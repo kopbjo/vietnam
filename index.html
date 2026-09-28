@@ -1,0 +1,53 @@
+<!doctype html>
+<html lang="nb">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://api.open-meteo.com https://cdn.jsdelivr.net https://latest.currency-api.pages.dev https://open.er-api.com https://firestore.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com; manifest-src 'self'; worker-src 'self'; object-src 'none'; base-uri 'none'; form-action 'none'">
+<meta name="format-detection" content="telephone=no">
+<meta name="theme-color" content="#f6f3ec" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#111514" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Vietnam">
+<title>Vietnam reisefølge</title>
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="icon" href="ikon.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="ikon-180.png">
+<link rel="stylesheet" href="stil.css">
+</head>
+<body>
+<header class="topp" id="topp">
+  <div class="topp-v"><a id="tilbake" class="tilbake" href="#/reisen" hidden><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg><span>Tilbake</span></a></div>
+  <div class="topp-tittel" id="toppTittel">Vietnam</div>
+  <div class="topp-h"><a href="#/sok" class="sokknapp" id="sokknapp" hidden aria-label="Søk"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="10.5" cy="10.5" r="6.2"/><path d="m15.2 15.2 4.8 4.8"/></svg></a><a href="#/nod" class="sos" id="sos" hidden aria-label="Nød og helse">SOS</a></div>
+</header>
+<div class="nett" id="nett" hidden>Uten nett – viser lagret versjon</div>
+<main id="innhold" tabindex="-1">
+  <section class="laas" id="laas">
+    <div class="laas-ikon"><img src="ikon-180.png" alt="" width="72" height="72"></div>
+    <h1>Reisefølge</h1>
+    <p>Skriv familiepassordet. Etter det virker appen uten nett på denne telefonen.</p>
+    <form id="laasSkjema" autocomplete="off">
+      <input id="passord" type="password" placeholder="Passord" aria-label="Passord" autocapitalize="none" autocorrect="off" spellcheck="false" enterkeyhint="go" required>
+      <label class="huske"><input type="checkbox" id="husk" checked> Husk på denne telefonen</label>
+      <button type="submit" id="laasKnapp" class="knapp knapp-stor">Lås opp</button>
+      <p class="feil" id="laasFeil" role="alert"></p>
+    </form>
+  </section>
+</main>
+<nav class="faner" id="faner" hidden aria-label="Hovedmeny">
+  <a href="#/idag" data-fane="idag"><svg viewBox="0 0 24 24"><rect x="3.5" y="5" width="17" height="15" rx="3"/><path d="M3.5 10h17M8 3v4M16 3v4"/></svg><span>I dag</span></a>
+  <a href="#/reisen" data-fane="reisen"><svg viewBox="0 0 24 24"><path d="M12 21s-6.5-6.2-6.5-11a6.5 6.5 0 0 1 13 0c0 4.8-6.5 11-6.5 11z"/><circle cx="12" cy="10" r="2.3"/></svg><span>Reisen</span></a>
+  <a href="#/mat" data-fane="mat"><svg viewBox="0 0 24 24"><path d="M7 3v8M4.5 3v5a2.5 2.5 0 0 0 5 0V3M7 11v10M17 3c-2 0-3.5 2.5-3.5 6s1.5 4 3.5 4v8"/></svg><span>Mat</span></a>
+  <a href="#/penger" data-fane="penger"><svg viewBox="0 0 24 24"><rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="2.8"/><path d="M6 9.5v5M18 9.5v5"/></svg><span>Penger</span></a>
+  <a href="#/mer" data-fane="mer"><svg viewBox="0 0 24 24"><circle cx="5.5" cy="12" r="1.6"/><circle cx="12" cy="12" r="1.6"/><circle cx="18.5" cy="12" r="1.6"/></svg><span>Mer</span></a>
+</nav>
+<div class="overlay" id="overlay" hidden role="dialog" aria-modal="true"></div>
+<div class="toast" id="toast" hidden></div>
+<script src="app.js"></script>
+</body>
+</html>
