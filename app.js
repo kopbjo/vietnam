@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 37, tid: "2026-09-29 kl. 21:12" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 38, tid: "2026-09-29 kl. 21:24" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -32,6 +32,8 @@
     if (!r.length) return null;
     const navnRe = r.flatMap((x) => [reEsc(x.navn), reEsc(x.navn.toUpperCase())]).join("|"), ordRe = r.map((x) => reEsc(x.ord)).join("|");
     FAM = { r,
+      // Unntak (ønske 29.09): bonusprogrammene («KrisFlyer <navn>») står alltid med navn
+      fast: new Set(((D.meta && D.meta.bonus) || []).map((b) => String(b[0]).trim())),
       voksne: D.personer.filter((p) => r.some((x) => x.navn === p.navn)).map((p) => p.id),
       // ord → navn (for foreldrene) og navn → ord (for barna); etternavn etter fornavnet (på skilt o.l.) byttes ikke
       tilNavn: new RegExp(`(?<![\\p{L}])(${ordRe})(s?)(?![\\p{L}])`, "giu"),
@@ -48,7 +50,7 @@
     const w = document.createTreeWalker(rot, NodeFilter.SHOW_TEXT), noder = [];
     for (let n = w.nextNode(); n; n = w.nextNode()) if (F.finn.test(n.nodeValue)) noder.push(n);
     for (const n of noder) {
-      const el = n.parentElement; if (!el || el.closest(FAM_SKIP)) continue;
+      const el = n.parentElement; if (!el || el.closest(FAM_SKIP) || F.fast.has(n.nodeValue.trim())) continue;
       let t = n.nodeValue;
       for (const x of F.r) t = t.split(x.hel).join(voksen ? x.navn : stor1(x.ord)); // kontaktnavnet «Navn (pappa)»
       const store = (o) => o === o.toUpperCase() && o !== o.toLowerCase() && o.length > 1;
@@ -2298,6 +2300,7 @@
     35: "Ryddigere I dag: hele dagen på én tidslinje – trykk på et punkt for detaljer",
     36: "Rettet visningen av hotell- og stedslistene",
     37: "Appen spør hvem du er – og skriver «pappa» og «mamma» for jentene, navn for de voksne",
+    38: "Bonusprogrammene står alltid med navn",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
