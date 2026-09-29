@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 35, tid: "2026-09-29 kl. 20:41" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 36, tid: "2026-09-29 kl. 20:58" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -609,7 +609,7 @@
       return `<div class="tr${aktiv ? " aktiv" : ""}${ferdig ? " ferdig" : ""}${a ? " egen" : ""}" data-idet="${id}" role="button" tabindex="0"><span class="kl">${esc(e.t || "–")}</span><span class="pr">${ikon(radIkon(e), "")}</span><div class="inn">
         ${aktiv ? `<div class="netikett">Neste · ${esc(nesteNaar(e))}</div>` : ""}<div class="tt">${mote ? "<b>Møtested:</b> " : ""}${a ? esc(a.tekst) : md(e.tittel)}${bord}</div>${under}</div></div>`;
     };
-    const naaStrek = `<div class="naa" aria-label="Nå"><span>${esc(hhmm(Date.now()))}</span><i></i></div>`;
+    const naaStrek = `<div class="naastrek" aria-label="Nå"><span>${esc(hhmm(Date.now()))}</span><i></i></div>`;
     let liste = rader;
     if (fri && resort) liste = [...rader, ...resortRader(d)].sort((a, b) => sortMin(a) - sortMin(b));
     let tl = "", strek = !erIdag;
@@ -2246,6 +2246,7 @@
     32: "Sammenhengende flystreker gjennom kartbruddet",
     34: "Enkel bruksstatistikk",
     35: "Ryddigere I dag: hele dagen på én tidslinje – trykk på et punkt for detaljer",
+    36: "Rettet visningen av hotell- og stedslistene",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
