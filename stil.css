@@ -805,6 +805,15 @@ ul.tidslinje .oppg.gjort .kl { color: var(--dempet); }
 
 /* ---------- v21: sammenfoldet «ferdig», fly, nød, pakkeliste ---------- */
 details.fold.ferdig > summary { color: var(--dempet); font-weight: 600; }
+details.fold.huskfold { border-left: 4px solid var(--gronn); }
+details.fold.huskfold > summary .ikon { stroke: var(--gronn); }
+details.fold.huskfold > summary::after { margin-left: 10px; }
+details.fold.huskfold > summary .hfnavn { white-space: nowrap; }
+details.fold.huskfold > summary .antall { margin-left: auto; white-space: nowrap; color: var(--dempet); font-size: .82rem; font-weight: 500; }
+details.fold.huskfold > .innhold > .krolle:first-child { margin-top: 0; }
+.huskfold .husk-l { border-top-color: var(--linje); }
+.huskfold .krolle + .husk-l { border-top: 0; }
+.huskfold .husk-tid { color: var(--gronn); }
 details.fold.ferdig > summary .ikon { stroke: var(--gronn); }
 details.fold.ferdig > .innhold .kort { box-shadow: none; margin-bottom: 0; }
 details.fold.innfelt { box-shadow: none; background: transparent; border: 0; border-top: .5px solid var(--gul-linje); border-radius: 0; margin: 8px 0 0; }

@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 41, tid: "2026-09-29 kl. 21:55" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 42, tid: "2026-09-29 kl. 22:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -519,6 +519,7 @@
 
   // ---------- Husk-oppgaver (kryss deles med familien via synk: {k:"x", r:"husk", l:"felles", n, v, hvem}) ----------
   const oppgNokkel = (e) => `${e.d} ${e.tittel}`;
+  let huskApen = ""; // stedet der «Husk underveis» er åpnet for hånd (beholdes når siden tegnes på nytt)
   function huskLes() {
     const o = {};
     for (const p of Object.values(synkLes().p)) if (p.k === "x" && p.r === "husk" && p.v) o[p.n] = p;
@@ -1076,7 +1077,7 @@
     kartVisning[sid] = Number(j);
     if (el && s) el.outerHTML = kartKort(s);
   });
-  document.addEventListener("toggle", (e) => { if (e.target && e.target.id === "reiseliste") lagre.set("vn.reiseListe", e.target.open ? "1" : "0"); }, true);
+  document.addEventListener("toggle", (e) => { if (e.target && e.target.id === "reiseliste") lagre.set("vn.reiseListe", e.target.open ? "1" : "0"); if (e.target && e.target.id === "huskher" && e.target.dataset.sted) huskApen = e.target.open ? e.target.dataset.sted : ""; }, true);
 
   // ---------- SIDE: Reisen ----------
   function sideReisen() {
@@ -1113,8 +1114,18 @@
 
     const oppg = D.hendelser.filter((e) => e.oppgave && e.sted === s.id).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : minutter(a.t) - minutter(b.t)));
     if (oppg.length) {
-      const gjort = huskLes(), igjen = oppg.filter((e) => !gjort[oppgNokkel(e)]).length;
-      h += `<section class="kort advarsel huskkort" id="huskher"><h2>${ikon("advarsel")}Husk underveis <span class="antall">${igjen ? `${igjen} igjen` : "alt gjort"}</span></h2>${oppg.map((e) => huskRad(e, "div", true)).join("")}<p class="krolle huskhjelp">Kryss av når det er gjort – det vises på alle telefonene.</p></section>`;
+      // Lukket og grønn til noe må gjøres: gul og åpen først den dagen en oppgave skal gjøres (eller den er passert uten kryss)
+      const gjort = huskLes(), igjenL = oppg.filter((e) => !gjort[oppgNokkel(e)]), igjen = igjenL.length, idg = idagISO();
+      const naa = igjenL.filter((e) => e.d <= idg), senere = oppg.filter((e) => !naa.includes(e));
+      const hjelp = `<p class="krolle huskhjelp">Kryss av når det er gjort – det vises på alle telefonene.</p>`;
+      if (naa.length) {
+        const rest = senere.length ? `<details class="fold innfelt"><summary>Senere her (${senere.length})</summary><div class="innhold">${senere.map((e) => huskRad(e, "div", true)).join("")}</div></details>` : "";
+        h += `<section class="kort advarsel huskkort" id="huskher"><h2>${ikon("advarsel")}Husk underveis <span class="antall">${naa.length} nå</span></h2>${naa.map((e) => huskRad(e, "div", true)).join("")}${hjelp}${rest}</section>`;
+      } else {
+        const forst = igjenL[0];
+        const ant = igjen ? `fra ${kort(forst.d)}` : "alt gjort";
+        h += `<details class="fold huskfold" id="huskher" data-sted="${esc(s.id)}"${huskApen === s.id ? " open" : ""}><summary>${ikon("bestilt")}<span class="hfnavn">Husk underveis${igjen ? ` (${igjen})` : ""}</span><span class="antall">${esc(ant)}</span></summary><div class="innhold huskkort">${igjen ? `<p class="krolle">Ingenting å gjøre ennå – kortet blir gult og åpnes den dagen noe skal gjøres.</p>` : ""}${oppg.map((e) => huskRad(e, "div", true)).join("")}${hjelp}</div></details>`;
+      }
     }
     h += hotellKort(s);
     h += kartKort(s);
@@ -2533,6 +2544,7 @@
     39: "Reisen-kartet: hjemreisen øverst til venstre, der den hører hjemme",
     40: "Legg ideer inn i planen – fra I dag, stedssiden og «Legg til»",
     41: "Trykk på et setenummer for å se hvor dere sitter i flyet",
+    42: "«Husk underveis» er lukket og grønn til noe må gjøres – og oppgavene sier tydeligere hva som gjelder",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
