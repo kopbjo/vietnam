@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 40, tid: "2026-09-29 kl. 21:55" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 41, tid: "2026-09-29 kl. 21:55" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -218,7 +218,7 @@
       const sete = f.seter ? f.seter[p.id] : "";
       const billett = f.billett ? f.billett[p.id] : "";
       if (!sete && !billett) return "";
-      return `<tr class="${p.id === m ? "meg" : ""}"><td>${esc(p.navn)}</td><td>${esc(sete || "")}</td><td>${esc(billett || "")}</td></tr>`;
+      return `<tr class="${p.id === m ? "meg" : ""}"><td>${esc(p.navn)}</td><td>${sete ? skKnapp(f, p.id, esc(sete)) : ""}</td><td>${esc(billett || "")}</td></tr>`;
     }).join("");
     return `<div class="fly">
       <div class="ftopp"><span class="fnr">${esc(f.id)}</span><span class="fdato">${esc(pen(f.d))}<br>${esc(f.sel)}</span></div>
@@ -228,13 +228,171 @@
         <div class="h"><div class="tid">${esc(f.arr)}${f.arrPluss ? "<sup>+1</sup>" : ""}</div><div class="sted"><b>${esc(f.til)}</b>${f.tilT ? " · " + esc(f.tilT) : ""}</div></div>
       </div>
       <div class="fmeta"><span>Ref. <button class="ref" data-kopier="${esc(f.ref)}">${esc(f.ref)}</button></span>
-        ${mitt ? `<span class="dittsete">Ditt sete ${esc(mitt)}</span>` : `<span><b>Seter</b> ${esc(f.seterTekst || (f.seter ? Object.values(f.seter).sort().join(", ") : ""))}</span>`}</div>
+        ${mitt ? (skKan(f) ? skKnapp(f, m, `Ditt sete ${esc(mitt)} <small>· Setekart ›</small>`, "dittsete") : `<span class="dittsete">Ditt sete ${esc(mitt)}</span>`) : `<span><b>Seter</b> ${skKnapp(f, "", esc(f.seterTekst || (f.seter ? Object.values(f.seter).sort().join(", ") : "")) + (skKan(f) ? " ›" : ""))}</span>`}</div>
       ${f.info ? `<div class="finfo">${md(f.info)}</div>` : ""}
       <div class="knapper flyknapper">${f.innsjekk && f.d >= idagISO() ? knapp("web", f.innsjekk.url, "Sjekk inn") : ""}${knapp("web", "https://www.flightradar24.com/data/flights/" + encodeURIComponent(f.id.toLowerCase()), "Flystatus")}</div>
       ${f.innsjekk && f.d >= idagISO() ? `<div class="finnsj">Innsjekk på nett: ${md(f.innsjekk.tekst)}</div>` : ""}
       ${rader ? `<details class="flydet"><summary>Seter og billettnumre</summary><table>${rader}</table></details>` : ""}
     </div>`;
   }
+
+  // ---------- setekart (v41): trykk på et setenummer → hvor familien sitter + hvor i flyet ----------
+  // Flytypene (bokstaver, rader, dører, vinge) ligger i reiseinfoen (D.flytyper, f.type). Initialene i D.personer[].init.
+  const skType = (f) => (f && f.type && D.flytyper ? D.flytyper[f.type] : null);
+  const skDel = (s) => { const m = /^(\d{1,3})([A-Z])$/.exec(String(s || "").trim().toUpperCase()); return m ? [Number(m[1]), m[2]] : null; };
+  const skKan = (f) => !!(skType(f) && f.seter && Object.values(f.seter).some(skDel));
+  const skKnapp = (f, pid, inn, kl = "setenr") => (skKan(f) ? `<button class="${kl}" data-setekart="${esc(f.id)}"${pid ? ` data-skp="${esc(pid)}"` : ""}>${inn}</button>` : inn);
+  // Alle rader i flyet i rekkefølge, med sone og radavstand
+  function skRader(T) {
+    const ut = [];
+    for (const z of T.soner) for (let r = z.fra; r <= z.til; r++) if (!(T.hopp || []).includes(r)) ut.push({ r, z, p: z.p || 1 });
+    return ut;
+  }
+  function skSone(T, r) { return T.soner.find((z) => r >= z.fra && r <= z.til) || null; }
+  const skSeteFins = (T, r, c) => !((T.mangler || {})[String(r)] || []).includes(c);
+  function skPlass(T, c) {
+    const bl = T.blokker, alle = bl.flat();
+    if (c === alle[0] || c === alle[alle.length - 1]) return "ved vinduet";
+    for (const b of bl) { const i = b.indexOf(c); if (i >= 0) return i === 0 || i === b.length - 1 ? "ved midtgangen" : "i midten"; }
+    return "";
+  }
+  const skBlokk = (T, c) => T.blokker.findIndex((b) => b.includes(c));
+  const skListe = (a) => (a.length < 2 ? a.join("") : a.slice(0, -1).join(", ") + " og " + a[a.length - 1]);
+
+  // Figur 1: setene i radene der familien sitter (+ raden foran og bak), nesen opp
+  function skKart(f, T, valgt) {
+    const hvem = {}, init = {};
+    D.personer.forEach((p) => { init[p.id] = p.init || p.navn.slice(0, 2).toUpperCase(); });
+    for (const [p, s] of Object.entries(f.seter)) { const d = skDel(s); if (d) hvem[d[0] + d[1]] = p; }
+    const alle = skRader(T).map((x) => x.r), famR = [...new Set(Object.values(f.seter).map(skDel).filter(Boolean).map((d) => d[0]))];
+    famR.forEach((r) => { if (!alle.includes(r)) alle.push(r); }); alle.sort((a, b) => a - b);
+    const idx = new Set(); famR.forEach((r) => { const i = alle.indexOf(r); [i - 1, i, i + 1].forEach((j) => { if (j >= 0 && j < alle.length) idx.add(j); }); });
+    const vis = [...idx].sort((a, b) => a - b), rader = [];
+    vis.forEach((j, k) => { if (k && j !== vis[k - 1] + 1) rader.push(null); rader.push(alle[j]); });
+    const kol = T.blokker.flat(), gang = T.blokker.length - 1, W = 358, vegg = 14, gangB = 22, mell = 3;
+    const sw = Math.min(54, (W - 2 * vegg - gang * gangB - (kol.length - gang - 1) * mell) / kol.length), sh = Math.round(Math.min(56, sw * 1.12));
+    const innerB = kol.length * sw + (kol.length - T.blokker.length) * mell + gang * gangB, x0 = (W - innerB) / 2, topp = 44;
+    const fsI = Math.max(12, Math.min(20, sw * 0.42)), fsN = Math.max(8.5, Math.min(12, sw * 0.24));
+    const xs = {}; let x = x0;
+    T.blokker.forEach((b, bi) => { b.forEach((c, ci) => { xs[c] = x; x += sw + (ci < b.length - 1 ? mell : 0); }); if (bi < gang) x += gangB; });
+    const hoyde = (r) => (r === null ? 22 : sh + 10);
+    let y = topp, rad = "";
+    rader.forEach((r, k) => {
+      if (r === null) { rad += `<text x="${W / 2}" y="${y + 15}" class="stk-hull" text-anchor="middle">· · ·</text>`; y += hoyde(r); return; }
+      const brudd = k && rader[k - 1] !== null && (T.brudd || {})[String(rader[k - 1])];
+      if (brudd) { rad += `<line x1="${x0}" x2="${x0 + innerB}" y1="${y - 2}" y2="${y - 2}" class="stk-brudd"/>`; y += 10; }
+      const ym = y + sh / 2;
+      rad += `<rect x="${x0 - vegg + 6}" y="${ym - 7}" width="3" height="14" rx="1.5" class="stk-vindu"/><rect x="${x0 + innerB + vegg - 9}" y="${ym - 7}" width="3" height="14" rx="1.5" class="stk-vindu"/>`;
+      let gx = x0; T.blokker.forEach((b, bi) => { gx += b.length * sw + (b.length - 1) * mell; if (bi < gang) { rad += `<text x="${gx + gangB / 2}" y="${ym + 4}" class="stk-rad" text-anchor="middle">${r}</text>`; gx += gangB; } });
+      for (const c of kol) {
+        const nr = r + c, p = hvem[nr], cx = xs[c];
+        if (!p && !skSeteFins(T, r, c)) continue;
+        rad += `<g class="stk-sete${p ? (p === valgt ? " stk-valgt" : " stk-fam") : ""}"${p ? ` data-skvelg="${esc(p)}"` : ""}><rect x="${cx}" y="${y}" width="${sw}" height="${sh}" rx="${Math.min(9, sw * 0.22)}"/><rect x="${cx + 3}" y="${y + sh - 6}" width="${sw - 6}" height="3" rx="1.5" class="stk-arm"/>`;
+        if (p) rad += `<text x="${cx + sw / 2}" y="${y + sh * 0.47}" text-anchor="middle" class="stk-init" style="font-size:${fsI.toFixed(1)}px">${esc(init[p])}</text><text x="${cx + sw / 2}" y="${y + sh * 0.47 + fsN + 3}" text-anchor="middle" class="stk-nr" style="font-size:${fsN.toFixed(1)}px">${esc(nr)}</text>`;
+        rad += `</g>`;
+      }
+      y += hoyde(r);
+    });
+    const H = y + 16;
+    let s = `<svg class="setekart" viewBox="0 0 ${W} ${H.toFixed(0)}" width="100%" role="img" aria-label="Setekart">`;
+    s += `<rect x="${x0 - vegg + 4}" y="22" width="${innerB + 2 * vegg - 8}" height="${H - 18}" rx="18" class="stk-kropp"/>`;
+    s += `<text x="${W / 2}" y="13" class="stk-front" text-anchor="middle">▲ Fronten av flyet</text>`;
+    for (const [c, cx] of Object.entries(xs)) s += `<text x="${cx + sw / 2}" y="${topp - 6}" class="stk-bokst" text-anchor="middle">${esc(c)}</text>`;
+    return s + rad + `</svg>`;
+  }
+
+  // Posisjon (0–1 langs flykroppen) for starten av en rad
+  function skPosFn(T) {
+    const R = skRader(T); let sum = 0; const start = {};
+    R.forEach((x) => { start[x.r] = sum; sum += x.p + ((T.brudd || {})[String(x.r)] || 0); });
+    const a = T.bred ? 0.1 : 0.12, l = T.bred ? 0.74 : 0.72;
+    const pos = (r) => { if (start[r] == null) { const n = R.find((x) => x.r > r); return n ? pos(n.r) : a + l; } return a + (l * start[r]) / sum; };
+    const bredde = (r) => { const x = R.find((q) => q.r === r); return (l * (x ? x.p : 1)) / sum; };
+    return { pos, bredde, a, l };
+  }
+  // Figur 2: hele flyet sett ovenfra, nesen til venstre
+  function skPlassering(f, T) {
+    const rader = Object.values(f.seter).map(skDel).filter(Boolean).map((d) => d[0]);
+    const { pos, bredde, a, l } = skPosFn(T), R = skRader(T), sist = R[R.length - 1].r;
+    const W = 340, L = W - 20, span = T.bred ? 50 : 42, kr = T.bred ? 16 : 13, cy = span + kr + 6, H = 2 * cy, X = (t) => 10 + t * L;
+    let s = `<svg class="plassering" viewBox="0 0 ${W} ${H}" width="100%" role="img" aria-label="Hvor i flyet">`;
+    const v0 = X(pos(T.vinge[0])), v1 = X(pos(T.vinge[1]) + bredde(T.vinge[1])), c = v1 - v0, tl = v1 - 0.05 * c, tt = v1 + 0.22 * c;
+    for (const sg of [-1, 1]) {
+      const yr = cy + sg * kr, yt = cy + sg * (kr + span);
+      s += `<path d="M${v0.toFixed(1)} ${yr} L${tl.toFixed(1)} ${yt} L${tt.toFixed(1)} ${yt} L${(v1 + 0.12 * c).toFixed(1)} ${yr} Z" class="pl-vinge"/>`;
+      const ex = v0 + 0.18 * c, ey = cy + sg * (kr + span * 0.38);
+      s += `<rect x="${(ex - 10).toFixed(1)}" y="${(ey - 5).toFixed(1)}" width="22" height="10" rx="5" class="pl-motor"/>`;
+    }
+    const h0 = X(0.87), h1 = X(0.965);
+    for (const sg of [-1, 1]) s += `<path d="M${h0.toFixed(1)} ${cy + sg * (kr - 5)} L${(h1 - 4).toFixed(1)} ${cy + sg * (kr + 20)} L${(h1 + 6).toFixed(1)} ${cy + sg * (kr + 20)} L${(h1 + 2).toFixed(1)} ${cy + sg * 4} Z" class="pl-vinge"/>`;
+    s += `<path d="M${X(0)} ${cy} C${X(0)} ${cy - kr} ${X(0.05)} ${cy - kr} ${X(0.1)} ${cy - kr} L${X(0.85)} ${cy - kr} C${X(0.95)} ${cy - kr + 3} ${X(1)} ${cy - 4} ${X(1)} ${cy} C${X(1)} ${cy + 4} ${X(0.95)} ${cy + kr - 3} ${X(0.85)} ${cy + kr} L${X(0.1)} ${cy + kr} C${X(0.05)} ${cy + kr} ${X(0)} ${cy + kr} ${X(0)} ${cy} Z" class="pl-kropp"/>`;
+    s += `<path d="M${X(0.018)} ${cy - 6} Q${X(0.035)} ${cy - 10} ${X(0.05)} ${cy - 10} L${X(0.05)} ${cy + 10} Q${X(0.035)} ${cy + 10} ${X(0.018)} ${cy + 6} Z" class="pl-cockpit"/>`;
+    T.soner.forEach((z) => { const za = X(pos(z.fra)), zb = X(pos(z.til) + bredde(z.til)); s += `<rect x="${(za + 1).toFixed(1)}" y="${cy - kr + 4}" width="${Math.max(2, zb - za - 2).toFixed(1)}" height="${2 * kr - 8}" rx="3" class="pl-sone ${skKl(z.kl)}"/>`; });
+    (T.dorer || []).forEach((d) => {
+      const t = d === "f" ? pos(R[0].r) - 0.015 : d === "b" || d === sist ? pos(sist) + bredde(sist) + 0.012 : pos(d) + bredde(d) + 0.006;
+      s += `<rect x="${(X(t) - 2).toFixed(1)}" y="${cy - kr - 1}" width="4" height="4" class="pl-dor"/><rect x="${(X(t) - 2).toFixed(1)}" y="${cy + kr - 3}" width="4" height="4" class="pl-dor"/>`;
+    });
+    const r0 = Math.min(...rader), r1 = Math.max(...rader), b0 = X(pos(r0)), b1 = X(pos(r1) + bredde(r1));
+    s += `<rect x="${(b0 - 1).toFixed(1)}" y="${cy - kr - 3}" width="${Math.max(7, b1 - b0 + 2).toFixed(1)}" height="${2 * kr + 6}" rx="3" class="pl-dere"/>`;
+    s += `<text x="${X(0) + 2}" y="${cy + kr + 16}" class="pl-front">Fronten</text>`;
+    return s + `</svg><div class="pl-legende">${T.soner.map((z) => `<span><i class="${skKl(z.kl)}"></i>${esc(z.kl)}</span>`).join("")}<span><i class="pl-her"></i>Her sitter vi</span></div>`;
+  }
+  const skKl = (kl) => (/business/i.test(kl) ? "pl-bus" : /premium|plus/i.test(kl) ? "pl-prem" : "pl-oko");
+
+  function skTekst(f, T, valgt) {
+    const m = meg(), nv = (p) => (p === m ? "du" : personNavn(p)), obj = (p) => (p === m ? "deg" : personNavn(p));
+    const d = skDel(f.seter[valgt]); if (!d) return "";
+    const [r, c] = d, stor = (t) => t.charAt(0).toUpperCase() + t.slice(1);
+    const andre = Object.keys(f.seter).filter((p) => p !== valgt && skDel(f.seter[p]));
+    const med = (fn) => andre.filter((p) => fn(skDel(f.seter[p])));
+    const side = med(([r2, c2]) => r2 === r && skBlokk(T, c2) === skBlokk(T, c)), over = med(([r2, c2]) => r2 === r && skBlokk(T, c2) !== skBlokk(T, c));
+    const alle = skRader(T).map((x) => x.r), i = alle.indexOf(r);
+    const foran = med(([r2]) => i > 0 && r2 === alle[i - 1]), bak = med(([r2]) => i >= 0 && r2 === alle[i + 1]);
+    let t = `${stor(nv(valgt))} sitter ${skPlass(T, c)}.`;
+    if (side.length) t += ` Ved siden av${valgt === m ? " deg" : ""}: ${skListe(side.map(obj))}.`;
+    if (over.length) t += ` Rett over midtgangen: ${skListe(over.map(obj))}.`;
+    if (foran.length) t += ` Raden foran: ${skListe(foran.map(obj))}.`;
+    if (bak.length) t += ` Raden bak: ${skListe(bak.map(obj))}.`;
+    return t;
+  }
+  function skHvor(f, T) {
+    const rader = Object.values(f.seter).map(skDel).filter(Boolean).map((d) => d[0]);
+    const r0 = Math.min(...rader), r1 = Math.max(...rader), z = skSone(T, r0); if (!z) return "";
+    const zi = T.soner.indexOf(z), zr = skRader(T).filter((x) => x.z === z).map((x) => x.r), k = zr.indexOf(r0) / Math.max(1, zr.length);
+    const navn = T.soner.length < 2 ? "flyet" : z.kl === "Økonomi" ? "økonomi" : z.kl;
+    const del = zi > 0 && zr.indexOf(r0) <= 2 ? `fremst i ${navn}, rett bak ${T.soner[zi - 1].kl}` : `${k < 0.3 ? "fremst" : k < 0.65 ? "midt" : "bakerst"} i ${navn}`;
+    const [v0, v1] = T.vinge, vt = r1 < v0 ? "foran vingen" : r0 > v1 ? "bak vingen" : r1 > v1 ? "ved bakkanten av vingen" : "over vingen – dere ser vingen fra vinduet";
+    return `${r0 === r1 ? "Rad " + r0 : "Rad " + r0 + "–" + r1} er ${del}, ${vt}.`;
+  }
+  function skInnhold(f, valgt) {
+    const T = skType(f), m = meg();
+    const pers = D.personer.filter((p) => skDel(f.seter[p.id])).sort((a, b) => { const x = skDel(f.seter[a.id]), y = skDel(f.seter[b.id]); return x[0] - y[0] || x[1].localeCompare(y[1]); });
+    if (!pers.some((p) => p.id === valgt)) valgt = pers.some((p) => p.id === m) ? m : null;
+    const chips = pers.map((p) => `<button class="${p.id === valgt ? "valgt" : ""}" data-skvelg="${esc(p.id)}" data-init="${esc(p.init || "")}" aria-pressed="${p.id === valgt}">${p.id === m ? "Du" : esc(p.navn)} · ${esc(skDel(f.seter[p.id]).join(""))}</button>`).join("");
+    return `<div class="ark-etikett">Setekart · ${esc(f.id)}</div><h2>${esc(f.fra)} → ${esc(f.til)}</h2><p class="stk-under">${esc(T.navn)} · trykk på et navn for å se setet</p>
+      <div class="stk-boks">${skKart(f, T, valgt)}</div><div class="stk-hvem">${chips}</div>${valgt ? `<p class="stk-forklar">${esc(skTekst(f, T, valgt))}</p>` : ""}
+      <div class="stk-deltittel">Hvor i flyet</div><div class="stk-boks">${skPlassering(f, T)}</div><p class="stk-forklar">${esc(skHvor(f, T))}</p>
+      <p class="stk-tips">${f.typeMerk ? esc(f.typeMerk) + " " : ""}Bytter flyselskapet fly, kan setene bli flyttet – sjekk setet ved innsjekk.</p>`;
+  }
+  let skAapen = null;
+  function visSetekart(id, valgt) {
+    const f = D.fly.find((x) => x.id === id); if (!skKan(f)) return;
+    skAapen = id;
+    const o = $("#overlay");
+    o.className = "overlay ark";
+    o.innerHTML = `<div class="ark-flate" role="dialog" aria-modal="true"><div class="ark-topp"><span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div><div class="stk-inn">${skInnhold(f, valgt)}</div></div>`;
+    o.hidden = false; o.scrollTop = 0;
+  }
+  document.addEventListener("click", (e) => {
+    if (!D || !e.target.closest) return;
+    const b = e.target.closest("[data-setekart]");
+    if (b) { e.preventDefault(); e.stopPropagation(); visSetekart(b.dataset.setekart, b.dataset.skp || meg()); return; }
+    const v = e.target.closest("[data-skvelg]");
+    if (v && skAapen && v.closest("#overlay")) {
+      e.preventDefault(); const f = D.fly.find((x) => x.id === skAapen), inn = $("#overlay .stk-inn");
+      if (f && inn) { const fl = $("#overlay .ark-flate"), st = fl ? fl.scrollTop : 0; inn.innerHTML = skInnhold(f, v.dataset.skvelg); if (fl) fl.scrollTop = st; }
+    }
+  });
 
   // Tlf.-nummer til hotellet (for sjåførkortet)
   const hotellNummer = (k) => { if (!k) return ""; const x = k.knapper.find(([t]) => t === "tel") || k.knapper.find(([t]) => t === "wa"); return x ? x[1] : ""; };
@@ -1481,11 +1639,11 @@
   const BRUK_KLIKK = [["a[href^='tel:']", "ring"], ["a[href*='wa.me']", "whatsapp"], ["a[href*='google.com/maps']", "kart"], ["#sos", "sos"], ["#sokknapp", "sok"],
     ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-frase]", "frase"],
     ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary,[data-ivaer]", "vaer"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
-    ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["a[target='_blank']", "lenke"]];
+    ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-setekart]", "setekart"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["a[target='_blank']", "lenke"]];
   const HANDLINGER = { ring: "Ringte", whatsapp: "Åpnet WhatsApp", kart: "Åpnet kart", sos: "Trykket SOS", sok: "Åpnet søk", hk: "Åpnet ⟦k1⟧", hknod: "Nødskjermen på ⟦k1⟧",
     tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været",
     hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", dag: "Byttet dag",
-    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", detalj: "Åpnet detaljer i I dag", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen" };
+    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", setekart: "Åpnet setekart", detalj: "Åpnet detaljer i I dag", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen" };
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest) return;
     const bn = e.target.closest(".bunn");
@@ -2374,6 +2532,7 @@
     38: "Bonusprogrammene står alltid med navn",
     39: "Reisen-kartet: hjemreisen øverst til venstre, der den hører hjemme",
     40: "Legg ideer inn i planen – fra I dag, stedssiden og «Legg til»",
+    41: "Trykk på et setenummer for å se hvor dere sitter i flyet",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {

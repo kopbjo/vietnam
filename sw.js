@@ -1,7 +1,7 @@
 // Offline-støtte og rask oppstart: lagret kopi vises med én gang, og ny versjon hentes i bakgrunnen.
 // Er en fil endret, får appen beskjed (melding «ny»). Nettleserens HTTP-mellomlager omgås («no-cache»/«reload»),
 // ellers kan en ny cache-versjon fylles med gamle filer.
-const CACHE = "vn-reise-v40";
+const CACHE = "vn-reise-v41";
 const FILER = ["./", "index.html", "stil.css", "app.js", "data.enc", "manifest.webmanifest", "ikon.svg", "ikon-180.png", "ikon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILER.map((f) => new Request(f, { cache: "reload" })))).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {

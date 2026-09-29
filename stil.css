@@ -1220,3 +1220,55 @@ details.oppdpost.av summary { color: var(--dempet); }
 .ideplan-i svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; }
 .ideark-hjelp { margin: -4px 0 10px; }
 .ideark-sted { font-size: 1rem; margin: 18px 0 6px; }
+
+/* ---------- Setekart (v41) ---------- */
+:root { --stk-mork: #1f6b3a; --stk-mork-t: #ffffff; --stk-lys: #c4e8cd; --stk-lys-t: #134a27; --stk-tom: #eceae4; --stk-tom-k: #d6d2c8; --stk-kropp: #fbfaf7; --stk-bus: #d9c9a3; --stk-prem: #ece2cc; --stk-vindu: #9cc3dd; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --stk-mork: #3fae66; --stk-mork-t: #06170c; --stk-lys: #24452f; --stk-lys-t: #bfeccc; --stk-tom: #2a3230; --stk-tom-k: #3b4541; --stk-kropp: #171c1b; --stk-bus: #5a4d33; --stk-prem: #3b3528; --stk-vindu: #4f7f9e; } }
+:root[data-theme="dark"] { --stk-mork: #3fae66; --stk-mork-t: #06170c; --stk-lys: #24452f; --stk-lys-t: #bfeccc; --stk-tom: #2a3230; --stk-tom-k: #3b4541; --stk-kropp: #171c1b; --stk-bus: #5a4d33; --stk-prem: #3b3528; --stk-vindu: #4f7f9e; }
+.setekart, .plassering { display: block; font-family: inherit; }
+.stk-kropp { fill: var(--stk-kropp); stroke: var(--linje); stroke-width: 1.5; }
+.stk-front, .stk-bokst, .stk-rad { font-size: 11px; font-weight: 700; fill: var(--dempet); }
+.stk-front { letter-spacing: .04em; }
+.stk-hull { font-size: 16px; font-weight: 700; fill: var(--dempet); }
+.stk-brudd { stroke: var(--stk-tom-k); stroke-width: 1.5; stroke-dasharray: 4 4; }
+.stk-vindu { fill: var(--stk-vindu); }
+.stk-sete > rect:first-child { fill: var(--stk-tom); stroke: var(--stk-tom-k); stroke-width: 1; }
+.stk-sete .stk-arm { fill: var(--stk-tom-k); }
+.stk-fam, .stk-valgt { cursor: pointer; }
+.stk-fam > rect:first-child { fill: var(--stk-lys); stroke: var(--stk-mork); stroke-width: 1.2; }
+.stk-fam .stk-arm { fill: color-mix(in srgb, var(--stk-mork) 35%, transparent); }
+.stk-fam text { fill: var(--stk-lys-t); }
+.stk-valgt > rect:first-child { fill: var(--stk-mork); stroke: var(--stk-mork); stroke-width: 2.5; }
+.stk-valgt .stk-arm { fill: rgba(255,255,255,.35); }
+.stk-valgt text { fill: var(--stk-mork-t); }
+.stk-init { font-weight: 800; letter-spacing: .02em; }
+.stk-nr { font-weight: 600; opacity: .9; }
+.pl-kropp { fill: var(--stk-kropp); stroke: var(--dempet); stroke-width: 1.3; }
+.pl-vinge { fill: var(--stk-tom); stroke: var(--dempet); stroke-width: 1; }
+.pl-motor { fill: var(--stk-tom-k); stroke: var(--dempet); stroke-width: .8; }
+.pl-cockpit { fill: var(--stk-vindu); }
+.pl-sone.pl-bus { fill: var(--stk-bus); } .pl-sone.pl-prem { fill: var(--stk-prem); } .pl-sone.pl-oko { fill: var(--stk-tom); }
+.pl-dor { fill: var(--dempet); }
+.pl-dere { fill: var(--stk-mork); }
+.pl-front { font-size: 10.5px; font-weight: 600; fill: var(--dempet); }
+.pl-legende { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; font-size: .8rem; color: var(--dempet); margin-top: 6px; }
+.pl-legende span { display: inline-flex; align-items: center; gap: 5px; }
+.pl-legende i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
+.pl-legende i.pl-bus { background: var(--stk-bus); } .pl-legende i.pl-prem { background: var(--stk-prem); }
+.pl-legende i.pl-oko { background: var(--stk-tom); border: 1px solid var(--stk-tom-k); } .pl-legende i.pl-her { background: var(--stk-mork); }
+.stk-under { color: var(--dempet); font-size: .92rem; margin: 0 0 10px; }
+.stk-boks { background: var(--flate); border-radius: 16px; padding: 10px 8px; border: .5px solid var(--linje); }
+.stk-hvem { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 4px; }
+.stk-hvem button { display: inline-flex; align-items: center; gap: 6px; border: 1.2px solid var(--stk-mork); background: var(--stk-lys); color: var(--stk-lys-t); border-radius: 999px; min-height: 38px; padding: 4px 12px 4px 6px; font: inherit; font-size: .88rem; font-weight: 650; cursor: pointer; }
+.stk-hvem button::before { content: attr(data-init); background: rgba(255,255,255,.55); border-radius: 999px; padding: 2px 6px; font-size: .78rem; font-weight: 800; }
+.stk-hvem button.valgt { background: var(--stk-mork); color: var(--stk-mork-t); }
+.stk-hvem button.valgt::before { background: rgba(255,255,255,.22); }
+:root[data-theme="dark"] .stk-hvem button::before { background: rgba(0,0,0,.25); }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stk-hvem button::before { background: rgba(0,0,0,.25); } }
+.stk-forklar { font-size: .95rem; margin: 8px 0 0; }
+.stk-tips { font-size: .8rem; color: var(--dempet); margin: 10px 0 0; }
+.stk-deltittel { font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin: 18px 0 6px; }
+/* inngangene: setenumrene på flykortet */
+.fly button.dittsete { border: 0; font: inherit; font-weight: 700; cursor: pointer; }
+.fly button.dittsete small { font-weight: 600; opacity: .85; }
+.fly button.setenr { border: 0; background: var(--aksent-lys); color: var(--aksent); font: inherit; font-weight: 700; border-radius: 8px; padding: 2px 8px; cursor: pointer; }
