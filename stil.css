@@ -1078,3 +1078,34 @@ details.oppdpost.av summary { color: var(--dempet); }
 
 .fraclaude { font-size: .8rem; color: var(--gul); }
 .rinnhold .fraclaude { background: var(--gul-bg); border: .5px solid var(--gul-linje); border-radius: 10px; padding: 6px 10px; }
+/* Bruksstatistikk (skjult side #/stat) – én farge for alle stolper, tekst i teksttoner */
+.bunn { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
+.sfliser { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 4px; }
+.sflis { background: var(--flate); border: .5px solid var(--linje); border-radius: 14px; padding: 12px 14px; box-shadow: var(--skygge); }
+.sflis small { display: block; color: var(--dempet); font-size: .8rem; font-weight: 600; }
+.sflis b { display: block; font-size: 1.45rem; font-weight: 750; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.sstolper { display: grid; gap: 11px; }
+.sst-topp { display: flex; justify-content: space-between; gap: 10px; font-size: .92rem; }
+.sst-topp b { font-variant-numeric: tabular-nums; font-weight: 650; }
+.sst-kl { font-style: normal; color: var(--dempet); font-size: .8rem; margin-left: 4px; }
+.sst-spor { height: 8px; margin-top: 5px; border-radius: 99px; background: var(--flate2); overflow: hidden; }
+.sst-spor span { display: block; height: 100%; background: var(--aksent); border-radius: 99px; }
+.sstolpe small { display: block; color: var(--dempet); font-size: .78rem; margin-top: 3px; }
+.sperson + .sperson { border-top: .5px solid var(--linje); margin-top: 12px; padding-top: 12px; }
+.sp-topp { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+.sp-topp b { font-size: 1.02rem; }
+.sp-topp span { color: var(--dempet); font-size: .88rem; font-variant-numeric: tabular-nums; }
+.sp-sist { color: var(--dempet); font-size: .82rem; margin: 2px 0 6px; }
+.senhet { display: flex; justify-content: space-between; align-items: center; gap: 10px; background: var(--flate2); border-radius: 10px; padding: 8px 10px; margin-top: 6px; }
+.senhet .se-navn { font-size: .88rem; font-weight: 600; }
+.senhet .se-navn i { font-weight: 400; color: var(--dempet); }
+.senhet small { display: block; color: var(--dempet); font-size: .76rem; margin-top: 1px; }
+.se-tall { font-weight: 650; font-variant-numeric: tabular-nums; }
+.se-gml { background: var(--gul-bg); color: var(--gul); border: .5px solid var(--gul-linje); border-radius: 6px; padding: 0 5px; font-weight: 600; }
+.sdager { display: grid; grid-template-columns: repeat(var(--n), 1fr); gap: 2px; height: 110px; align-items: end; }
+.sdager button { height: 100%; border: 0; padding: 0; background: none; display: flex; align-items: flex-end; cursor: pointer; border-radius: 4px; }
+.sdager button span { display: block; width: 100%; background: var(--aksent); opacity: .55; border-radius: 4px 4px 0 0; }
+.sdager button.valgt span { opacity: 1; }
+.sdager button.valgt { background: var(--aksent-lys); }
+.sdag-akse { display: flex; justify-content: space-between; color: var(--dempet); font-size: .75rem; margin-top: 6px; border-top: .5px solid var(--linje); padding-top: 4px; }
+.sdag-info { margin: 8px 0 0 !important; font-size: .9rem; }

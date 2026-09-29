@@ -5,9 +5,9 @@
   if (window.top !== window.self) { document.documentElement.innerHTML = ""; return; } // skal ikke kunne vises inni en annen side
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-  const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet" };
+  const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 33, tid: "2026-09-28 kl. 23:08" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 34, tid: "2026-09-29 kl. 20:13" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1037,6 +1037,7 @@
       const d = x.document; if (!d || !d.fields) continue;
       const ts = d.fields.s && d.fields.s.timestampValue; if (ts) maks = Math.max(maks, tsMs(ts));
       let p; try { p = await synkDekrypter(d.fields.c.stringValue); } catch { continue; }
+      if (p && p.k === "t") { brukMottak(p); continue; } // bruksstatistikk ligger i eget lager (vn.bruk)
       const k = postNokkel(p), her = s.p[k];
       if (!her || p.t > her.t) { s.p[k] = p; delete s.u[k]; endret = true; }
     }
@@ -1067,8 +1068,10 @@
         // Mens noen redigerer en liste, hentes ingenting nytt (da flytter ikke radene seg under fingeren). Egne endringer sendes likevel.
         const endret = pakkRediger ? false : await synkHent();
         await synkSend();
+        await brukSend();
         synkLes().ok = Date.now(); synkLagre(); synkStatus("ok");
         if (endret) synkOppdaterVisning();
+        if (B.endret) { B.endret = false; brukLagre(true); if (rute().side === "stat" && trygtAaTegne()) { const y = window.scrollY; vis(); window.scrollTo(0, y); } }
       } catch (e) { synkStatus(navigator.onLine ? "feil" : "vent"); if (navigator.onLine) synkSnart(8000); } // nytt forsøk om litt
     })();
     try { await S.gaar; } finally { S.gaar = null; if (S.igjen) { S.igjen = false; synkSnart(); } }
@@ -1155,6 +1158,237 @@
     else navigator.clipboard.writeText(ui(tekst)).then(() => toast("Lista er kopiert"), () => toast("Kunne ikke kopiere", 2600, "feil"));
   }
   function fokusNy() { const el = $("#pakkNyInput"); if (el) { el.focus(); el.scrollIntoView({ block: "center" }); } }
+
+  // ---------- bruk: enkel bruksstatistikk – tellere per telefon, bruker og dag (ingen innhold, ingen posisjon, ingen logg) ----------
+  // Lokalt: vn.bruk = { p: {nøkkel: post}, u: {nøkkel: 1} (ikke sendt ennå), sendt: ms }. Holdes utenfor vn.synk, men sendes kryptert
+  // i samme samling. Post {k:"t", enh, d, hvem, v, pf, sk, o:[4], sek:[4], uten, s:{skjerm:[4]}, h:{handling:[4]}, t}.
+  // Tidsbolker (telefonens klokke): 0 morgen 05–11 · 1 dag 11–17 · 2 kveld 17–23 · 3 natt 23–05.
+  // Sendes høyst hvert 5. min – og når appen legges bort. Vises på en skjult side (#/stat: trykk fem ganger på linja nederst).
+  const BOLKER = ["Morgen", "Dag", "Kveld", "Natt"], BOLK_TID = ["05–11", "11–17", "17–23", "23–05"];
+  const BRUK_SEND = 5 * 60e3, BRUK_MAKS_TID = 10 * 60e3;
+  const B = { tilst: null, lagreT: null, vis: false, synlig: 0, skjult: 0, endret: false, tving: false, trykk: 0, trykkT: 0 };
+  const bolk = (d = new Date()) => { const h = d.getHours(); return h >= 5 && h < 11 ? 0 : h >= 11 && h < 17 ? 1 : h >= 17 && h < 23 ? 2 : 3; };
+  const sum4 = (a) => (Array.isArray(a) ? a.reduce((x, y) => x + (Number(y) || 0), 0) : 0);
+  function brukLes() {
+    if (B.tilst) return B.tilst;
+    try { B.tilst = JSON.parse(lagre.get(LS.bruk) || "null"); } catch {}
+    if (!B.tilst || !B.tilst.p) B.tilst = { p: {}, u: {}, sendt: 0 };
+    return B.tilst;
+  }
+  function brukLagre(naa) { clearTimeout(B.lagreT); if (naa) lagre.set(LS.bruk, JSON.stringify(brukLes())); else B.lagreT = setTimeout(() => brukLagre(true), 2000); }
+  const brukNokkel = (p) => JSON.stringify(["t", p.enh, p.d, p.hvem || ""]);
+  function plattform() {
+    const ua = navigator.userAgent || "", mt = navigator.maxTouchPoints > 1;
+    const ipad = /iPad/.test(ua) || (/Macintosh/.test(ua) && mt), iphone = /iPhone|iPod/.test(ua);
+    const type = ipad ? "iPad" : iphone ? "iPhone" : /Android/.test(ua) ? "Android" : /Macintosh|Mac OS X/.test(ua) ? "Mac" : /Windows/.test(ua) ? "PC" : "Annen";
+    let os = "";
+    const ios = ua.match(/OS (\d+)[_.](\d+)/), and = ua.match(/Android (\d+(?:\.\d+)?)/);
+    if ((iphone || ipad) && ios) os = `iOS ${ios[1]}.${ios[2]}`;
+    else if (and) os = "Android " + and[1];
+    let hs = false; try { hs = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; } catch {}
+    const nl = /CriOS|Chrome\//.test(ua) && !/Edg/.test(ua) ? "Chrome" : /FxiOS|Firefox/.test(ua) ? "Firefox" : /Safari/.test(ua) ? "Safari" : "nettleser";
+    return { pf: [type, os, hs ? "hjemskjerm" : nl].filter(Boolean).join(" · "), sk: `${screen.width}×${screen.height}` };
+  }
+  function brukPost() {
+    const s = brukLes(), p0 = { k: "t", enh: enhet(), d: idagISO(), hvem: meg() || "" }, k = brukNokkel(p0);
+    let p = s.p[k];
+    if (!p) p = s.p[k] = { ...p0, o: [0, 0, 0, 0], sek: [0, 0, 0, 0], uten: 0, s: {}, h: {}, t: 0 };
+    const pf = plattform(); p.v = APP.versjon; p.pf = pf.pf; p.sk = pf.sk;
+    return [k, p];
+  }
+  function brukTell(felt, navn, n = 1) {
+    if (!D) return;
+    try {
+      const [k, p] = brukPost(), b = bolk();
+      if (felt === "o") { p.o[b] += n; if (!navigator.onLine) p.uten = (p.uten || 0) + n; }
+      else if (felt === "sek") p.sek[b] += n;
+      else { const o = (p[felt] = p[felt] || {}); (o[navn] = o[navn] || [0, 0, 0, 0])[b] += n; }
+      p.t = Date.now(); brukLes().u[k] = 1; brukLagre();
+    } catch {}
+  }
+  // Tid i appen: bare mens den er synlig, maks 10 min om gangen (i tilfelle telefonen sovnet uten å si fra)
+  function brukTid() {
+    const naa = Date.now();
+    if (B.vis && B.synlig) { const dt = Math.min(naa - B.synlig, BRUK_MAKS_TID); if (dt >= 1000) brukTell("sek", null, Math.round(dt / 1000)); }
+    B.synlig = naa;
+  }
+  function brukSkjerm() { const { side, arg } = rute(); if (side !== "stat") brukTell("s", side === "sted" && arg ? "sted:" + arg : side); }
+  function brukStart() { B.vis = document.visibilityState === "visible"; B.synlig = Date.now(); brukTell("o"); brukSkjerm(); }
+  document.addEventListener("visibilitychange", () => {
+    if (!D) return;
+    if (document.visibilityState === "hidden") { brukTid(); B.vis = false; B.skjult = Date.now(); brukLagre(true); if (D.synk) { B.tving = true; synk(); } }
+    else { B.vis = true; B.synlig = Date.now(); if (B.skjult && Date.now() - B.skjult > 60e3) { brukTell("o"); brukSkjerm(); } }
+  });
+  window.addEventListener("pagehide", () => { if (D) { brukTid(); brukLagre(true); } });
+  setInterval(() => { if (D && B.vis) brukTid(); }, 30e3);
+  window.addEventListener("hashchange", () => { if (D) brukSkjerm(); });
+  // Handlinger som telles (første treff vinner)
+  const BRUK_KLIKK = [["a[href^='tel:']", "ring"], ["a[href*='wa.me']", "whatsapp"], ["a[href*='google.com/maps']", "kart"], ["#sos", "sos"], ["#sokknapp", "sok"],
+    ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-frase]", "frase"],
+    ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary", "vaer"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
+    ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["a[target='_blank']", "lenke"]];
+  const HANDLINGER = { ring: "Ringte", whatsapp: "Åpnet WhatsApp", kart: "Åpnet kart", sos: "Trykket SOS", sok: "Åpnet søk", hk: "Åpnet ⟦k1⟧", hknod: "Nødskjermen på ⟦k1⟧",
+    tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været",
+    hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", dag: "Byttet dag",
+    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave" };
+  document.addEventListener("click", (e) => {
+    if (!D || !e.target.closest) return;
+    const bn = e.target.closest(".bunn");
+    if (bn && !e.target.closest("a")) { // skjult vei inn: fem raske trykk på linja nederst
+      const naa = Date.now(); B.trykk = (naa - B.trykkT < 1500 ? B.trykk : 0) + 1; B.trykkT = naa;
+      if (B.trykk >= 5) { B.trykk = 0; location.hash = "#/stat"; }
+      return;
+    }
+    for (const [sel, navn] of BRUK_KLIKK) if (e.target.closest(sel)) { brukTell("h", navn); break; }
+  }, true);
+  document.addEventListener("change", (e) => {
+    if (!D || !e.target.matches) return;
+    if (e.target.matches("[data-pakk]") && e.target.checked) brukTell("h", "pakk");
+    else if (e.target.matches("[data-husk]") && e.target.checked) brukTell("h", "husk");
+  }, true);
+  // Kalles fra synkHent for poster med k:"t"
+  function brukMottak(p) {
+    if (!p || !p.enh || !p.d) return;
+    const s = brukLes(), k = brukNokkel(p), her = s.p[k];
+    if (!her || (p.t || 0) > (her.t || 0)) { s.p[k] = p; delete s.u[k]; B.endret = true; }
+  }
+  async function brukSend() {
+    brukTid();
+    const s = brukLes(), alle = Object.keys(s.u).filter((k) => s.p[k]);
+    if (!alle.length || (!B.tving && Date.now() - (s.sendt || 0) < BRUK_SEND)) return;
+    B.tving = false;
+    for (let i = 0; i < alle.length; i += 200) {
+      const del = alle.slice(i, i + 200), sendt = {}, writes = [];
+      for (const k of del) {
+        sendt[k] = s.p[k].t;
+        writes.push({ update: { name: `${fsRot()}/reise/${D.synk.familie}/poster/${await synkId(k)}`, fields: { c: { stringValue: await synkKrypter(s.p[k]) } } },
+          updateTransforms: [{ fieldPath: "s", setToServerValue: "REQUEST_TIME" }] });
+      }
+      await fsKall(":commit", { writes });
+      for (const k of del) if (s.p[k] && s.p[k].t === sendt[k]) delete s.u[k];
+    }
+    s.sendt = Date.now(); brukLagre(true);
+  }
+
+  // ---------- SIDE: Statistikk (skjult) ----------
+  let statPer = "7", statHvem = "alle", statDag = null;
+  const statPerioder = () => [["1", "I dag"], ["7", "7 dager"], ["30", "30 dager"], ["reise", "Reisen"], ["alt", "Alt"]];
+  function statFraTil() {
+    const i = idagISO();
+    if (statPer === "1") return [i, i];
+    if (statPer === "7") return [pluss(i, -6), i];
+    if (statPer === "30") return [pluss(i, -29), i];
+    if (statPer === "reise") return [start(), slutt()];
+    return ["0000-00-00", "9999-99-99"];
+  }
+  const statAlle = () => Object.values(brukLes().p).filter((p) => p && p.k === "t" && p.enh && p.d);
+  const statNavn = (id) => { if (!id) return "Ikke valgt"; const p = D.personer.find((x) => x.id === id); return p ? p.navn : id; };
+  function varighet(sek) {
+    const m = Math.round((sek || 0) / 60);
+    if (!sek) return "0 min"; if (m < 1) return "under 1 min"; if (m < 60) return m + " min";
+    return `${Math.floor(m / 60)} t${m % 60 ? " " + (m % 60) + " min" : ""}`;
+  }
+  function naarTekst(ms) {
+    if (!ms) return "–";
+    const d = new Date(ms), t = d.toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" });
+    if (d.toDateString() === new Date().toDateString()) return "i dag kl. " + t;
+    if (d.toDateString() === new Date(Date.now() - 864e5).toDateString()) return "i går kl. " + t;
+    return d.toLocaleDateString("nb-NO", { day: "numeric", month: "numeric" }) + " kl. " + t;
+  }
+  function skjermNavn(k) {
+    if (k.startsWith("sted:")) { const s = stedEtterId(k.slice(5)); return "Reisen · " + (s ? s.navn : k.slice(5)); }
+    return TITLER[k] || k;
+  }
+  const flertall = (n, en, fl) => `${n.toLocaleString("nb-NO")} ${n === 1 ? en : fl}`;
+  function statStolper(rader, tom) { // [[tekst, tall, undertekst]] – én farge, lengde = tall
+    if (!rader.length) return `<p class="tom">${tom}</p>`;
+    const maks = Math.max(1, ...rader.map((r) => r[1]));
+    return `<div class="sstolper">${rader.map(([t, n, u]) => `<div class="sstolpe"><div class="sst-topp"><span>${t}</span><b>${n.toLocaleString("nb-NO")}</b></div>
+      <div class="sst-spor" aria-hidden="true"><span style="width:${n ? Math.max(2, Math.round(100 * n / maks)) : 0}%"></span></div>${u ? `<small>${u}</small>` : ""}</div>`).join("")}</div>`;
+  }
+  function sideStat() {
+    const [fra, til] = statFraTil(), alle = statAlle(), per = alle.filter((p) => p.d >= fra && p.d <= til);
+    const utvalg = per.filter((p) => statHvem === "alle" || (p.hvem || "") === statHvem);
+    const hvemFins = [...new Set(alle.map((p) => p.hvem || ""))];
+    let h = tittel("Bruksstatistikk", synkHtml("statSynk"));
+    h += `<div class="velger">${statPerioder().map(([k, t]) => `<button data-statper="${k}" class="${k === statPer ? "valgt" : ""}">${t}</button>`).join("")}</div>`;
+    const folk = D.personer.map((p) => [p.id, p.navn]).concat(hvemFins.includes("") ? [["", "Ikke valgt"]] : []);
+    h += `<div class="velger"><button data-stathvem="alle" class="${statHvem === "alle" ? "valgt" : ""}">Alle</button>${folk.map(([id, n]) => `<button data-stathvem="${esc(id)}" class="${statHvem === id ? "valgt" : ""}">${esc(n)}</button>`).join("")}</div>`;
+    const apn = utvalg.reduce((x, p) => x + sum4(p.o), 0), sek = utvalg.reduce((x, p) => x + sum4(p.sek), 0);
+    const dager = new Set(utvalg.map((p) => p.d)).size, enh = new Set(utvalg.map((p) => p.enh)).size;
+    h += `<div class="sfliser">
+      <div class="sflis"><small>Åpninger</small><b>${apn.toLocaleString("nb-NO")}</b></div>
+      <div class="sflis"><small>Tid i appen</small><b>${varighet(sek)}</b></div>
+      <div class="sflis"><small>Dager i bruk</small><b>${dager}</b></div>
+      <div class="sflis"><small>Telefoner</small><b>${enh}</b></div></div>`;
+    if (!utvalg.length) h += `<p class="tom" style="margin:4px 4px 0">Ingen bruk registrert i perioden.</p>`;
+
+    // Personer og telefoner: tellere for perioden, versjon og «sist sett» fra nyeste post
+    const nyesteV = Math.max(APP.versjon, ...alle.map((p) => p.v || 0));
+    const perHvem = {};
+    for (const p of utvalg) { const x = (perHvem[p.hvem || ""] = perHvem[p.hvem || ""] || { o: 0, sek: 0, enh: {} }); x.o += sum4(p.o); x.sek += sum4(p.sek); (x.enh[p.enh] = x.enh[p.enh] || { o: 0, sek: 0 }); x.enh[p.enh].o += sum4(p.o); x.enh[p.enh].sek += sum4(p.sek); }
+    const sist = (enh, hvem) => alle.filter((p) => p.enh === enh && (hvem === undefined || (p.hvem || "") === hvem)).sort((a, b) => (b.t || 0) - (a.t || 0))[0] || {};
+    const meEnh = enhet();
+    const hvemListe = Object.keys(perHvem).sort((a, b) => perHvem[b].o - perHvem[a].o || perHvem[b].sek - perHvem[a].sek);
+    if (hvemListe.length) {
+      h += `<div class="seksjonstittel">Personer og telefoner</div><section class="kort spersoner">${hvemListe.map((hv) => {
+        const x = perHvem[hv], sisteT = Math.max(...Object.keys(x.enh).map((e) => sist(e, hv).t || 0));
+        return `<div class="sperson"><div class="sp-topp"><b>${esc(statNavn(hv))}</b><span>${flertall(x.o, "åpning", "åpninger")} · ${varighet(x.sek)}</span></div>
+          <div class="sp-sist">Sist brukt ${naarTekst(sisteT)}</div>
+          ${Object.keys(x.enh).sort((a, b) => x.enh[b].o - x.enh[a].o).map((e) => { const n = sist(e); const gml = n.v && n.v < nyesteV;
+            return `<div class="senhet"><div><span class="se-navn">${esc(n.pf || "Ukjent")}${e === meEnh ? ` <i>(denne)</i>` : ""}</span>
+              <small>Appversjon ${esc(n.v || "?")}${gml ? ` <span class="se-gml">eldre versjon</span>` : ""} · sist ${naarTekst(n.t)} · id ${esc(e)}</small></div>
+              <span class="se-tall">${x.enh[e].o}</span></div>`; }).join("")}</div>`;
+      }).join("")}</section>`;
+    }
+
+    // Skjermer og handlinger
+    const samle = (felt) => { const o = {}; for (const p of utvalg) for (const [k, v] of Object.entries(p[felt] || {})) o[k] = (o[k] || 0) + sum4(v); return Object.entries(o).sort((a, b) => b[1] - a[1]); };
+    const skjermer = samle("s"), handl = samle("h");
+    if (utvalg.length) {
+      h += `<div class="seksjonstittel">Mest brukte sider</div><section class="kort">${statStolper(skjermer.slice(0, 15).map(([k, n]) => [esc(skjermNavn(k)), n]), "Ingen sider vist.")}
+        ${skjermer.length > 15 ? `<p class="krolle" style="margin-top:8px">+ ${skjermer.length - 15} andre</p>` : ""}</section>`;
+      h += `<div class="seksjonstittel">Handlinger</div><section class="kort">${statStolper(handl.map(([k, n]) => [esc(HANDLINGER[k] || k), n]), "Ingen handlinger registrert.")}</section>`;
+      // Når på døgnet
+      const bo = [0, 1, 2, 3].map((i) => [utvalg.reduce((x, p) => x + ((p.o || [])[i] || 0), 0), utvalg.reduce((x, p) => x + ((p.sek || [])[i] || 0), 0)]);
+      h += `<div class="seksjonstittel">Når på døgnet</div><section class="kort">${statStolper(bo.map(([o, s], i) => [`${BOLKER[i]} <i class="sst-kl">${BOLK_TID[i]}</i>`, o, varighet(s)]), "")}
+        <p class="krolle" style="margin-top:8px">Åpninger per tidsbolk (telefonens klokke) · tid i appen under</p></section>`;
+      // Per dag (maks 31 siste dager i perioden)
+      const f0 = [...utvalg.map((p) => p.d)].sort()[0], sisteD = til > idagISO() ? idagISO() : til;
+      let dg = []; for (let d = f0 < fra ? fra : f0; d <= sisteD && dg.length < 400; d = pluss(d, 1)) dg.push(d);
+      dg = dg.slice(-31);
+      if (dg.length > 1) {
+        const pd = Object.fromEntries(dg.map((d) => [d, { o: 0, sek: 0 }]));
+        for (const p of utvalg) if (pd[p.d]) { pd[p.d].o += sum4(p.o); pd[p.d].sek += sum4(p.sek); }
+        const mx = Math.max(1, ...dg.map((d) => pd[d].o)), valgt = statDag && pd[statDag] ? statDag : dg[dg.length - 1];
+        h += `<div class="seksjonstittel">Per dag</div><section class="kort"><div class="sdager" style="--n:${dg.length}">${dg.map((d) => `<button data-statdag="${d}" class="${d === valgt ? "valgt" : ""}" aria-label="${esc(kort(d))}: ${pd[d].o} åpninger"><span style="height:${pd[d].o ? Math.max(4, Math.round(100 * pd[d].o / mx)) : 0}%"></span></button>`).join("")}</div>
+          <div class="sdag-akse"><span>${esc(kort(dg[0]))}</span><span>${esc(kort(dg[dg.length - 1]))}</span></div>
+          <p class="sdag-info"><b>${esc(pen(valgt))}</b> · ${flertall(pd[valgt].o, "åpning", "åpninger")} · ${varighet(pd[valgt].sek)}</p></section>`;
+      }
+    }
+    const pf = plattform();
+    h += `<div class="seksjonstittel">Denne telefonen</div><section class="kort"><p>${esc(pf.pf)} · ${esc(pf.sk)}</p>
+      <p class="krolle">Id ${esc(meEnh)} · bruker: ${esc(statNavn(meg()))} · ${Object.keys(brukLes().u).length ? "noe venter på å bli sendt" : "alt er sendt"}</p>
+      <button class="knapp knapp-sek knapp-full" data-statkopier style="margin-top:10px">Kopier tallene (til Claude)</button></section>`;
+    h += `<p class="krolle" style="margin:14px 4px 0">Bare tellere per telefon, bruker og dag – ingen tekst du skriver, ingen posisjon. Deles kryptert med familiens telefoner.</p>`;
+    return h + bunn();
+  }
+  function statKopier() {
+    const [fra, til] = statFraTil();
+    const poster = statAlle().filter((p) => p.d >= fra && p.d <= til).map(({ k, ...r }) => r).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+    const tekst = JSON.stringify({ bruksstatistikk: 1, laget: new Date().toISOString(), app: APP.versjon, periode: [fra, til], bolker: BOLKER, personer: Object.fromEntries(D.personer.map((p) => [p.id, p.navn])), poster });
+    navigator.clipboard.writeText(tekst).then(() => toast("Kopiert – lim inn hos Claude"), () => toast("Kunne ikke kopiere", 2600, "feil"));
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest && e.target.closest("[data-statper],[data-stathvem],[data-statdag],[data-statkopier]");
+    if (!t || !D) return;
+    e.preventDefault();
+    if (t.dataset.statper) { statPer = t.dataset.statper; statDag = null; }
+    else if (t.dataset.stathvem !== undefined) statHvem = t.dataset.stathvem;
+    else if (t.dataset.statdag) statDag = t.dataset.statdag;
+    else if (t.hasAttribute("data-statkopier")) { statKopier(); return; }
+    const y = window.scrollY; vis(); window.scrollTo(0, y);
+  });
 
   // ---------- SIDE: Fraser, tips og priser ----------
   function sideParlor() {
@@ -1592,21 +1826,21 @@
   }
 
   // ---------- ruting ----------
-  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude" };
+  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk" };
   const rute = () => { const [, side = "idag", arg, del] = (location.hash.startsWith("#/") ? location.hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
   function vis() {
     if (!D) return;
     const { side, arg, del } = rute();
     const html = side === "reisen" ? sideReisen() : side === "sted" ? sideSted(arg) : side === "mat" ? sideMat(arg) : side === "kontakter" ? sideKontakter()
-      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : sideIdag();
+      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : sideIdag();
     $("#innhold").innerHTML = html;
     sistVistDato = idagISO();
-    const fane = side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
+    const fane = side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
     $$(".faner a").forEach((a) => { const on = a.dataset.fane === fane; a.classList.toggle("aktiv", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     $("#toppTittel").textContent = side === "sted" ? (stedEtterId(arg) || {}).navn || "" : TITLER[side] || "";
     const tb = $("#tilbake");
     if (side === "sted") { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
-    else if (["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
+    else if (["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
     else if (side === "sok") { tb.hidden = false; tb.href = sokFra; tb.querySelector("span").textContent = "Tilbake"; }
     else tb.hidden = true;
     $("#sos").hidden = side === "nod";
@@ -1878,6 +2112,7 @@
     30: "Velg restaurant og marker bordreservasjon i egne avtaler",
     31: "Oppdater appen fra Claude – uten Mac",
     32: "Sammenhengende flystreker gjennom kartbruddet",
+    34: "Enkel bruksstatistikk",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -2488,7 +2723,7 @@
 
   // ---------- oppstart ----------
   async function lasOpp(p, n) {
-    D0 = D = await dekrypter(n, p); K = n; synkMigrer(); D = oppdBruk(D0); tpMigrer(); $("#faner").hidden = false; vis(); tpVarsel();
+    D0 = D = await dekrypter(n, p); K = n; synkMigrer(); D = oppdBruk(D0); tpMigrer(); $("#faner").hidden = false; vis(); tpVarsel(); brukStart();
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch {}
     synk();
     hentetMelding();
@@ -2505,7 +2740,7 @@
     synkTikk++; const nodkort = !$("#overlay").hidden && AK.skjerm === "nod";
     if (nodkort || synkTikk % 3 === 0) synk();
   }, 10000);
-  window.addEventListener("hashchange", () => { if (D && ["pakk", "tlogg"].includes(rute().side)) { tpGjenBekreft = null; synk(); } });
+  window.addEventListener("hashchange", () => { if (D && ["pakk", "tlogg", "stat"].includes(rute().side)) { tpGjenBekreft = null; if (rute().side === "stat") B.tving = true; synk(); } });
   window.addEventListener("online", () => { if (D) hentKurs().then((ny) => { if (ny && rute().side === "penger") vis(); }); });
   async function oppstart() {
     nett();
