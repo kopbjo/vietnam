@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 38, tid: "2026-09-29 kl. 21:24" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 39, tid: "2026-09-29 kl. 21:50" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -812,9 +812,14 @@
       const inn = x.hjem ? K_HUS : `<text class="knum" y="4">${nr(s.id)}</text>`;
       return `<a href="#/sted/${esc(s.id)}" aria-label="${esc(x.navn || s.navn)}"><g class="kn ${x.hjem ? "kn-hotell" : "kn-bestilt"} kstopp${her ? " naa" : ""}" transform="translate(${kf(px)} ${kf(py)})"><circle class="ktreff" r="${r + 10}"/>${her ? `<circle class="kring" r="${r + 5}"/>` : ""}<circle class="kprikk" r="${r}"/>${inn}${lab}</g></a>`;
     };
-    const hoved = o.stopp.map((x) => { const h = x.side !== "v", tx = h ? 14 : -14; return stopp(x, pr, 10, etikett(stedEtterId(x.sted) || {}, tx, x.dy, h ? "start" : "end")); }).join("");
-    const ib = D.kart.baser[o.innfelt.base], ip = kProj(ib), ix = b.W - ib.W - 6, iy = b.H - ib.H - 34;
-    const innfelt = o.innfeltStopp.map((x) => x.hjem ? stopp(x, ip, 7, etikett({}, -11, 0, "end", x.navn, x.dato)) : stopp(x, ip, 8, etikett(stedEtterId(x.sted) || {}, 0, -14, "middle", "", ""))).join("");
+    const hoved = o.stopp.map((x) => {
+      const s = stedEtterId(x.sted) || {}, dx = x.dx || 0;
+      if (x.side === "o" || x.side === "u") return stopp(x, pr, 10, etikett(s, dx, (x.side === "o" ? -26 : 25) + (x.dy || 0), x.anker || "middle"));
+      const h = x.side !== "v", tx = (h ? 14 : -14) + dx; return stopp(x, pr, 10, etikett(s, tx, x.dy, h ? "start" : "end"));
+    }).join("");
+    const ib = D.kart.baser[o.innfelt.base], [kx, ky, iw, ih] = o.innfelt.klipp || [0, 0, ib.W, ib.H], ip0 = kProj(ib), ip = (la, lo) => { const [x, y] = ip0(la, lo); return [x - kx, y - ky]; };
+    const [ix, iy] = o.innfelt.pos || [b.W - iw - 6, b.H - ih - 34];
+    const innfelt = o.innfeltStopp.map((x) => x.hjem ? stopp(x, ip, 7, x.side === "h" ? etikett({}, 11, x.dy || 0, "start", x.navn, x.dato) : etikett({}, -11, 0, "end", x.navn, x.dato)) : stopp(x, ip, 8, etikett(stedEtterId(x.sted) || {}, x.dx || 0, x.dy != null ? x.dy : -14, x.anker || "middle", "", ""))).join("");
     // Stripe under kartet (kartbrudd): samme målestokk og lengdegrader, så flybyttet står rett under der det hører hjemme
     const st = o.stripe, sb = st && D.kart.baser[st.base], gap = 14, oy = b.H + gap, H = sb ? oy + sb.H : b.H;
     let stripe = "", sRuter = "", sBue = "", sStopp = "", attr = kAttr(b);
@@ -825,7 +830,7 @@
       sRuter = (st.ruter || []).map((r) => kRute(r, kombi)).join("");
       const bolge = (y) => { let d = `M0 ${y}`; for (let x = 0; x <= b.W; x += 12) d += `Q${x + 3} ${y - 3} ${x + 6} ${y}T${x + 12} ${y}`; return d; };
       stripe = `<clipPath id="kstripeklipp"><rect y="${oy}" width="${sb.W}" height="${sb.H}"/></clipPath><g clip-path="url(#kstripeklipp)"><g transform="translate(0 ${oy})">${kGrunn(sb)}</g></g>
-        <rect x="0" y="${b.H}" width="${b.W}" height="${gap}" class="kbrudd"/><path d="${bolge(b.H + 2)}" class="kbrudd-l"/><path d="${bolge(oy - 2)}" class="kbrudd-l"/>${st.tekst ? `<text class="kbrudd-t" x="8" y="${b.H + 10}">${esc(st.tekst)}</text>` : ""}`;
+        <rect x="0" y="${b.H}" width="${b.W}" height="${gap}" class="kbrudd"/><path d="${bolge(b.H + 2)}" class="kbrudd-l"/><path d="${bolge(oy - 2)}" class="kbrudd-l"/>${st.tekst ? `<text class="kbrudd-t" x="${st.tekstSide === "h" ? b.W - 8 : 8}" y="${b.H + 10}"${st.tekstSide === "h" ? ' text-anchor="end"' : ""}>${esc(st.tekst)}</text>` : ""}`;
       if (st.bue) { // bue fra et punkt i det innfelte kartet ned til stripa
         const [a1, b1] = ip(...st.bue.fra), x1 = a1 + ix, y1 = b1 + iy, [x2, y2] = sp(...st.bue.til), k = st.bue.k || 0;
         sBue = `<path d="M${kf(x1)} ${kf(y1)}Q${kf((x1 + x2) / 2 - (y2 - y1) * k)} ${kf((y1 + y2) / 2 + (x2 - x1) * k)} ${kf(x2)} ${kf(y2)}" class="kr kr-fly"/>`;
@@ -837,7 +842,7 @@
       attr = kAttr(sb, { x: 0, y: oy, w: sb.W, h: sb.H, s: 1 });
     }
     return `<section class="kort kartkort oversikt"><svg class="kartsvg" viewBox="0 0 ${b.W} ${H}" role="img" aria-label="Kart over reiseruta">${kGrunn(b)}${stripe}${o.ruter.map((r) => kRute(r, pr)).join("")}${sRuter}${hoved}
-      <g transform="translate(${ix} ${iy})"><clipPath id="kinnklipp"><rect width="${ib.W}" height="${ib.H}" rx="8"/></clipPath><g clip-path="url(#kinnklipp)">${kGrunn(ib)}</g><rect width="${ib.W}" height="${ib.H}" rx="8" class="kinnramme"/>${kRute(o.innfeltRute, ip)}</g>${sBue}<g transform="translate(${ix} ${iy})">${innfelt}</g>${sStopp}${attr}</svg>
+      <g transform="translate(${ix} ${iy})"><clipPath id="kinnklipp"><rect width="${iw}" height="${ih}" rx="8"/></clipPath><g clip-path="url(#kinnklipp)"><g transform="translate(${-kx} ${-ky})">${kGrunn(ib)}</g></g><rect width="${iw}" height="${ih}" rx="8" class="kinnramme"/>${kRute(o.innfeltRute, ip)}</g>${sBue}<g transform="translate(${ix} ${iy})">${innfelt}</g>${sStopp}${attr}</svg>
       <div class="kforkl"><span><i class="f-fly"></i>Fly</span><span><i class="f-bil"></i>Bil og båt</span><span>Trykk på et sted for å åpne det</span></div></section>`;
   }
   document.addEventListener("click", (e) => {
@@ -2301,6 +2306,7 @@
     36: "Rettet visningen av hotell- og stedslistene",
     37: "Appen spør hvem du er – og skriver «pappa» og «mamma» for jentene, navn for de voksne",
     38: "Bonusprogrammene står alltid med navn",
+    39: "Reisen-kartet: hjemreisen øverst til venstre, der den hører hjemme",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
