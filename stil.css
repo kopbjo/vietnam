@@ -1207,3 +1207,16 @@ details.oppdpost.av summary { color: var(--dempet); }
 .hvem-valg button { min-height: 76px; border-radius: 16px; border: 0; background: #1f5f4a; color: #fff; font: inherit; font-size: 1.25rem; font-weight: 700; cursor: pointer; }
 .hvem-valg button:active { transform: scale(.98); }
 .hvem-inn .hvem-fot { margin: 18px 0 0; font-size: .88rem; color: #6b746f; }
+/* ideer i planen (v40) */
+.avttyper.fem { grid-auto-flow: row; grid-template-columns: repeat(6, 1fr); gap: 2px; }
+.avttyper.fem button { grid-column: span 2; }
+.avttyper.fem button:nth-child(n+4) { grid-column: span 3; }
+.bordvalg button[data-avtbestvalg="0"].valgt { background: #fdf3d6; border-color: #b58300; color: #6f5000; }
+.bordvalg button[data-avtbestvalg="1"].valgt { background: #e2f1e9; border-color: #1f5f4a; color: #1f5f4a; }
+.restinfo .praktisk { color: #555; margin-top: 4px; }
+.ideplan .knapper { margin-top: 8px; align-items: center; }
+.ideplan .bord { margin-left: 0; }
+.ideplan-i { display: flex; align-items: center; gap: 5px; margin-top: 6px; font-size: .84rem; font-weight: 600; color: var(--gronn); }
+.ideplan-i svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2.2; }
+.ideark-hjelp { margin: -4px 0 10px; }
+.ideark-sted { font-size: 1rem; margin: 18px 0 6px; }

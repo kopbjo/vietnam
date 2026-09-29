@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 39, tid: "2026-09-29 kl. 21:50" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 40, tid: "2026-09-29 kl. 21:55" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -290,7 +290,16 @@
       <div class="knapper">${x.tel.map(([n, e]) => knapp("tel", n, `${e}: ${n}`)).join("")}${knapp("kart", x.navn + " " + x.adr, "Kart")}</div>
     </div>`).join("");
   }
-  const ideerHtml = (liste) => (liste || []).map((i) => `<div class="ide"><b>${i.kart ? `<span class="knr kn-ide ide-nr" title="På kartet">${esc(i.kart)}</span>` : ""}${esc(i.navn)}</b>${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}</div>`).join("");
+  // sId gir «Legg i planen» på hver idé; dag = fast dag (fra I dag), ellers velges dag i skjemaet
+  const ideerHtml = (liste, sId, dag) => (liste || []).map((i) => `<div class="ide"><b>${i.kart ? `<span class="knr kn-ide ide-nr" title="På kartet">${esc(i.kart)}</span>` : ""}${esc(i.navn)}</b>${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}${sId ? idePlanHtml(sId, i, dag) : ""}</div>`).join("");
+  function idePlanHtml(sId, i, dag) {
+    const k = (D.ideer[sId] || []).indexOf(i), planer = ideIPlan(sId, i.navn);
+    const denne = dag ? planer.find((a) => a.d === dag) : null, andre = planer.filter((a) => a !== denne);
+    const linje = andre.length ? `<div class="ideplan-i">${ikon("bestilt", "")}I planen ${andre.map((a) => esc(pen(a.d))).join(", ")}</div>` : "";
+    const kn = denne ? `<span class="bord ${denne.best ? "ja" : "nei"}">I planen${denne.tid ? " kl. " + esc(denne.tid) : ""}</span><button class="kb" data-avt="${esc(denne.id)}">Endre</button>`
+      : `<button class="kb ideplankn" data-ideplan="${esc(sId)}|${k}"${dag ? ` data-ided="${esc(dag)}"` : ""}>${ikon("pluss", "")}Legg i planen</button>`;
+    return `<div class="ideplan">${linje}<div class="knapper">${kn}</div></div>`;
+  }
   const oppdatertTekst = () => {
     try { const t = new Date(D.meta.bygget); const f = (o) => new Intl.DateTimeFormat("sv-SE", { timeZone: "Europe/Oslo", ...o }).format(t);
       return `${f({ year: "numeric", month: "2-digit", day: "2-digit" })} kl. ${f({ hour: "2-digit", minute: "2-digit", hourCycle: "h23" })} (norsk tid)`; }
@@ -374,14 +383,22 @@
   const avtLes = () => Object.values(synkLes().p).filter((p) => p.k === "a" && !p.slettet);
   const avtDag = (d) => avtLes().filter((a) => a.type !== "opph" && a.d === d);
   const avtOpph = (id) => avtLes().filter((a) => a.type === "opph" && a.opph === id).sort((a, b) => (a.c || 0) - (b.c || 0));
-  const avtSomHend = (a) => ({ d: a.d, t: a.tid || "", tittel: a.tekst, merk: [a.rest ? (a.bord ? "Bord reservert" : "Bord ikke reservert") : "", a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "), egen: a });
+  const avtSomHend = (a) => ({ d: a.d, t: a.tid || "", tittel: a.tekst, merk: [a.rest ? (a.bord ? "Bord reservert" : "Bord ikke reservert") : a.ide ? (a.best ? "Bestilt" : "Ikke bestilt") : "", a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "), egen: a });
   // Restauranter fra restaurantlista for en dag: stedet dere er på, og stedet dere reiser fra på flyttedager
   const restSteder = (d) => D.steder.filter((s) => s.fra <= d && d <= s.til && D.restauranter.liste.some((r) => r.sted === s.id)).sort((a, b) => (a.fra < b.fra ? 1 : -1));
   const restForDag = (d) => { const ids = restSteder(d).map((s) => s.id); return D.restauranter.liste.filter((r) => ids.includes(r.sted)).sort((a, b) => ids.indexOf(a.sted) - ids.indexOf(b.sted) || a.prio - b.prio); };
+  // Ideer for en dag: stedet dere er på, og stedet dere reiser fra på flyttedager
+  const ideSteder = (d) => D.steder.filter((s) => s.fra <= d && d <= s.til && (D.ideer[s.id] || []).length).sort((a, b) => (a.fra < b.fra ? 1 : -1));
+  const ideAntall = (d) => ideSteder(d).reduce((n, s) => n + D.ideer[s.id].length, 0);
+  const ideEtter = (a) => (a && a.inavn ? (D.ideer[a.isted] || []).find((i) => i.navn === a.inavn) || null : null);
+  const ideIPlan = (sId, navn) => avtLes().filter((a) => a.ide && a.isted === sId && a.inavn === navn && a.d).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
+  const dagerI = (s) => { const l = []; for (let d = s.fra; d <= s.til; d = pluss(d, 1)) l.push(d); return l; };
+  const bestPille = (a) => `<span class="bord ${a.best ? "ja" : "nei"}">${a.best ? "Bestilt" : "Ikke bestilt"}</span>`;
   const restEtter = (a) => (a && a.rnavn ? D.restauranter.liste.find((r) => r.navn === a.rnavn && (!a.rsted || r.sted === a.rsted)) : null);
   // Vietnamesiske nummer lagres med landskode, så de kan ringes fra norsk SIM og brukes i WhatsApp
   const tlfNorm = (n) => { let x = String(n || "").replace(/[^\d+]/g, ""); if (!x) return ""; if (x.startsWith("00")) return "+" + x.slice(2); if (x.startsWith("0")) return "+84" + x.slice(1); return x.startsWith("+") ? x : "+" + x; };
   function avtKnapper(a, medEndre = true) {
+    if (a.ide) return (a.best ? "" : `<button class="kb bordkn" data-avtbest="${esc(a.id)}">${ikon("bestilt", "")}Marker som bestilt</button>`) + (medEndre ? `<button class="kb" data-avt="${esc(a.id)}">Endre</button>` : "");
     const r = a.rest ? restEtter(a) : null;
     const bord = a.rest && !a.bord ? `<button class="kb bordkn" data-avtbord="${esc(a.id)}">${ikon("bestilt", "")}Marker som reservert</button>` : "";
     if (r) return bord + (r.adresse && sjoforHer(r.sted) ? `<button class="kb" data-sjofor="r:${D.restauranter.liste.indexOf(r)}">${ikon("kart", "")}Vis til sjåføren</button>` : "") +
@@ -416,13 +433,17 @@
     const a = AV, ny = !a.id, o = $("#overlay");
     // Restaurantavtaler lagres som type «dag» med rest:1 (så eldre appversjoner viser dem som vanlige avtaler)
     if (a.type === "dag" && a.rest) a.type = "rest";
+    // Ideer i planen lagres også som type «dag» (med ide:1)
+    if (a.type === "dag" && a.ide) a.type = "ide";
+    if (a.type === "ide" && a.id && !a.dagvalg) a.dagvalg = a.isted;
+    const iSteder = a.d ? ideSteder(a.d) : [];
     const rListe = a.d ? restForDag(a.d) : [];
     if (a.type === "rest" && a.fri === undefined) a.fri = a.rnavn ? !restEtter(a) : !!a.id || !rListe.length;
     const stay = a.opph ? stedEtterId(a.opph) : overnatting(a.d);
     if (a.type === "opph" && !stay) a.type = "dag";
     if (a.type === "opph") a.opph = stay.id;
-    const typer = [["dag", "Denne dagen"], ["rest", "Restaurant"], ...(stay ? [["opph", "Hele oppholdet"]] : []), ["mote", "Møtested"]];
-    const hvor = a.type === "opph" ? `Vises alle dager på ${stay.hotell.navn} (${stay.dato})` : a.type === "mote" ? `${pen(a.d)} · hvis vi blir borte fra hverandre` : pen(a.d);
+    const typer = [["dag", "Denne dagen"], ["rest", "Restaurant"], ...(iSteder.length ? [["ide", "Idé"]] : []), ...(stay ? [["opph", "Hele oppholdet"]] : []), ["mote", "Møtested"]];
+    const hvor = a.type === "ide" && a.dagvalg ? "Velg idé og dag" : a.type === "ide" ? pen(a.d) + " · fra ideene – ikke bestilt" : a.type === "opph" ? `Vises alle dager på ${stay.hotell.navn} (${stay.dato})` : a.type === "mote" ? `${pen(a.d)} · hvis vi blir borte fra hverandre` : pen(a.d);
     const felt = (lbl, inp) => `<label class="af"><span>${lbl}</span>${inp}</label>`;
     let f;
     if (a.type === "dag") f = felt("Klokkeslett (valgfritt)", `<input type="time" id="avtTid" value="${esc(a.tid)}">`) +
@@ -445,27 +466,43 @@
         `<div class="af"><span>Bord</span><div class="bordvalg"><button type="button" data-avtbordvalg="0" class="${a.bord ? "" : "valgt"}">Ikke reservert</button><button type="button" data-avtbordvalg="1" class="${a.bord ? "valgt" : ""}">${ikon("bestilt", "")}Bord reservert</button></div></div>` +
         felt("Notat (valgfritt)", `<input id="avtNotat" value="${esc(a.notat)}" placeholder="F.eks. Bestilt på etternavnet, 4 pers., bord ute" autocomplete="off" enterkeyhint="done">`);
     }
+    else if (a.type === "ide") {
+      const i = ideEtter(a);
+      const opt = (st, x, k) => `<option value="${esc(st.id)}|${k}"${i === x ? " selected" : ""}>${esc(x.navn)}</option>`;
+      const alle = (st) => D.ideer[st.id].map((x, k) => opt(st, x, k)).join("");
+      const valg = iSteder.length ? felt(`Idé (fra lista for ${esc(iSteder.map((x) => x.navn).join(" og "))})`, `<select id="avtIde">
+          ${!i ? `<option value="" selected disabled>Velg idé …</option>` : ""}
+          ${iSteder.length > 1 ? iSteder.map((st) => `<optgroup label="${esc(st.navn)}">${alle(st)}</optgroup>`).join("") : alle(iSteder[0])}</select>`) : "";
+      const info = i ? `<div class="restinfo">${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}</div>` : "";
+      const ds = a.dagvalg ? stedEtterId(a.dagvalg) : null;
+      const dag = ds ? felt("Dag", `<select id="avtDag">${dagerI(ds).map((x) => `<option value="${x}"${x === a.d ? " selected" : ""}>${esc(pen(x))}${D.hendelser.some((e) => e.d === x && !e.oppgave) || avtDag(x).some((y) => y.type !== "mote" && y.id !== a.id) ? "" : " – ingenting i planen"}</option>`).join("")}</select>`) : "";
+      f = valg + info + dag + felt("Klokkeslett (valgfritt)", `<input type="time" id="avtTid" value="${esc(a.tid)}">`) +
+        `<div class="af"><span>Status</span><div class="bordvalg"><button type="button" data-avtbestvalg="0" class="${a.best ? "" : "valgt"}">Ikke bestilt</button><button type="button" data-avtbestvalg="1" class="${a.best ? "valgt" : ""}">${ikon("bestilt", "")}Bestilt</button></div></div>` +
+        felt("Notat (valgfritt)", `<input id="avtNotat" value="${esc(a.notat)}" placeholder="F.eks. Billetter i resepsjonen, ta med badetøy" autocomplete="off" enterkeyhint="done">`);
+    }
     else if (a.type === "opph") f = felt("Notat", `<textarea id="avtTekst" rows="3" placeholder="F.eks. Rom 305 (jentene) og 307 · Wi-Fi: BelMarina / passord">${esc(a.tekst)}</textarea>`);
     else f = felt("Hvor møtes vi?", `<input id="avtTekst" value="${esc(a.tekst)}" placeholder="F.eks. Ved inngangen til nattmarkedet" autocomplete="off" enterkeyhint="done">`) +
       felt("Fra klokken (valgfritt)", `<input type="time" id="avtTid" value="${esc(a.tid)}">`);
     o.className = "overlay skjema";
     o.innerHTML = `<button class="lukk">Lukk</button><div class="avtskjema">
-      <h2>${ny ? "Legg til" : a.type === "opph" ? "Endre notat" : a.type === "mote" ? "Endre møtested" : a.type === "rest" ? "Endre restaurant" : "Endre avtale"}</h2>
-      ${ny ? `<div class="avttyper${typer.length > 3 ? " fire" : ""}">${typer.map(([k, t]) => `<button data-avttype="${k}" class="${k === a.type ? "valgt" : ""}">${t}</button>`).join("")}</div>` : ""}
+      <h2>${ny ? (a.fast ? "Legg i planen" : "Legg til") : a.type === "opph" ? "Endre notat" : a.type === "mote" ? "Endre møtested" : a.type === "rest" ? "Endre restaurant" : a.type === "ide" ? "Endre idé i planen" : "Endre avtale"}</h2>
+      ${ny && !a.fast ? `<div class="avttyper${typer.length > 4 ? " fem" : typer.length > 3 ? " fire" : ""}">${typer.map(([k, t]) => `<button data-avttype="${k}" class="${k === a.type ? "valgt" : ""}">${t}</button>`).join("")}</div>` : ""}
       <p class="avthvor">${esc(hvor)}</p>${f}
       <button class="knapp knapp-full avtlagre" data-avtlagre>Lagre</button>
-      ${ny ? "" : `<button class="knapp knapp-full knapp-lys avtslett" data-avtslett>Slett</button>`}
+      ${ny ? "" : `<button class="knapp knapp-full knapp-lys avtslett" data-avtslett>${a.type === "ide" ? "Fjern fra planen" : "Slett"}</button>`}
       <p class="sno">Vises på alle telefonene. Lagres her først og deles når dere har nett.</p></div>`;
     o.hidden = false; o.scrollTop = 0;
   }
-  function avtFelt() { for (const [k, id] of [["tid", "avtTid"], ["tekst", "avtTekst"], ["adr", "avtAdr"], ["tlf", "avtTlf"], ["notat", "avtNotat"]]) { const el = document.getElementById(id); if (el) AV[k] = el.value; } }
+  function avtFelt() { for (const [k, id] of [["d", "avtDag"], ["tid", "avtTid"], ["tekst", "avtTekst"], ["adr", "avtAdr"], ["tlf", "avtTlf"], ["notat", "avtNotat"]]) { const el = document.getElementById(id); if (el) AV[k] = el.value; } }
   function avtEtterTegning(fn) { const y = window.scrollY; vis(); window.scrollTo(0, y); if (fn) fn(); }
   function avtLagre() {
     avtFelt(); const a = AV, rv = a.type === "rest" && !a.fri ? restEtter(a) : null;
     if (a.type === "rest" && !a.fri && !rv) { toast("Velg en restaurant – eller «Annen restaurant»", 2400, "info"); return; }
-    const tekst = rv ? rv.navn : String(a.tekst || "").trim();
+    const iv = a.type === "ide" ? ideEtter(a) : null;
+    if (a.type === "ide" && !iv) { toast("Velg en idé", 2200, "info"); return; }
+    const tekst = rv ? rv.navn : iv ? iv.navn : String(a.tekst || "").trim();
     if (!tekst) { toast(a.type === "mote" ? "Skriv hvor dere møtes" : a.type === "opph" ? "Skriv notatet" : a.type === "rest" ? "Skriv navnet på restauranten" : "Skriv hva det gjelder", 2200, "info"); return; }
-    const p = { k: "a", id: a.id || tilfeldigHex(6), type: a.type === "rest" ? "dag" : a.type, tekst, hvem: a.id ? a.hvem || "" : meg() || "", c: a.c || Date.now() };
+    const p = { k: "a", id: a.id || tilfeldigHex(6), type: a.type === "rest" || a.type === "ide" ? "dag" : a.type, tekst, hvem: a.id ? a.hvem || "" : meg() || "", c: a.c || Date.now() };
     if (a.type === "opph") p.opph = a.opph;
     else { p.d = a.d; p.tid = /^\d{1,2}:\d{2}$/.test(a.tid || "") ? a.tid.padStart(5, "0") : ""; }
     if (a.type === "dag") { p.adr = String(a.adr || "").trim(); p.tlf = tlfNorm(a.tlf); }
@@ -474,13 +511,14 @@
       if (rv) Object.assign(p, { rnavn: rv.navn, rsted: rv.sted, adr: rv.sjofor ? rv.sjofor.adr : rv.adresse, tlf: "" });
       else Object.assign(p, { adr: String(a.adr || "").trim(), tlf: tlfNorm(a.tlf) });
     }
+    if (a.type === "ide") Object.assign(p, { ide: 1, inavn: iv.navn, isted: a.isted, best: a.best ? 1 : 0, notat: String(a.notat || "").trim(), adr: "", tlf: "" });
     synkSett(p); lukkOverlay(); AV = null;
-    avtEtterTegning(() => toast(a.id ? "Endret – vises på alle telefonene" : "Lagt til – vises på alle telefonene", 2400));
+    avtEtterTegning(() => toast(a.id ? "Endret – vises på alle telefonene" : a.type === "ide" ? `Lagt i planen ${pen(p.d)} – vises på alle telefonene` : "Lagt til – vises på alle telefonene", 2400));
   }
   function avtSlett() {
     const gammel = avtLes().find((x) => x.id === AV.id); if (!gammel) { lukkOverlay(); return; }
     synkSett({ ...gammel, slettet: 1 }); lukkOverlay(); AV = null;
-    avtEtterTegning(() => toastAngre("Slettet", () => synkSett({ ...gammel, slettet: 0 })));
+    avtEtterTegning(() => toastAngre(gammel.ide ? "Fjernet fra planen – ideen ligger fortsatt i lista" : "Slettet", () => synkSett({ ...gammel, slettet: 0 })));
   }
   function avtKlikk(t) {
     if (t.dataset.avtny) {
@@ -488,11 +526,29 @@
       const opph = t.dataset.avtsted || ((overnatting(d) || {}).id);
       return visAvtSkjema({ type: t.dataset.avtny, d: t.dataset.avtsted ? (stedEtterId(t.dataset.avtsted) || {}).fra || d : d, opph: t.dataset.avtny === "opph" ? opph : undefined });
     }
+    if (t.dataset.ideark !== undefined) return visIdeArk(valgtDag || idagISO());
+    if (t.dataset.ideplan) {
+      const [sId, k] = t.dataset.ideplan.split("|"), i = (D.ideer[sId] || [])[Number(k)], s = stedEtterId(sId); if (!i || !s) return;
+      let d = t.dataset.ided, dagvalg;
+      if (!d) { // fra stedssiden: i dag / dagen som vises i I dag, ellers første dag uten noe i planen
+        dagvalg = sId; const inne = (x) => x && s.fra <= x && x <= s.til;
+        d = [idagISO(), valgtDag].find(inne) || dagerI(s).find((x) => !D.hendelser.some((e) => e.d === x && !e.oppgave) && !avtDag(x).some((y) => y.type !== "mote")) || s.fra;
+      }
+      return visAvtSkjema({ type: "ide", d, isted: sId, inavn: i.navn, dagvalg, fast: 1 });
+    }
+    if (t.dataset.avtbestvalg) { AV.best = Number(t.dataset.avtbestvalg); t.parentNode.querySelectorAll("button").forEach((b) => b.classList.toggle("valgt", b === t)); return; }
+    if (t.dataset.avtbest) {
+      const a = avtLes().find((x) => x.id === t.dataset.avtbest); if (!a) return;
+      if (t.closest("#overlay")) lukkOverlay(); // arket viser ellers gammel status
+      synkSett({ ...a, best: 1 });
+      return avtEtterTegning(() => toastAngre("Markert som bestilt – vises på alle telefonene", () => { synkSett({ ...a, best: 0 }); avtEtterTegning(); }));
+    }
     if (t.dataset.avt) { const a = avtLes().find((x) => x.id === t.dataset.avt); if (a) visAvtSkjema({ ...a }); return; }
     if (t.dataset.avttype) { avtFelt(); AV.type = t.dataset.avttype; if (AV.type !== "opph") delete AV.opph; return visAvtSkjema(AV); }
     if (t.dataset.avtbordvalg) { AV.bord = Number(t.dataset.avtbordvalg); t.parentNode.querySelectorAll("button").forEach((b) => b.classList.toggle("valgt", b === t)); return; }
     if (t.dataset.avtbord) {
       const a = avtLes().find((x) => x.id === t.dataset.avtbord); if (!a) return;
+      if (t.closest("#overlay")) lukkOverlay();
       synkSett({ ...a, bord: 1 });
       return avtEtterTegning(() => toastAngre("Bord reservert – vises på alle telefonene", () => { synkSett({ ...a, bord: 0 }); avtEtterTegning(); }));
     }
@@ -508,7 +564,7 @@
   const flyForHend = (e) => (e && !e.egen && !e.oppgave ? D.fly.find((f) => f.d === e.d && String(e.tittel || "").startsWith(f.id + " ")) : null);
   const sortMin = (e) => (e.sortMin != null ? e.sortMin : minutter(e.t));
   function radIkon(e) {
-    if (e.egen) return e.egen.rest ? "mat" : e.egen.type === "mote" ? "kart" : "kalender";
+    if (e.egen) return e.egen.rest ? "mat" : e.egen.ide ? "ideer" : e.egen.type === "mote" ? "kart" : "kalender";
     if (e.forslag) return "ideer";
     if (flyForHend(e)) return "reise";
     if (e.avledet || /innsjekk|utsjekk|sjekk ut/i.test(e.tittel)) return "hotell";
@@ -624,7 +680,7 @@
     if (betal.length) h += `<div class="betaldag">${ikon("penger")}<div><b>Betale i dag</b>${betal.map((l) => `<div>${md(l)}</div>`).join("")}</div></div>`;
 
     if (fri) h += `<section class="kort fridag2"><h2>Fri dag – ingenting bestilt</h2><p class="krolle">Forslag – ikke bestilt:</p><div class="knapper">
-      ${antIde ? `<a class="kb" href="#/sted/${esc(sId)}/ideerher">${ikon("ideer", "")}Ideer (${antIde})</a>` : ""}
+      ${antIde ? `<button class="kb" data-ideark>${ikon("ideer", "")}Ideer (${ideAntall(d)})</button>` : ""}
       ${antMat ? `<a class="kb" href="#/mat/${esc(sId)}">${ikon("mat", "")}Mat (${antMat})</a>` : ""}
       <button class="kb tel" data-avtny="dag">${ikon("pluss", "")}Legg til plan</button></div></section>`;
 
@@ -643,7 +699,7 @@
       const f = flyForHend(e), k = e.kontakt ? kontaktEtterId(e.kontakt) : null, aktiv = erNeste(e);
       const ferdig = erIdag && !aktiv && sortMin(e) >= 0 && e.t !== "kveld" && sortMin(e) < nm - 15;
       const a = e.egen, mote = a && a.type === "mote";
-      const bord = a && a.rest ? `<span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span>` : "";
+      const bord = a && a.rest ? `<span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span>` : a && a.ide ? bestPille(a) : "";
       let under = "";
       if (a) { const x = [a.notat, a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "); if (x) under += `<div class="merk">${esc(x)}</div>`; }
       else if (e.merk) under += `<div class="merk">${md(e.merk)}</div>`;
@@ -701,6 +757,16 @@
     return h + bunn();
   }
 
+  // Ideene for dagen i arket nedenfra – hver med «Legg i planen» for dagen som vises
+  function visIdeArk(d) {
+    const st = ideSteder(d); if (!st.length) return;
+    const inn = `<div class="ark-etikett">Forslag – ikke bestilt · ${esc(pen(d))}</div><h2>Ideer</h2><p class="krolle ideark-hjelp">Trykk «Legg i planen» for å legge en idé inn på denne dagen.</p>` +
+      st.map((s) => `${st.length > 1 ? `<h3 class="ideark-sted">${esc(s.navn)}</h3>` : ""}<div class="ideark">${ideerHtml(D.ideer[s.id], s.id, d)}</div>`).join("");
+    const o = $("#overlay");
+    o.className = "overlay ark";
+    o.innerHTML = `<div class="ark-flate" role="dialog" aria-modal="true"><div class="ark-topp"><span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div>${inn}</div>`;
+    o.hidden = false; o.scrollTop = 0;
+  }
   // Detaljark nedenfra: trykk på en rad, flybilletten, hotellet i natt eller været
   function visDagArk(id) {
     const x = id === "vaer" ? null : IDET[id];
@@ -709,9 +775,9 @@
     else if (!x) return;
     else if (x.hotellSted) { const s = x.hotellSted; inn = `<div class="ark-etikett">Overnatting · ${esc(s.dato)}</div><div class="hotell">${hotellInnhold(s, false)}${notatHtml(s)}</div>`; }
     else if (x.egen) {
-      const a = x.egen, hvem = personNavn(a.hvem);
-      inn = `<div class="ark-etikett">${a.type === "mote" ? "Møtested" : a.rest ? "Restaurant" : "Egen avtale"}${a.tid ? " · kl. " + esc(a.tid) : ""} · ${esc(pen(x.d))}</div><h2>${esc(a.tekst)}</h2>
-        ${a.rest ? `<p><span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span></p>` : ""}${a.notat ? `<p>${esc(a.notat)}</p>` : ""}${a.adr ? `<p class="krolle">${esc(a.adr.replace(/\s*\n\s*/g, ", "))}</p>` : ""}
+      const a = x.egen, hvem = personNavn(a.hvem), iv = a.ide ? ideEtter(a) : null;
+      inn = `<div class="ark-etikett">${a.type === "mote" ? "Møtested" : a.rest ? "Restaurant" : a.ide ? "Idé i planen" : "Egen avtale"}${a.tid ? " · kl. " + esc(a.tid) : ""} · ${esc(pen(x.d))}</div><h2>${esc(a.tekst)}</h2>
+        ${a.rest ? `<p><span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span></p>` : ""}${a.ide ? `<p>${bestPille(a)}</p>` : ""}${iv ? `<p>${esc(iv.tekst)}</p>${iv.praktisk ? `<p class="krolle">${md(iv.praktisk)}</p>` : ""}` : ""}${a.notat ? `<p>${esc(a.notat)}</p>` : ""}${a.adr ? `<p class="krolle">${esc(a.adr.replace(/\s*\n\s*/g, ", "))}</p>` : ""}
         <p class="krolle">${a.type === "mote" ? "Hvis vi blir borte fra hverandre · " : ""}Lagt til${hvem ? " av " + esc(hvem) : ""}</p><div class="knapper">${avtKnapper(a, true)}</div>`;
     } else {
       const f = flyForHend(x), k = x.kontakt ? kontaktEtterId(x.kontakt) : null, s = x.sted;
@@ -901,7 +967,7 @@
 
     const alle = D.kontakter.filter((k) => k.sted === s.id);
     if (alle.length) h += `<details class="fold" id="kontakterher"><summary>${ikon("kontakt")}Alle kontakter her <span class="antall">(${alle.length})</span></summary><div class="innhold">${alle.map(kontaktHtml).join("")}</div></details>`;
-    if (D.ideer[s.id]) h += `<details class="fold" id="ideerher"><summary>${ikon("ideer")}Ideer – ikke bestilt <span class="antall">(${D.ideer[s.id].length})</span></summary><div class="innhold">${ideerHtml(D.ideer[s.id])}</div></details>`;
+    if (D.ideer[s.id]) h += `<details class="fold" id="ideerher"><summary>${ikon("ideer")}Ideer – ikke bestilt <span class="antall">(${D.ideer[s.id].length})</span></summary><div class="innhold">${ideerHtml(D.ideer[s.id], s.id)}</div></details>`;
     if (D.sykehus[s.id]) h += `<details class="fold" id="sykehus"><summary>${ikon("sykehus")}Nærmeste sykehus</summary><div class="innhold">${sykehusHtml(D.sykehus[s.id])}</div></details>`;
 
     h += `<div class="navnedre">${forr ? `<a href="#/sted/${esc(forr.id)}">‹ Forrige<b>${esc(forr.navn)}</b></a>` : ""}${neste ? `<a class="neste-sted" href="#/sted/${esc(neste.id)}">Neste ›<b>${esc(neste.navn)}</b></a>` : ""}</div>`;
@@ -1415,11 +1481,11 @@
   const BRUK_KLIKK = [["a[href^='tel:']", "ring"], ["a[href*='wa.me']", "whatsapp"], ["a[href*='google.com/maps']", "kart"], ["#sos", "sos"], ["#sokknapp", "sok"],
     ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-frase]", "frase"],
     ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary,[data-ivaer]", "vaer"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
-    ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["a[target='_blank']", "lenke"]];
+    ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["a[target='_blank']", "lenke"]];
   const HANDLINGER = { ring: "Ringte", whatsapp: "Åpnet WhatsApp", kart: "Åpnet kart", sos: "Trykket SOS", sok: "Åpnet søk", hk: "Åpnet ⟦k1⟧", hknod: "Nødskjermen på ⟦k1⟧",
     tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været",
     hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", dag: "Byttet dag",
-    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", detalj: "Åpnet detaljer i I dag", hvem: "Valgte hvem som bruker telefonen" };
+    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", detalj: "Åpnet detaljer i I dag", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen" };
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest) return;
     const bn = e.target.closest(".bunn");
@@ -2307,6 +2373,7 @@
     37: "Appen spør hvem du er – og skriver «pappa» og «mamma» for jentene, navn for de voksne",
     38: "Bonusprogrammene står alltid med navn",
     39: "Reisen-kartet: hjemreisen øverst til venstre, der den hører hjemme",
+    40: "Legg ideer inn i planen – fra I dag, stedssiden og «Legg til»",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -2728,7 +2795,7 @@
     }
     const oc = e.target.closest("[data-oppdkopier],[data-oppdfeilkopier],[data-oppdlim],[data-oppdles],[data-oppdavbryt],[data-oppdlegg],[data-oppdav]");
     if (oc) { e.preventDefault(); oppdKlikk(oc); return; }
-    const av = e.target.closest("[data-avtny],[data-avt],[data-avttype],[data-avtlagre],[data-avtslett],[data-avtbord],[data-avtbordvalg]");
+    const av = e.target.closest("[data-avtny],[data-avt],[data-avttype],[data-avtlagre],[data-avtslett],[data-avtbord],[data-avtbordvalg],[data-ideark],[data-ideplan],[data-avtbest],[data-avtbestvalg]");
     if (av) { e.preventDefault(); avtKlikk(av); return; }
     const ut = e.target.closest("[data-uttale]");
     if (ut) { e.preventDefault(); uttale(ut); return; }
@@ -2772,6 +2839,8 @@
     } else if (t.classList.contains("lukk")) lukkOverlay();
   });
   document.addEventListener("change", (e) => {
+    if (e.target.id === "avtIde" && AV) { avtFelt(); const [sId, k] = e.target.value.split("|"), i = (D.ideer[sId] || [])[Number(k)]; if (i) { AV.isted = sId; AV.inavn = i.navn; } return visAvtSkjema(AV); }
+    if (e.target.id === "avtDag" && AV) { avtFelt(); return visAvtSkjema(AV); }
     if (e.target.id === "avtRest" && AV) { avtFelt(); const r = D.restauranter.liste[Number(e.target.value)]; AV.fri = e.target.value === "fri"; if (r) { AV.rnavn = r.navn; AV.rsted = r.sted; } return visAvtSkjema(AV); }
     const f = e.target.closest("[data-pnavn],[data-pmerk],[data-pgtittel]");
     if (f) { pakkFeltEndret(f); return; }
