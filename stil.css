@@ -1195,3 +1195,15 @@ details.oppdpost.av summary { color: var(--dempet); }
 .ark-flate > .fly, .ark-flate > .kort, .ark-flate > .hotell { margin-top: 12px; }
 .ark-flate > .hotell { background: var(--flate); border: .5px solid var(--linje); border-radius: var(--r); padding: 14px 16px; }
 .ark-flate > .kort.vaer { margin-top: 4px; }
+
+/* ---------- Første gang: hvem er du? (v37) ---------- */
+.overlay.hvem { display: flex; align-items: center; justify-content: center; padding: calc(24px + env(safe-area-inset-top)) 22px calc(24px + env(safe-area-inset-bottom)); }
+.overlay.hvem::before { display: none; }
+.hvem-inn { width: 100%; max-width: 380px; text-align: center; }
+.hvem-inn img { border-radius: 16px; margin: 0 auto 12px; display: block; }
+.hvem-inn h1 { font-size: 2rem; font-weight: 750; margin: 0 0 8px; color: #111; }
+.hvem-inn p { color: #4a524e; margin: 0 0 20px; line-height: 1.4; }
+.hvem-valg { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.hvem-valg button { min-height: 76px; border-radius: 16px; border: 0; background: #1f5f4a; color: #fff; font: inherit; font-size: 1.25rem; font-weight: 700; cursor: pointer; }
+.hvem-valg button:active { transform: scale(.98); }
+.hvem-inn .hvem-fot { margin: 18px 0 0; font-size: .88rem; color: #6b746f; }

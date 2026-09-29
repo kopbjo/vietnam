@@ -7,14 +7,64 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 36, tid: "2026-09-29 kl. 20:58" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 37, tid: "2026-09-29 kl. 21:12" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
   const ui = (s) => (typeof s === "string" && s.indexOf("⟦") >= 0 ? s.replace(/⟦(\w+)⟧/g, (m, k) => (D && D.ui && D.ui[k] != null ? D.ui[k] : "")) : s);
   for (const egenskap of ["innerHTML", "outerHTML"]) {
     const d = Object.getOwnPropertyDescriptor(Element.prototype, egenskap);
-    if (d && d.set) Object.defineProperty(Element.prototype, egenskap, { configurable: true, enumerable: d.enumerable, get() { return d.get.call(this); }, set(v) { d.set.call(this, ui(v)); } });
+    if (d && d.set) Object.defineProperty(Element.prototype, egenskap, { configurable: true, enumerable: d.enumerable, get() { return d.get.call(this); },
+      set(v) { const rot = egenskap === "outerHTML" ? this.parentNode : this; d.set.call(this, ui(v)); if (rot) famOrd(rot); } });
+  }
+  // ---------- «pappa»/«mamma» eller fornavn etter hvem som bruker telefonen (v37) ----------
+  // Barna ser «pappa»/«mamma», foreldrene ser fornavnene. Navnene hentes fra reiseinfoen (kontaktene «pappa» og «mamma»,
+  // «Navn (pappa)»), aldri fra koden. Gjelder all tekst som settes inn med innerHTML.
+  // Hoppes over: personvelgerne (.personer), [data-egennavn], utklippsfelt, referanser og tekst på andre språk.
+  const FAM_SKIP = ".personer,[data-egennavn],textarea,script,style,.ref,[lang]:not([lang='nb'])";
+  const reEsc = (x) => x.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+  let FAM = null, FAM_D = null;
+  function famOppsett() {
+    if (FAM_D === D) return FAM;
+    FAM_D = D; FAM = null;
+    const rolle = (id) => { const k = (D.kontakter || []).find((x) => x.id === id); const m = k && String(k.navn).match(/^(.+?)\s*\(([^)]+)\)\s*$/); return m ? { navn: m[1], ord: m[2].toLowerCase(), hel: k.navn } : null; };
+    const r = [rolle("pappa"), rolle("mamma")].filter(Boolean);
+    if (!r.length) return null;
+    const navnRe = r.flatMap((x) => [reEsc(x.navn), reEsc(x.navn.toUpperCase())]).join("|"), ordRe = r.map((x) => reEsc(x.ord)).join("|");
+    FAM = { r,
+      voksne: D.personer.filter((p) => r.some((x) => x.navn === p.navn)).map((p) => p.id),
+      // ord → navn (for foreldrene) og navn → ord (for barna); etternavn etter fornavnet (på skilt o.l.) byttes ikke
+      tilNavn: new RegExp(`(?<![\\p{L}])(${ordRe})(s?)(?![\\p{L}])`, "giu"),
+      tilOrd: new RegExp(`(?<![\\p{L}])(${navnRe})([sS]?)(?![\\p{L}])(?!\\s+\\p{Lu})`, "gu"),
+      finn: new RegExp(`${navnRe}|${ordRe}`, "iu") };
+    return FAM;
+  }
+  const stor1 = (x) => x.charAt(0).toUpperCase() + x.slice(1);
+  function famOrd(rot) {
+    const m = D ? meg() : ""; // D finnes først etter opplåsing – da er alt definert
+    if (!m || !rot || !rot.nodeType || rute().side === "stat") return;
+    const F = famOppsett(); if (!F || !D.personer.some((p) => p.id === m)) return;
+    const voksen = F.voksne.includes(m);
+    const w = document.createTreeWalker(rot, NodeFilter.SHOW_TEXT), noder = [];
+    for (let n = w.nextNode(); n; n = w.nextNode()) if (F.finn.test(n.nodeValue)) noder.push(n);
+    for (const n of noder) {
+      const el = n.parentElement; if (!el || el.closest(FAM_SKIP)) continue;
+      let t = n.nodeValue;
+      for (const x of F.r) t = t.split(x.hel).join(voksen ? x.navn : stor1(x.ord)); // kontaktnavnet «Navn (pappa)»
+      const store = (o) => o === o.toUpperCase() && o !== o.toLowerCase() && o.length > 1;
+      if (voksen) t = t.replace(F.tilNavn, (x, o, s2) => { const p = F.r.find((y) => y.ord === o.toLowerCase()); const v = store(o) ? p.navn.toUpperCase() : p.navn; return v + (s2 ? (store(o) ? "S" : "s") : ""); });
+      else {
+        // Stor forbokstav bare ved setningsstart – også når ordet står først i f.eks. <b> midt i en setning
+        let foran = "";
+        try { const blokk = el.closest("p,li,dd,dt,td,th,div,h1,h2,h3,h4,button,a,label,summary,section") || el, rg = document.createRange(); rg.setStart(blokk, 0); rg.setEnd(n, 0); foran = rg.toString(); } catch {}
+        t = t.replace(F.tilOrd, (x, o, s2, pos, hel) => {
+          const p = F.r.find((y) => y.navn.toLowerCase() === o.toLowerCase()), st = store(o) && o !== p.navn;
+          const start = /(^\s*|[.!?:«]\s*)$/.test(foran + hel.slice(0, pos));
+          return (st ? p.ord.toUpperCase() : start ? stor1(p.ord) : p.ord) + (s2 ? (st ? "S" : "s") : "");
+        });
+      }
+      if (t !== n.nodeValue) n.nodeValue = t;
+    }
   }
   const FA = () => ui("⟦fa⟧"), FU = () => ui("⟦fu⟧"); // feltnavn i oppdateringskodene (uendret format)
   const vTall = (v) => (v == null || v === "" || !isFinite(Number(v)) ? null : Number(v)); // tall fra eksterne tjenester
@@ -800,7 +850,7 @@
   // ---------- SIDE: Reisen ----------
   function sideReisen() {
     const naa = stedForDato(idagISO());
-    let h = tittel("Reisen", `${esc(pen(start(), false))} – ${esc(pen(slutt(), false))} · ${esc(D.meta.reisende)}`);
+    let h = tittel("Reisen", `${esc(pen(start(), false))} – ${esc(pen(slutt(), false))} · <span data-egennavn>${esc(D.meta.reisende)}</span>`);
     const liste = `<div class="stedliste">${D.steder.map((s, i) => `<a class="kort stedkort mednr ${naa && naa.id === s.id ? "naa" : ""}" href="#/sted/${esc(s.id)}">
       <span class="snr${s.netter ? "" : " hjem"}">${s.netter ? i + 1 : `<svg viewBox="-6 -6 12 12" aria-hidden="true">${K_HUS}</svg>`}</span><b>${esc(s.navn)}</b><span class="netter">${s.netter ? s.netter + (s.netter === 1 ? " natt" : " netter") : ""}${ikon("chev", "")}</span>
       <span class="dato">${esc(s.dato)}${naa && naa.id === s.id ? ' · <span class="naa-merke">Her er vi nå</span>' : ""}</span></a>`).join("")}</div>`;
@@ -1358,11 +1408,11 @@
   const BRUK_KLIKK = [["a[href^='tel:']", "ring"], ["a[href*='wa.me']", "whatsapp"], ["a[href*='google.com/maps']", "kart"], ["#sos", "sos"], ["#sokknapp", "sok"],
     ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-frase]", "frase"],
     ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary,[data-ivaer]", "vaer"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
-    ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-idet]", "detalj"], ["a[target='_blank']", "lenke"]];
+    ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["a[target='_blank']", "lenke"]];
   const HANDLINGER = { ring: "Ringte", whatsapp: "Åpnet WhatsApp", kart: "Åpnet kart", sos: "Trykket SOS", sok: "Åpnet søk", hk: "Åpnet ⟦k1⟧", hknod: "Nødskjermen på ⟦k1⟧",
     tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været",
     hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", dag: "Byttet dag",
-    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", detalj: "Åpnet detaljer i I dag" };
+    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", detalj: "Åpnet detaljer i I dag", hvem: "Valgte hvem som bruker telefonen" };
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest) return;
     const bn = e.target.closest(".bunn");
@@ -2247,6 +2297,7 @@
     34: "Enkel bruksstatistikk",
     35: "Ryddigere I dag: hele dagen på én tidslinje – trykk på et punkt for detaljer",
     36: "Rettet visningen av hotell- og stedslistene",
+    37: "Appen spør hvem du er – og skriver «pappa» og «mamma» for jentene, navn for de voksne",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -2624,6 +2675,19 @@
     const h = s.hotell;
     visSjoforKort({ navn: h.navn, adr: h.adr, tlf: hotellNummer(kontaktEtterId(h.kontakt)), tlfVi: "Số điện thoại khách sạn", tlfEn: "Hotel phone", kartq: h.kartq });
   }
+  // Første gang på en telefon: hvem bruker den? (v37) – styrer sete, pakkeliste og «pappa»/fornavn i tekstene
+  function visHvem() {
+    const o = $("#overlay"); o.className = "overlay hvem";
+    o.innerHTML = `<div class="hvem-inn" role="dialog" aria-modal="true" aria-labelledby="hvemTittel"><img src="ikon-180.png" alt="" width="64" height="64"><h1 id="hvemTittel">Hvem er du?</h1>
+      <p>Velg deg selv. Da ser du ditt eget sete, din egen pakkeliste og riktige navn i appen.</p>
+      <div class="hvem-valg" data-egennavn>${D.personer.map((p) => `<button data-hvem="${esc(p.id)}">${esc(p.navn)}</button>`).join("")}</div>
+      <p class="hvem-fot">Kan endres senere under Mer.</p></div>`;
+    o.hidden = false;
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-hvem]"); if (!b || !D) return;
+    lagre.set(LS.meg, b.dataset.hvem); lukkOverlay(); vis(); toast(`Hei, ${personNavn(b.dataset.hvem)}!`);
+  });
   const lukkOverlay = () => { uttaleStopp(); $("#overlay").hidden = true; $("#overlay").innerHTML = ""; };
 
   // ---------- klikk ----------
@@ -2858,6 +2922,7 @@
   // ---------- oppstart ----------
   async function lasOpp(p, n) {
     D0 = D = await dekrypter(n, p); K = n; synkMigrer(); D = oppdBruk(D0); tpMigrer(); $("#faner").hidden = false; vis(); tpVarsel(); brukStart();
+    if (!meg() && $("#overlay").hidden) visHvem();
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch {}
     synk();
     hentetMelding();
