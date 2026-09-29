@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 42, tid: "2026-09-29 kl. 22:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 43, tid: "2026-09-29 kl. 22:10" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1024,18 +1024,59 @@
       ${v.merk ? `<p class="kmerk">${esc(v.merk)}</p>` : ""}<div class="kforkl">${forkl}</div>
       ${lenker ? `<div class="knapper">${lenker}</div>` : ""}</section>`;
   }
-  // Oversiktskartet i Reisen-fanen: Vietnam med alle stedene, innfelt kart med hjemreisen og (valgfritt) en stripe lenger sør med flybyttet
+  // Oversiktskartet i Reisen-fanen: Vietnam med alle stedene, innfelt kart med hjemreisen og (valgfritt) en stripe lenger sør med flybyttet.
+  // Reisetråden: o.tidslinje = etapper {r, t0, t1, rev, fra, til, ank, mal}. Tilbakelagt = hel strek, nå = puls/fly på streken, resten stiplet.
+  const kLerp = (a, b, f) => [a[0] + (b[0] - a[0]) * f, a[1] + (b[1] - a[1]) * f];
+  function kGeo(g, rev) { // g: {q:[p0,c,p2]} eller {l:[p...]} i kartets koordinater
+    if (g.q) { const [a, c, b] = rev ? [...g.q].reverse() : g.q; return { d: `M${kf(a[0])} ${kf(a[1])}Q${kf(c[0])} ${kf(c[1])} ${kf(b[0])} ${kf(b[1])}`, a, del(f) {
+      const p01 = kLerp(a, c, f), p12 = kLerp(c, b, f), p = kLerp(p01, p12, f), tx = p12[0] - p01[0], ty = p12[1] - p01[1];
+      return { p, vinkel: Math.atan2(ty, tx) * 180 / Math.PI, for: `M${kf(a[0])} ${kf(a[1])}Q${kf(p01[0])} ${kf(p01[1])} ${kf(p[0])} ${kf(p[1])}`, etter: `M${kf(p[0])} ${kf(p[1])}Q${kf(p12[0])} ${kf(p12[1])} ${kf(b[0])} ${kf(b[1])}` }; } }; }
+    const q = rev ? [...g.l].reverse() : g.l, len = [0];
+    for (let i = 1; i < q.length; i++) len.push(len[i - 1] + Math.hypot(q[i][0] - q[i - 1][0], q[i][1] - q[i - 1][1]));
+    const sti = (pts) => "M" + pts.map(([x, y]) => `${kf(x)} ${kf(y)}`).join("L");
+    return { d: sti(q), a: q[0], del(f) {
+      const m = len[len.length - 1] * f; let i = 1; while (i < q.length - 1 && len[i] < m) i++;
+      const u = (m - len[i - 1]) / ((len[i] - len[i - 1]) || 1), p = kLerp(q[i - 1], q[i], u);
+      return { p, vinkel: Math.atan2(q[i][1] - q[i - 1][1], q[i][0] - q[i - 1][0]) * 180 / Math.PI, for: sti([...q.slice(0, i), p]), etter: sti([p, ...q.slice(i)]) }; } };
+  }
+  const kQ = (r, pr) => { // rute fra kartdata → geometri
+    const q = r.pts.map(([a, b]) => pr(a, b));
+    if (r.bue != null && q.length === 2) { const [[x1, y1], [x2, y2]] = q; return { q: [q[0], [(x1 + x2) / 2 - (y2 - y1) * r.bue, (y1 + y2) / 2 + (x2 - x1) * r.bue], q[1]] }; }
+    return { l: q };
+  };
+  // Hvor er vi nå? m: for | reise | opphold | etter
+  function reiseNaa(L, t) {
+    if (!L || !L.length) return null;
+    const ms = L.map((e) => [Date.parse(e.t0), Date.parse(e.t1)]);
+    if (t < ms[0][0]) return { m: "for", i: -1, neste: L[0], t0: ms[0][0] };
+    for (let i = 0; i < L.length; i++) {
+      if (t < ms[i][0]) return { m: "opphold", i: i - 1, mal: L[i - 1].mal, neste: L[i], t0: ms[i][0] };
+      if (t <= ms[i][1]) return { m: "reise", i, e: L[i], f: (t - ms[i][0]) / (ms[i][1] - ms[i][0]), t1: ms[i][1] };
+    }
+    return { m: "etter", i: L.length };
+  }
+  const kVarighet = (min) => { min = Math.max(1, Math.round(min)); const t = Math.floor(min / 60), m = min % 60; return t ? `${t} t${m ? ` ${m} min` : ""}` : `${m} min`; };
+  const kDagNr = (fra, til) => Math.round((Date.UTC(...til.split("-").map((v, i) => i === 1 ? v - 1 : +v)) - Date.UTC(...fra.split("-").map((v, i) => i === 1 ? v - 1 : +v))) / 864e5);
   function oversiktKart() {
     const o = D.kart && D.kart.oversikt;
     if (!o) return "";
-    const b = D.kart.baser[o.base], pr = kProj(b), naa = stedForDato(idagISO());
+    const b = D.kart.baser[o.base], pr = kProj(b), L = o.tidslinje || [], N = reiseNaa(L, Date.now());
+    const underveis = N && (N.m === "reise" || N.m === "opphold");
     const nr = (id) => String(D.steder.findIndex((s) => s.id === id) + 1);
+    // tilstand per sted: vaert (ferdig), naa (her nå), kom (kommer)
+    const tilstand = (id) => {
+      if (!N) return stedForDato(idagISO()) && stedForDato(idagISO()).id === id ? "naa" : "";
+      if (N.m === "for" || N.m === "etter") return id === "hjem" ? "naa" : N.m === "etter" ? "vaert" : "";
+      if (N.m === "opphold" && N.mal && N.mal.sted === id) return "naa";
+      return L.some((e, j) => e.mal && e.mal.sted === id && j < N.i) ? "vaert" : "kom";
+    };
     const etikett = (s, tx, dy, a, navn, dato) => `<text class="klab" x="${tx}" y="${dy}" text-anchor="${a}">${esc(navn || s.navn)}</text>${dato !== "" ? `<text class="klab2" x="${tx}" y="${dy + 12}" text-anchor="${a}">${esc(dato || s.dato)}</text>` : ""}`;
+    const puls = (r) => `<circle class="kpuls" r="${r}"/><circle class="kpuls k2" r="${r}"/>`;
     const stopp = (x, prj, r, lab) => {
       const s = stedEtterId(x.sted); if (!s) return "";
-      const [px, py] = prj(x.lat, x.lon), her = naa && naa.id === s.id;
+      const [px, py] = prj(x.lat, x.lon), tl = tilstand(s.id), her = tl === "naa";
       const inn = x.hjem ? K_HUS : `<text class="knum" y="4">${nr(s.id)}</text>`;
-      return `<a href="#/sted/${esc(s.id)}" aria-label="${esc(x.navn || s.navn)}"><g class="kn ${x.hjem ? "kn-hotell" : "kn-bestilt"} kstopp${her ? " naa" : ""}" transform="translate(${kf(px)} ${kf(py)})"><circle class="ktreff" r="${r + 10}"/>${her ? `<circle class="kring" r="${r + 5}"/>` : ""}<circle class="kprikk" r="${r}"/>${inn}${lab}</g></a>`;
+      return `<a href="#/sted/${esc(s.id)}" aria-label="${esc(x.navn || s.navn)}${her ? " – her er vi nå" : ""}"><g class="kn ${x.hjem ? "kn-hotell" : "kn-bestilt"} kstopp${tl ? " " + tl : ""}" transform="translate(${kf(px)} ${kf(py)})"><circle class="ktreff" r="${r + 10}"/>${her ? puls(r) : ""}<circle class="kprikk" r="${r}"/>${inn}${lab}</g></a>`;
     };
     const hoved = o.stopp.map((x) => {
       const s = stedEtterId(x.sted) || {}, dx = x.dx || 0;
@@ -1043,32 +1084,70 @@
       const h = x.side !== "v", tx = (h ? 14 : -14) + dx; return stopp(x, pr, 10, etikett(s, tx, x.dy, h ? "start" : "end"));
     }).join("");
     const ib = D.kart.baser[o.innfelt.base], [kx, ky, iw, ih] = o.innfelt.klipp || [0, 0, ib.W, ib.H], ip0 = kProj(ib), ip = (la, lo) => { const [x, y] = ip0(la, lo); return [x - kx, y - ky]; };
-    const [ix, iy] = o.innfelt.pos || [b.W - iw - 6, b.H - ih - 34];
+    const [ix, iy] = o.innfelt.pos || [b.W - iw - 6, b.H - ih - 34], ipA = (la, lo) => { const [x, y] = ip(la, lo); return [x + ix, y + iy]; };
     const innfelt = o.innfeltStopp.map((x) => x.hjem ? stopp(x, ip, 7, x.side === "h" ? etikett({}, 11, x.dy || 0, "start", x.navn, x.dato) : etikett({}, -11, 0, "end", x.navn, x.dato)) : stopp(x, ip, 8, etikett(stedEtterId(x.sted) || {}, x.dx || 0, x.dy != null ? x.dy : -14, x.anker || "middle", "", ""))).join("");
-    // Stripe under kartet (kartbrudd): samme målestokk og lengdegrader, så flybyttet står rett under der det hører hjemme
+    // Alle streker samles med nøkkel (o0.., s0.., bue, inn) i kartets koordinater, så reisetråden kan tegnes likt overalt
+    const G = {}; o.ruter.forEach((r, i) => { G["o" + i] = { r, g: kQ(r, pr) }; });
+    G.inn = { r: o.innfeltRute, g: kQ(o.innfeltRute, ipA) };
     const st = o.stripe, sb = st && D.kart.baser[st.base], gap = 14, oy = b.H + gap, H = sb ? oy + sb.H : b.H;
-    let stripe = "", sRuter = "", sBue = "", sStopp = "", attr = kAttr(b);
+    let stripe = "", sStopp = "", attr = kAttr(b), sp = null;
     if (sb) {
-      const sp0 = kProj(sb), sp = (la, lo) => { const [x, y] = sp0(la, lo); return [x, y + oy]; }, nord = sb.bb[2];
-      // Ruter som krysser bruddet tegnes sammenhengende: punkter sør for stripas nordkant plasseres i stripa, resten på hovedkartet
+      const sp0 = kProj(sb), nord = sb.bb[2]; sp = (la, lo) => { const [x, y] = sp0(la, lo); return [x, y + oy]; };
       const kombi = (la, lo) => (la <= nord ? sp(la, lo) : pr(la, lo));
-      sRuter = (st.ruter || []).map((r) => kRute(r, kombi)).join("");
+      (st.ruter || []).forEach((r, i) => { G["s" + i] = { r, g: kQ(r, kombi) }; });
       const bolge = (y) => { let d = `M0 ${y}`; for (let x = 0; x <= b.W; x += 12) d += `Q${x + 3} ${y - 3} ${x + 6} ${y}T${x + 12} ${y}`; return d; };
       stripe = `<clipPath id="kstripeklipp"><rect y="${oy}" width="${sb.W}" height="${sb.H}"/></clipPath><g clip-path="url(#kstripeklipp)"><g transform="translate(0 ${oy})">${kGrunn(sb)}</g></g>
         <rect x="0" y="${b.H}" width="${b.W}" height="${gap}" class="kbrudd"/><path d="${bolge(b.H + 2)}" class="kbrudd-l"/><path d="${bolge(oy - 2)}" class="kbrudd-l"/>${st.tekst ? `<text class="kbrudd-t" x="${st.tekstSide === "h" ? b.W - 8 : 8}" y="${b.H + 10}"${st.tekstSide === "h" ? ' text-anchor="end"' : ""}>${esc(st.tekst)}</text>` : ""}`;
-      if (st.bue) { // bue fra et punkt i det innfelte kartet ned til stripa
-        const [a1, b1] = ip(...st.bue.fra), x1 = a1 + ix, y1 = b1 + iy, [x2, y2] = sp(...st.bue.til), k = st.bue.k || 0;
-        sBue = `<path d="M${kf(x1)} ${kf(y1)}Q${kf((x1 + x2) / 2 - (y2 - y1) * k)} ${kf((y1 + y2) / 2 + (x2 - x1) * k)} ${kf(x2)} ${kf(y2)}" class="kr kr-fly"/>`;
-      }
+      if (st.bue) { const x1 = ipA(...st.bue.fra), x2 = sp(...st.bue.til), k = st.bue.k || 0; G.bue = { r: { t: "fly" }, g: { q: [x1, [(x1[0] + x2[0]) / 2 - (x2[1] - x1[1]) * k, (x1[1] + x2[1]) / 2 + (x2[0] - x1[0]) * k], x2] } }; }
       if (st.stopp) { // flybytte: ikke et eget sted – trykk åpner Fly-siden
-        const x = st.stopp, [px, py] = sp(x.lat, x.lon), h = x.side !== "v", tx = h ? 13 : -13;
-        sStopp = `<a href="#/fly" aria-label="${esc(x.navn)} – se flyene"><g class="kn kn-fly kstopp" transform="translate(${kf(px)} ${kf(py)})"><circle class="ktreff" r="19"/><circle class="kprikk" r="9"/><g transform="scale(.9)">${K_FLY}</g>${etikett({}, tx, x.dy || 0, h ? "start" : "end", x.navn, x.dato || "")}</g></a>`;
+        const x = st.stopp, [px, py] = sp(x.lat, x.lon), h = x.side !== "v", tx = h ? 13 : -13, her = N && N.m === "opphold" && N.mal && N.mal.sted === "sin";
+        sStopp = `<a href="#/fly" aria-label="${esc(x.navn)} – se flyene"><g class="kn kn-fly kstopp${her ? " naa" : ""}" transform="translate(${kf(px)} ${kf(py)})"><circle class="ktreff" r="19"/>${her ? puls(9) : ""}<circle class="kprikk" r="9"/><g transform="scale(.9)">${K_FLY}</g>${etikett({}, tx, x.dy || 0, h ? "start" : "end", x.navn, x.dato || "")}</g></a>`;
       }
       attr = kAttr(sb, { x: 0, y: oy, w: sb.W, h: sb.H, s: 1 });
     }
-    return `<section class="kort kartkort oversikt"><svg class="kartsvg" viewBox="0 0 ${b.W} ${H}" role="img" aria-label="Kart over reiseruta">${kGrunn(b)}${stripe}${o.ruter.map((r) => kRute(r, pr)).join("")}${sRuter}${hoved}
-      <g transform="translate(${ix} ${iy})"><clipPath id="kinnklipp"><rect width="${iw}" height="${ih}" rx="8"/></clipPath><g clip-path="url(#kinnklipp)"><g transform="translate(${-kx} ${-ky})">${kGrunn(ib)}</g></g><rect width="${iw}" height="${ih}" rx="8" class="kinnramme"/>${kRute(o.innfeltRute, ip)}</g>${sBue}<g transform="translate(${ix} ${iy})">${innfelt}</g>${sStopp}${attr}</svg>
+    // Streker: status per nøkkel ut fra tidslinja (en strek kan brukes to ganger – ut og hjem)
+    const status = {}, forGjort = {};
+    L.forEach((e, i) => { const s = !N ? "" : N.m === "etter" || i < N.i || (i === N.i && N.m === "opphold") ? "gjort" : i === N.i ? "naa" : "kom", p = status[e.r];
+      if (s === "gjort") forGjort[e.r] = true;
+      status[e.r] = p === "naa" || s === "naa" ? "naa" : p === "gjort" || s === "gjort" ? "gjort" : s; });
+    const strek = (key) => { const x = G[key]; if (!x) return ""; const r = x.r, s = status[key] || (underveis ? "kom" : ""), geo = kGeo(x.g);
+      const kl = `kr kr-${esc(r.t)}${r.svak ? " svak" : ""}`, s2 = s === "naa" ? "gjort" : s;
+      if (s === "naa" && N.m === "reise" && N.e.r === key && !forGjort[key]) { const g2 = kGeo(x.g, N.e.rev), dl = g2.del(N.f);
+        return `<path d="${dl.etter}" class="${kl} kom"/><path d="${dl.for}" class="${kl} gjort"/>`; }
+      const halo = r.t === "tur" || r.t === "gange" || r.t === "bat" ? `<path d="${geo.d}" class="kr-halo"/>` : "";
+      return `${halo}<path d="${geo.d}" class="${kl}${s2 ? " " + s2 : ""}"/>`; };
+    // Flyet (eller bilen) på streken akkurat nå, med lysende hale
+    let farkost = "", defs = "";
+    if (N && N.m === "reise" && G[N.e.r]) {
+      const x = G[N.e.r], dl = kGeo(x.g, N.e.rev).del(N.f), [px, py] = dl.p, a0 = kGeo(x.g, N.e.rev).a, fly = x.r.t === "fly";
+      defs = `<defs><linearGradient id="khale" gradientUnits="userSpaceOnUse" x1="${kf(a0[0])}" y1="${kf(a0[1])}" x2="${kf(px)}" y2="${kf(py)}"><stop offset="0" class="khale0"/><stop offset="1" class="khale1"/></linearGradient></defs>`;
+      farkost = `<path d="${dl.for}" class="khale-sti${fly ? "" : " bil"}"/><g class="kfarkost${fly ? "" : " bil"}" transform="translate(${kf(px)} ${kf(py)})">${puls(fly ? 10 : 6)}<circle class="kprikk" r="${fly ? 10 : 6}"/>${fly ? `<g transform="rotate(${kf(dl.vinkel + 45)})">${K_FLY}</g>` : ""}</g>`;
+    }
+    if (N && N.m === "opphold" && N.mal && !N.mal.sted && G[L[N.i].r]) { // venter et sted uten egen nål (f.eks. på flyplassen)
+      const [px, py] = kGeo(G[L[N.i].r].g, L[N.i].rev).del(1).p;
+      farkost = `<g class="kfarkost venter" transform="translate(${kf(px)} ${kf(py)})">${puls(5)}<circle class="kprikk" r="5"/></g>`;
+    }
+    const nokler = [...o.ruter.map((_, i) => "o" + i), ...((st && st.ruter) || []).map((_, i) => "s" + i)];
+    const ruterSvg = nokler.map(strek).join("");
+    return `<section class="kort kartkort oversikt${underveis ? " underveis" : ""}">${naaKort(N, L)}<div class="kramme"><svg class="kartsvg" viewBox="0 0 ${b.W} ${H}" role="img" aria-label="Kart over reiseruta">${defs}${kGrunn(b)}${stripe}${ruterSvg}${hoved}
+      <g transform="translate(${ix} ${iy})"><clipPath id="kinnklipp"><rect width="${iw}" height="${ih}" rx="8"/></clipPath><g clip-path="url(#kinnklipp)"><g transform="translate(${-kx} ${-ky})">${kGrunn(ib)}</g></g><rect width="${iw}" height="${ih}" rx="8" class="kinnramme"/></g>${strek("inn")}${strek("bue")}<g transform="translate(${ix} ${iy})">${innfelt}</g>${sStopp}${farkost}${attr}</svg></div>
       <div class="kforkl"><span><i class="f-fly"></i>Fly</span><span><i class="f-bil"></i>Bil og båt</span><span>Trykk på et sted for å åpne det</span></div></section>`;
+  }
+  // Glasskortet oppe til høyre: hvor vi er, og hvor langt vi har kommet på reisen
+  function naaKort(N, L) {
+    if (!N) return "";
+    const t = Date.now(), fra = Date.parse(L[0].t0), til = Date.parse(L[L.length - 1].t1), f = Math.min(1, Math.max(0, (t - fra) / (til - fra)));
+    const dager = kDagNr(D.steder[0].fra, D.steder[D.steder.length - 1].til) + 1, dagerTot = dager, dag = kDagNr(D.steder[0].fra, idagISO()) + 1;
+    const merker = L.filter((e) => e.mal && (stedEtterId(e.mal.sted) || {}).netter).map((e) => ((Date.parse(e.t1) - fra) / (til - fra) * 100).toFixed(1)); // ett merke per sted vi bor
+    let topp, tittel, under;
+    if (N.m === "for") { const d = kDagNr(idagISO(), D.steder[0].fra); topp = d > 1 ? `Om ${d} dager` : d === 1 ? "I morgen" : "I dag"; tittel = `${N.neste.fra} → Vietnam`; under = `Avreise ${esc(pen(D.steder[0].fra, false))} kl. ${esc(N.neste.avg || "")}`; }
+    else if (N.m === "etter") { topp = "Hjemme igjen"; tittel = "Hele reisen er tegnet"; under = `${dager} dager · ${D.steder.filter((s) => s.netter).length} steder`; }
+    else if (N.m === "reise") { const fly = N.e.type !== "bil"; topp = `${fly ? "I lufta" : "På vei"} · ${kVarighet((N.t1 - t) / 6e4)} igjen`; tittel = `${N.e.fra} → ${N.e.til}`; under = `${fly ? "Lander" : "Framme ca."} kl. ${esc(N.e.ank)}`; }
+    else if (N.mal && N.mal.venter) { topp = "På flyplassen"; tittel = N.mal.navn || ""; under = `Neste fly kl. ${esc(N.neste.avg || "")} · om ${kVarighet((N.t0 - t) / 6e4)}`; }
+    else if (N.mal && N.mal.bytte) { topp = "Flybytte"; tittel = N.mal.navn || "Flybytte"; under = `Neste fly kl. ${esc(N.neste.avg || "")} · om ${kVarighet((N.t0 - t) / 6e4)}`; }
+    else { const s = stedEtterId(N.mal.sted) || {}, igjen = s.til ? kDagNr(idagISO(), s.til) : 0; topp = "Her er vi nå"; tittel = s.navn || ""; under = igjen > 1 ? `${igjen} netter igjen her` : igjen === 1 ? "Reiser videre i morgen" : `Reiser videre kl. ${esc(N.neste.avg || "")}`; }
+    const hoyre = N.m === "reise" || N.m === "opphold" ? `Dag ${Math.max(1, dag)} av ${dagerTot}` : `${pen(D.steder[0].fra, false)} – ${pen(D.steder[D.steder.length - 1].til, false)}`;
+    return `<a class="knaa k-${N.m}" href="#/idag" aria-label="${esc(topp)}: ${esc(tittel)}"><span class="knaa-topp"><i></i>${esc(topp)}<em>${esc(hoyre)}</em></span><span class="knaa-linje"><b>${esc(tittel)}</b><small>${under}</small></span><span class="knaa-band" style="--f:${(f * 100).toFixed(1)}%">${merker.map((m) => `<i style="left:${m}%"></i>`).join("")}</span></a>`;
   }
   document.addEventListener("click", (e) => {
     const b = e.target.closest("[data-kvis]");
@@ -2545,6 +2624,7 @@
     40: "Legg ideer inn i planen – fra I dag, stedssiden og «Legg til»",
     41: "Trykk på et setenummer for å se hvor dere sitter i flyet",
     42: "«Husk underveis» er lukket og grønn til noe må gjøres – og oppgavene sier tydeligere hva som gjelder",
+    43: "Reisen-kartet viser hvor vi er – tilbakelagt strekning, flyet i lufta og dagene som er igjen",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {

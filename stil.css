@@ -1281,3 +1281,39 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fly button.dittsete { border: 0; font: inherit; font-weight: 700; cursor: pointer; }
 .fly button.dittsete small { font-weight: 600; opacity: .85; }
 .fly button.setenr { border: 0; background: var(--aksent-lys); color: var(--aksent); font: inherit; font-weight: 700; border-radius: 8px; padding: 2px 8px; cursor: pointer; }
+
+/* Reisetråden på Reisen-kartet: tilbakelagt = hel strek, nå = puls, resten stiplet og dempet */
+.oversikt .kramme { position: relative; }
+.underveis .kr.kom { opacity: .42; }
+.underveis .kr.svak.kom { opacity: .3; }
+.kr-fly.gjort { stroke-dasharray: none; stroke-width: 2; opacity: .9; }
+.kr.svak.gjort { opacity: .5; }
+.underveis .kstopp.kom .kprikk { fill: var(--flate); stroke: var(--aksent); stroke-width: 1.8; }
+.underveis .kstopp.kom .knum { fill: var(--aksent); }
+.underveis .kstopp.vaert .kprikk { opacity: .78; }
+.kstopp.naa .kprikk { stroke-width: 2.5; }
+.underveis .kstopp.naa > .kprikk, .underveis .kstopp.naa > .knum { transform: scale(1.12); }
+.kpuls { fill: var(--aksent); opacity: 0; transform-box: fill-box; transform-origin: center; animation: kpuls 2.6s cubic-bezier(.2,.6,.3,1) infinite; pointer-events: none; }
+.kpuls.k2 { animation-delay: 1.3s; }
+@keyframes kpuls { 0% { transform: scale(1); opacity: .5; } 100% { transform: scale(2.9); opacity: 0; } }
+.kfarkost .kprikk { fill: var(--flate); stroke: var(--aksent); stroke-width: 2.2; }
+.kfarkost .kglyf { stroke: var(--aksent); stroke-width: 3.4; }
+.kfarkost.bil .kprikk { fill: var(--k-rute); stroke: var(--k-halo); stroke-width: 2; }
+.kfarkost.bil .kpuls { fill: var(--k-rute); }
+.khale-sti { fill: none; stroke: url(#khale); stroke-width: 4; stroke-linecap: round; }
+.khale-sti.bil { stroke-width: 5; }
+.khale0 { stop-color: var(--aksent); stop-opacity: 0; } .khale1 { stop-color: var(--aksent); stop-opacity: .85; }
+.knaa { display: block; margin: 2px 2px 10px; text-decoration: none; color: var(--tekst); }
+.knaa-topp { display: flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--aksent); }
+.knaa-topp em { margin-left: auto; font-style: normal; color: var(--dempet); letter-spacing: .04em; }
+.knaa-topp i { width: 8px; height: 8px; border-radius: 50%; background: var(--aksent); animation: knaaprikk 2.6s infinite; flex: none; }
+@keyframes knaaprikk { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--aksent) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
+.knaa-linje { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 3px; }
+.knaa-linje b { font-size: 17px; line-height: 1.25; font-weight: 700; }
+.knaa-linje small { font-size: 13px; color: var(--dempet); }
+.knaa-band { position: relative; display: block; height: 5px; margin-top: 9px; border-radius: 3px; background: color-mix(in srgb, var(--tekst) 13%, transparent); overflow: hidden; }
+.knaa-band::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--f); background: linear-gradient(90deg, color-mix(in srgb, var(--aksent) 55%, transparent), var(--aksent)); border-radius: 3px; }
+.knaa-band i { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--flate); }
+.knaa.k-for .knaa-topp i, .knaa.k-etter .knaa-topp i { animation: none; }
+@media (prefers-reduced-motion: reduce) { .kpuls { animation: none; opacity: .18; transform: scale(1.8); } .kpuls.k2 { display: none; } .knaa-topp i { animation: none; } }
+.kfarkost.venter .kprikk { fill: var(--aksent); stroke: var(--k-halo); stroke-width: 2; }
