@@ -1317,3 +1317,172 @@ details.oppdpost.av summary { color: var(--dempet); }
 .knaa.k-for .knaa-topp i, .knaa.k-etter .knaa-topp i { animation: none; }
 @media (prefers-reduced-motion: reduce) { .kpuls { animation: none; opacity: .18; transform: scale(1.8); } .kpuls.k2 { display: none; } .knaa-topp i { animation: none; } }
 .kfarkost.venter .kprikk { fill: var(--aksent); stroke: var(--k-halo); stroke-width: 2; }
+
+/* ---------- v44: forside hjemme («Før vi drar»), jentenes forside, reisebingo, dagens beste ---------- */
+.fv-hero { position: relative; overflow: hidden; border-radius: 22px; padding: 18px 18px 16px; margin: 4px 0 12px; color: var(--hero-tekst); cursor: pointer;
+  background: radial-gradient(120% 90% at 85% 0%, color-mix(in srgb, var(--hero-bg) 60%, #6cc39f) 0%, transparent 62%), linear-gradient(165deg, var(--hero-bg) 0%, color-mix(in srgb, var(--hero-bg) 68%, #000) 100%);
+  box-shadow: var(--skygge); -webkit-tap-highlight-color: transparent; }
+.fv-hero:active { transform: scale(.995); }
+.fv-karst { position: absolute; right: -6px; bottom: -2px; width: 250px; height: 100px; fill: currentColor; opacity: .09; pointer-events: none; }
+.fv-eyebrow { font-size: .74rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; opacity: .75; position: relative; }
+.fv-tall { font-size: 5rem; font-weight: 780; letter-spacing: -.05em; line-height: .95; margin-top: 8px; position: relative; font-variant-numeric: tabular-nums; }
+.fv-tall small { font-size: 1.3rem; font-weight: 600; letter-spacing: -.01em; margin-left: 6px; opacity: .9; }
+.fv-under { font-size: .92rem; opacity: .82; margin-top: 6px; position: relative; }
+.fv-rute { display: flex; margin-top: 16px; position: relative; }
+.fv-rute::before { content: ""; position: absolute; left: 7%; right: 7%; top: 4px; border-top: 1.5px dashed color-mix(in srgb, var(--hero-tekst) 45%, transparent); }
+.fv-rute span { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; font-size: .64rem; font-weight: 600; white-space: nowrap; opacity: .9; position: relative; }
+.fv-rute i { width: 9px; height: 9px; border-radius: 50%; background: var(--hero-tekst); box-shadow: 0 0 0 3px color-mix(in srgb, var(--hero-bg) 80%, #000); }
+.fv-rute .vn i { background: #f1c265; }
+.fv-pille { display: inline-flex; align-items: center; gap: 2px; margin-top: 15px; position: relative; font-size: .86rem; font-weight: 650; padding: 7px 10px 7px 13px; border-radius: 99px;
+  background: color-mix(in srgb, var(--hero-tekst) 15%, transparent); border: .5px solid color-mix(in srgb, var(--hero-tekst) 25%, transparent); }
+.fv-pille svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.fv-klokker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
+.fv-kl { display: flex; justify-content: space-between; align-items: baseline; background: var(--flate); border: .5px solid var(--linje); border-radius: 14px; padding: 9px 12px; box-shadow: var(--skygge); }
+.fv-kl span { font-size: .78rem; color: var(--dempet); }
+.fv-kl b { font-size: 1.2rem; font-weight: 680; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
+.fv-hode { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
+.fv-hode h2 { font-size: 1.12rem; font-weight: 680; }
+.fv-hode a { color: var(--aksent); font-weight: 600; font-size: .9rem; text-decoration: none; }
+.fv-bar { height: 8px; border-radius: 5px; background: var(--flate2); overflow: hidden; }
+.fv-bar i { display: block; height: 100%; border-radius: 5px; background: var(--aksent); }
+.fv-frem { display: flex; justify-content: space-between; font-size: .84rem; color: var(--dempet); margin: 8px 0 2px; }
+.fv-frem b { color: var(--tekst); font-weight: 650; }
+.fv-rad { display: flex; gap: 12px; align-items: center; padding: 11px 0; border-top: .5px solid var(--linje); cursor: pointer; }
+.fv-kort .fv-rad:first-of-type { margin-top: 6px; }
+.fv-dato { width: 46px; flex: none; text-align: center; border-radius: 12px; background: var(--flate2); padding: 6px 0 5px; line-height: 1; }
+.fv-dato b { display: block; font-size: 1.15rem; font-weight: 720; letter-spacing: -.02em; }
+.fv-dato span { display: block; font-size: .66rem; font-weight: 650; text-transform: uppercase; color: var(--dempet); letter-spacing: .04em; margin-top: 2px; }
+.fv-dato.gul { background: var(--gul-bg); } .fv-dato.gul b { color: var(--gul); }
+.fv-dato.rod { background: var(--rod-bg); } .fv-dato.rod b { color: var(--rod); }
+.fv-dikon { display: grid; place-items: center; height: 40px; background: var(--aksent-lys); }
+.fv-dikon svg { width: 20px; height: 20px; fill: none; stroke: var(--aksent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.fv-tekst { flex: 1; min-width: 0; display: block; }
+.fv-t { display: block; font-size: .98rem; line-height: 1.32; font-weight: 520; }
+.fv-m { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: .8rem; color: var(--dempet); margin-top: 3px; }
+.fv-hvem { font-size: .72rem; font-weight: 650; padding: 2px 8px; border-radius: 99px; background: var(--flate2); color: var(--dempet); }
+.fv-pil svg { width: 18px; height: 18px; fill: none; stroke: var(--dempet); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.fv-frist { font-weight: 650; color: var(--gul); }
+.fv-frist.gronn { color: var(--aksent); }
+.fv-frist.rod { color: var(--rod); }
+.fv-igjen { display: flex; align-items: center; gap: 10px; background: var(--gul-bg); border: .5px solid var(--gul-linje); border-radius: 14px; padding: 11px 13px; margin: 0 0 12px; color: var(--tekst); text-decoration: none; font-size: .92rem; }
+.fv-igjen svg { width: 20px; height: 20px; fill: none; stroke: var(--gul); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.fv-igjen span { flex: 1; }
+.dagnav:has(.fv-hjemknapp) { grid-template-columns: auto 1fr 48px; }
+.pilknapp.fv-hjemknapp { width: auto; padding: 0 14px 0 8px; display: inline-flex; align-items: center; gap: 2px; font-weight: 650; font-size: .92rem; }
+.pilknapp.fv-hjemknapp svg { width: 20px; height: 20px; }
+/* hele lista */
+.fv-seg { display: flex; background: var(--flate2); border-radius: 11px; padding: 3px; margin: 0 0 8px; }
+.fv-seg button { flex: 1; border: 0; background: none; font-size: .9rem; font-weight: 600; padding: 7px 0; border-radius: 9px; color: var(--dempet); cursor: pointer; }
+.fv-seg button.p { background: var(--flate); color: var(--tekst); box-shadow: 0 1px 3px rgba(0,0,0,.18); }
+.fv-chips { display: flex; flex-wrap: wrap; gap: 7px; margin: 4px 0 6px; }
+.fv-chips button { border: 0; font-size: .86rem; font-weight: 600; padding: 7px 12px; border-radius: 99px; background: var(--flate2); color: var(--dempet); cursor: pointer; }
+.fv-chips button.p { background: var(--aksent); color: var(--aksent-tekst); }
+.fv-gtittel { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 4px 6px; }
+.fv-gtittel h3 { font-size: .8rem; letter-spacing: .07em; text-transform: uppercase; color: var(--dempet); font-weight: 700; }
+.fv-gtittel span { font-size: .82rem; color: var(--dempet); }
+.fv-gtittel.rod h3 { color: var(--rod); }
+.fv-gruppe { background: var(--flate); border-radius: 16px; padding: 2px 14px; border: .5px solid var(--linje); box-shadow: var(--skygge); }
+.fv-lrad { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: .5px solid var(--linje); cursor: pointer; }
+.fv-gruppe > .fv-lrad:first-child, .fv-mine h2 + .fv-lrad { border-top: 0; }
+.fv-lrad.gjort .fv-t { color: var(--dempet); text-decoration: line-through; text-decoration-color: color-mix(in srgb, var(--dempet) 50%, transparent); }
+.fv-boks { position: relative; flex: none; width: 26px; height: 26px; margin-top: 1px; cursor: pointer; }
+.fv-boks input { position: absolute; inset: 0; opacity: 0; margin: 0; cursor: pointer; }
+.fv-boks span { position: absolute; inset: 0; border-radius: 50%; border: 2px solid var(--dempet); background: var(--flate); pointer-events: none; }
+.fv-boks input:checked + span { background: var(--aksent); border-color: var(--aksent); }
+.fv-boks input:checked + span::after { content: ""; position: absolute; left: 8px; top: 3.5px; width: 6px; height: 11px; border: solid var(--aksent-tekst); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
+.fv-boks input:focus-visible + span { outline: 2px solid var(--aksent); outline-offset: 2px; }
+.fv-gjortfold { margin-top: 16px; }
+.fv-kilde { margin: 14px 4px 0; font-size: .8rem; }
+/* Veien til Vietnam */
+.fv-linje { position: relative; padding-left: 30px; margin-top: 10px; }
+.fv-linje::before { content: ""; position: absolute; left: 10px; top: 6px; bottom: 24px; width: 2px; background: var(--linje); }
+.fv-gjortlinje { display: flex; gap: 8px; align-items: center; color: var(--dempet); font-size: .88rem; margin: 0 0 14px -30px; }
+.fv-gjortlinje svg { width: 20px; height: 20px; fill: none; stroke: var(--aksent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
+.fv-naa { position: relative; display: flex; align-items: center; gap: 8px; margin: 0 0 14px -30px; color: var(--rod); font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.fv-naa::before { content: ""; width: 22px; height: 2px; background: var(--rod); }
+.fv-naa::after { content: ""; flex: 1; height: 2px; background: var(--rod); opacity: .5; }
+.fv-naa i { position: absolute; left: 5px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--rod); }
+.fv-node { position: relative; padding: 0 0 14px; }
+.fv-node::before { content: ""; position: absolute; left: -25px; top: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--dempet); box-sizing: border-box; }
+.fv-node.avt::before { background: var(--aksent); border-color: var(--aksent); }
+.fv-node.gul::before { border-color: var(--gul); }
+.fv-node.rod::before { border-color: var(--rod); background: var(--rod-bg); }
+.fv-nd { font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin-bottom: 5px; }
+.fv-node.gul .fv-nd { color: var(--gul); } .fv-node.rod .fv-nd { color: var(--rod); }
+.fv-nkort { display: flex; gap: 11px; align-items: flex-start; background: var(--flate); border: .5px solid var(--linje); border-radius: 14px; padding: 11px 13px; cursor: pointer; box-shadow: var(--skygge); }
+.fv-nkort + .fv-nkort { margin-top: 6px; }
+.fv-mndkort { width: 100%; display: flex; justify-content: space-between; align-items: center; border: 0; background: var(--flate2); color: var(--tekst); border-radius: 14px; padding: 12px 14px; font-size: .95rem; font-weight: 600; cursor: pointer; text-align: left; }
+.fv-mndkort span { font-weight: 500; color: var(--dempet); font-size: .86rem; }
+.fv-node.mal::before { background: #f1c265; border-color: #f1c265; width: 14px; height: 14px; left: -26px; top: 18px; }
+.fv-mal { width: 100%; display: flex; gap: 12px; align-items: center; border: 0; text-align: left; cursor: pointer; border-radius: 16px; padding: 14px 15px; color: var(--hero-tekst);
+  background: linear-gradient(165deg, var(--hero-bg), color-mix(in srgb, var(--hero-bg) 70%, #000)); }
+.fv-mal svg { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.fv-mal b { display: block; font-size: 1rem; } .fv-mal small { font-size: .84rem; opacity: .8; }
+/* detaljark */
+.fv-meta { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 12px; }
+.fv-meta span { font-size: .82rem; font-weight: 600; padding: 5px 11px; border-radius: 99px; background: var(--flate2); color: var(--dempet); }
+.fv-meta .fv-frist { background: var(--gul-bg); color: var(--gul); }
+.fv-meta .fv-frist.rod { background: var(--rod-bg); color: var(--rod); }
+.fv-meta .fv-frist.gronn { background: var(--aksent-lys); color: var(--aksent); }
+.fv-arkkn { margin: 14px 0 6px; }
+.fv-arkkn .knapp { width: 100%; min-height: 50px; }
+.fv-arkkn .knapp svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+/* jentenes forside */
+.fv-fakta { --fh: #9b6bff; border-radius: 20px; padding: 16px 16px 14px; margin: 0 0 12px; box-shadow: var(--skygge);
+  background: linear-gradient(160deg, color-mix(in srgb, var(--fh) 22%, var(--flate)) 0%, color-mix(in srgb, var(--fh) 8%, var(--flate)) 100%); border: .5px solid color-mix(in srgb, var(--fh) 35%, var(--linje)); }
+.fv-fakta[data-tema="shopping"] { --fh: #1fa99a; } .fv-fakta[data-tema="sminke"] { --fh: #e0579b; } .fv-fakta[data-tema="handball"] { --fh: #f08a3c; }
+.fv-fakta[data-tema="mote"] { --fh: #c9a227; } .fv-fakta[data-tema="mat"] { --fh: #e5604f; } .fv-fakta[data-tema="dyr"] { --fh: #4caf50; }
+.fv-fakta[data-tema="tiktok"] { --fh: #3aa0e8; } .fv-fakta[data-tema="film"] { --fh: #7a7fe8; } .fv-fakta[data-tema="rare"] { --fh: #b07ad6; }
+.fv-fkat { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: color-mix(in srgb, var(--fh) 70%, var(--tekst)); }
+.fv-fkat i { width: 8px; height: 8px; border-radius: 50%; background: var(--fh); }
+.fv-ft { font-size: 1.1rem; line-height: 1.38; font-weight: 600; margin: 10px 0 12px; letter-spacing: -.01em; }
+.fv-fakta.kompakt .fv-ft { font-size: 1rem; }
+.fv-fbunn { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .8rem; color: var(--dempet); }
+.fv-fbunn a { color: inherit; }
+.fv-ny { border: 0; cursor: pointer; flex: none; font-weight: 650; font-size: .86rem; padding: 8px 12px; border-radius: 99px; color: color-mix(in srgb, var(--fh) 60%, var(--tekst)); background: color-mix(in srgb, var(--fh) 18%, transparent); }
+.fv-ord { display: flex; align-items: center; gap: 12px; }
+.fv-ord > div { flex: 1; }
+.fv-eyebrow2 { font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--dempet); margin-bottom: 3px; }
+.fv-vi { font-size: 1.45rem; font-weight: 720; letter-spacing: -.015em; }
+.fv-no { font-size: .86rem; color: var(--dempet); }
+.fv-lyd { width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--aksent-lys); color: var(--aksent); display: grid; place-items: center; cursor: pointer; flex: none; }
+.fv-lyd .hikon { width: 24px; height: 24px; }
+.fv-mine h2 { font-size: 1.06rem; font-weight: 650; margin-bottom: 4px; }
+.fv-pakkrad { display: flex; gap: 12px; align-items: center; padding: 11px 0 3px; border-top: .5px solid var(--linje); color: var(--tekst); text-decoration: none; }
+.fv-temaer { display: flex; flex-wrap: wrap; gap: 9px; margin: 6px 0 4px; }
+.fv-temaer button { display: inline-flex; align-items: center; gap: 7px; font-size: .98rem; font-weight: 600; padding: 11px 14px; border-radius: 14px; background: var(--flate); border: 1.5px solid var(--linje); color: var(--tekst); cursor: pointer; }
+.fv-temaer button small { font-size: .74rem; color: var(--dempet); font-weight: 600; }
+.fv-temaer button.p { border-color: #9b6bff; background: color-mix(in srgb, #9b6bff 16%, var(--flate)); }
+.fv-hake { width: 18px; height: 18px; border-radius: 50%; background: #9b6bff; display: grid; place-items: center; }
+.fv-hake svg { width: 12px; height: 12px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
+.fv-temaknapp .knapp { width: 100%; }
+.fv-tomfakta .knapper { margin-top: 4px; }
+/* reisebingo */
+.fv-bingorad { display: flex; gap: 12px; align-items: center; color: var(--tekst); text-decoration: none; }
+.fv-bgikon { width: 40px; height: 40px; flex: none; display: grid; grid-template-columns: 1fr 1fr; gap: 3px; padding: 7px; border-radius: 12px; background: var(--aksent-lys); }
+.fv-bgikon i { border-radius: 3px; background: var(--aksent); opacity: .85; } .fv-bgikon i:nth-child(2), .fv-bgikon i:nth-child(3) { opacity: .35; }
+.fv-bghode { display: flex; flex-direction: column; margin: 0 4px 10px; } .fv-bghode b { font-size: 1.1rem; } .fv-bghode span { font-size: .84rem; color: var(--dempet); }
+.fv-bgvinner { background: var(--gul-bg); border: .5px solid var(--gul-linje); color: var(--gul); font-weight: 700; border-radius: 14px; padding: 10px 13px; margin: 0 0 10px; }
+.fv-bgstilling { display: flex; gap: 8px; margin: 0 0 12px; flex-wrap: wrap; }
+.fv-bgstilling button { flex: 1; min-width: 30%; display: flex; justify-content: space-between; align-items: center; gap: 6px; border: .5px solid var(--linje); background: var(--flate); color: var(--tekst); border-radius: 14px; padding: 10px 12px; font-size: .95rem; font-weight: 600; cursor: pointer; }
+.fv-bgstilling button.p { border-color: var(--aksent); box-shadow: 0 0 0 1px var(--aksent) inset; }
+.fv-bgstilling b { font-size: 1.3rem; font-weight: 760; margin-left: auto; }
+.fv-bgstilling em { font-style: normal; font-size: .64rem; font-weight: 800; letter-spacing: .06em; color: var(--gul); }
+.fv-bgse { margin: -4px 4px 10px; }
+.fv-brett { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin: 0 0 12px; }
+.fv-brett button { aspect-ratio: 1; border-radius: 12px; background: var(--flate); border: .5px solid var(--linje); font-size: .72rem; line-height: 1.2; font-weight: 600; color: var(--tekst); padding: 4px; cursor: pointer; position: relative; overflow: hidden; overflow-wrap: anywhere; hyphens: auto; -webkit-hyphens: auto; }
+.fv-brett button.x { background: var(--aksent-lys); border-color: var(--aksent); color: var(--aksent); }
+.fv-brett button.x::after { content: ""; position: absolute; top: 5px; right: 5px; width: 12px; height: 12px; border-radius: 50%; background: var(--aksent); }
+.fv-brett button.linje { background: var(--gul-bg); border-color: var(--gul); color: var(--gul); }
+.fv-brett button.linje::after { background: var(--gul); }
+.fv-brett.les button { cursor: default; } .fv-brett button:disabled { opacity: 1; }
+.fv-bginv { background: var(--flate); border: .5px solid var(--linje); border-radius: 14px; padding: 12px 14px; margin: 0 0 12px; font-size: .92rem; }
+.fv-bginv .knapper { margin-top: 8px; }
+.fv-bgny .knapp { width: 100%; } .fv-bgny .knapp svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
+.fv-bghist div { display: flex; flex-wrap: wrap; gap: 4px 8px; align-items: baseline; padding: 8px 0; border-top: .5px solid var(--linje); font-size: .92rem; }
+.fv-bghist div:first-child { border-top: 0; } .fv-bghist div > span:last-child { margin-left: auto; color: var(--dempet); }
+/* dagens beste */
+.fv-dbl { font-size: .95rem; }
+.fv-dbny { display: flex; gap: 8px; margin-top: 6px; }
+.fv-dbny input { flex: 1; min-width: 0; min-height: 44px; border-radius: 12px; border: .5px solid var(--linje); background: var(--bg); color: var(--tekst); padding: 8px 12px; font: inherit; font-size: 16px; }
+.fv-merk p { font-size: .92rem; line-height: 1.5; margin: 0 0 10px; }

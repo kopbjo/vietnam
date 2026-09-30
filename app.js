@@ -5,9 +5,9 @@
   if (window.top !== window.self) { document.documentElement.innerHTML = ""; return; } // skal ikke kunne vises inni en annen side
   const $ = (s, r = document) => r.querySelector(s);
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
-  const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk" };
+  const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 43, tid: "2026-09-29 kl. 22:10" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 44, tid: "2026-10-01 kl. 00:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -775,22 +775,16 @@
 
   function sideIdag() {
     const idag = idagISO(), s0 = start(), s1 = slutt();
+    if (idag < s0 && !dagModus) return sideHjemme(); // før avreise: forsiden (v44) – «Se ferien dag for dag» åpner dag 1
     if (!valgtDag) { const sd = sistDag(); valgtDag = sd || (idag < s0 ? s0 : idag > s1 ? s1 : idag); }
     const d = valgtDag, erIdag = d === idag;
     lagre.set(LS.sistDag, JSON.stringify({ dag: d, sett: idag }));
     const navn = megNavn(), reise = idag >= s0 && idag <= s1;
     IDET = {};
     let h = hjemskjermHtml();
-    if (!reise) h += `<p class="hei">${navn ? `Hei, ${esc(navn)}!` : "Hei!"}</p>` + klokkeHtml();
-    if (idag < s0) {
-      const n = mellom(idag, s0);
-      h += `<section class="kort nedtelling"><h2>${n} ${n === 1 ? "dag" : "dager"} til avreise</h2></section>`;
-      // Oppgaver før første reisedag (f.eks. innsjekk på nett) vises de siste to ukene før avreise
-      const forAvreise = D.hendelser.filter((e) => e.oppgave && e.d >= idag && e.d < s0 && mellom(idag, e.d) <= 14).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : minutter(a.t) - minutter(b.t)));
-      if (forAvreise.length) h += `<section class="kort advarsel huskkort"><h2>${ikon("advarsel")}Husk før avreise</h2>${forAvreise.map((e) => huskRad(e, "div", true)).join("")}</section>`;
-    }
+    if (idag > s1) h += `<p class="hei">${navn ? `Hei, ${esc(navn)}!` : "Hei!"}</p>` + klokkeHtml();
     h += `<div class="dagnav">
-      <button class="pilknapp" data-dag="-1" aria-label="Forrige dag" ${d <= s0 ? "disabled" : ""}>${ikon("venstre", "")}</button>
+      ${idag < s0 && d <= s0 ? `<button class="pilknapp fv-hjemknapp" data-hjemme aria-label="Tilbake til forsiden">${ikon("venstre", "")}<span>Hjemme</span></button>` : `<button class="pilknapp" data-dag="-1" aria-label="Forrige dag" ${d <= s0 ? "disabled" : ""}>${ikon("venstre", "")}</button>`}
       <div class="dagtittel"><b>${esc(pen(d))}</b><span>${erIdag ? "I dag" : `Dag ${mellom(s0, d) + 1} av ${mellom(s0, s1) + 1}`}</span>
         ${!erIdag && idag >= s0 && idag <= s1 ? `<br><button class="idagknapp" data-dag="0">Gå til i dag</button>` : ""}</div>
       <button class="pilknapp" data-dag="1" aria-label="Neste dag" ${d >= s1 ? "disabled" : ""}>${ikon("hoyre", "")}</button></div>`;
@@ -835,6 +829,7 @@
     const sId = sted && sted.id, antIde = sId && D.ideer[sId] ? D.ideer[sId].length : 0, antMat = sId ? D.restauranter.liste.filter((r) => r.sted === sId).length : 0;
     const fri = !!sted && !hend.some((e) => !e.oppgave) && !egne.some((a) => a.type !== "mote") && (antIde || antMat || resort);
 
+    if (d === s0 && idag >= s0) h += fvIgjenLinje();
     const betal = betalIdag(d, hend, utH, natt);
     if (betal.length) h += `<div class="betaldag">${ikon("penger")}<div><b>Betale i dag</b>${betal.map((l) => `<div>${md(l)}</div>`).join("")}</div></div>`;
 
@@ -913,6 +908,8 @@
       const prog = D.resortProgram[String(ukedag(d))] || [];
       h += `<details class="fold" id="resortprog"><summary>${ikon("kalender")}På resortet <span class="antall">(${esc(DAGER[ukedag(d)])})</span></summary><div class="innhold"><ul class="program">${prog.map((p) => `<li>${esc(p)}</li>`).join("")}</ul><p class="krolle" style="margin-top:8px">Fra resortets aktivitetskalender – kan endres etter vær.</p></div></details>`;
     } else if (fri && resort) h += `<p class="krolle resortkilde">Resortets aktivitetskalender – kan endres etter vær.</p>`;
+    if (reise && d <= idag) h += dagensBesteHtml(d);
+    if (reise && erBarn()) h += faktaKort(true) + bingoRad();
     return h + bunn();
   }
 
@@ -1461,7 +1458,7 @@
     return S.tilst;
   }
   const synkLagre = () => lagre.set(LS.synk, JSON.stringify(synkLes()));
-  const postNokkel = (p) => JSON.stringify(p.k === "x" ? ["x", p.r, p.l, p.n] : p.k === "n" ? ["n", p.r, p.l] : p.k === "e" ? ["e", p.id] : p.k === "a" ? ["a", p.id] : p.k === "u" ? ["u", p.id] : ["l", p.l]);
+  const postNokkel = (p) => JSON.stringify(p.k === "x" ? ["x", p.r, p.l, p.n] : p.k === "n" ? ["n", p.r, p.l] : p.k === "e" ? ["e", p.id] : p.k === "a" ? ["a", p.id] : p.k === "u" ? ["u", p.id] : p.k === "b" ? ["b", p.id] : p.k === "d" ? ["d", p.id] : ["l", p.l]);
   function synkSett(p) {
     const s = synkLes(), k = postNokkel(p);
     p.t = Math.max(Date.now(), ((s.p[k] || {}).t || 0) + 1);
@@ -1583,7 +1580,7 @@
   function synkOppdaterVisning() {
     tpOppdater();
     const nyOppd = oppdFornyVedEndring();
-    if ((!nyOppd && !["pakk", "idag", "sted", "claude"].includes(rute().side)) || pakkRediger || pakkNy !== null || !$("#overlay").hidden) return;
+    if ((!nyOppd && !["pakk", "idag", "sted", "claude", "for", "bingo"].includes(rute().side)) || pakkRediger || pakkNy !== null || !$("#overlay").hidden) return;
     const f = document.activeElement; if (f && f.matches && f.matches("input,textarea")) return;
     const y = window.scrollY; vis(); window.scrollTo(0, y);
   }
@@ -2304,6 +2301,396 @@
     return h + bunn();
   }
 
+  // ---------- FØR VI DRAR (v44): forside hjemme, hele oppgavelista (liste eller «Veien til Vietnam») og detaljark ----------
+  // Oppgavene kommer fra reiseinfoen (D.forReise, lest fra huskelista) + oppgaver i programmet før første reisedag.
+  // Kryss deles som husk-kryss ({k:"x", r:"husk", l:"felles", n}). Før avreise viser «I dag» forsiden; «Se ferien dag for dag» åpner dag 1.
+  let dagModus = false, FV = [], fvFilter = "alle", fvApne = {};
+  const MND_LANG = ["januar", "februar", "mars", "april", "mai", "juni", "juli", "august", "september", "oktober", "november", "desember"];
+  const KARST = '<svg class="fv-karst" viewBox="0 0 220 90" aria-hidden="true"><path d="M0 90V70c8-2 10-20 18-22s10 18 16 16 6-34 16-36 10 30 16 30 8-14 14-14 6 22 14 22 6-44 18-46 12 40 18 42 8-10 14-10 6 16 12 16 8-26 16-28 10 24 16 24 8-6 12-6v42Z"/></svg>';
+  const erBarn = () => { const m = meg(); if (!m || !D) return false; const F = famOppsett(); return !!F && D.personer.some((p) => p.id === m) && !F.voksne.includes(m); };
+  const voksneIds = () => { const F = famOppsett(); return F ? F.voksne : D.personer.map((p) => p.id); };
+  const barnIds = () => D.personer.map((p) => p.id).filter((i) => !voksneIds().includes(i));
+  function fvOppg() {
+    const s0 = start();
+    const f4 = ((D.forReise || {}).oppg || []).map((o) => ({ ...o, key: o.id }));
+    const hend = D.hendelser.filter((e) => e.oppgave && e.d < s0).map((e) => ({ key: oppgNokkel(e), t: e.tittel, f: kort(e.d) + (e.t && e.t !== "kveld" ? " kl. " + e.t : ""), d: e.d, a: voksneIds(), s: "", m: e.merk || "", hend: e }));
+    return [...f4, ...hend].sort((a, b) => (a.d || "9") < (b.d || "9") ? -1 : (a.d || "9") > (b.d || "9") ? 1 : 0);
+  }
+  const fvGjort = (o) => huskLes()[o.key];
+  function fvTall(L) {
+    const g = L.filter((o) => fvGjort(o)).length, forr = (D.forReise && D.forReise.gjort) || 0;
+    return { apne: L.length - g, gjort: forr + g, total: forr + L.length };
+  }
+  const fvHvem = (o) => { const a = o.a || []; if (!a.length) return ""; if (a.length === D.personer.length) return "Alle fire"; return a.map(personNavn).filter(Boolean).join(", "); };
+  const fvFrist = (o, lang) => {
+    const idag = idagISO(), g = fvGjort(o);
+    if (!o.d) return `<span class="fv-frist">${esc(o.f || "Før avreise")}</span>`;
+    const forfalt = !g && o.d < idag, tekst = (lang ? pen(o.d) : kort(o.d)) + (o.avt ? " · time avtalt" : "");
+    return `<span class="fv-frist${forfalt ? " rod" : o.avt ? " gronn" : ""}">${forfalt ? "Frist var " : ""}${esc(tekst)}</span>`;
+  };
+  function fvMatch(o) {
+    const a = o.a || [];
+    if (fvFilter === "meg") return a.includes(meg());
+    if (fvFilter === "barn") return a.some((i) => barnIds().includes(i));
+    if (fvFilter !== "alle") return a.includes(fvFilter);
+    return true;
+  }
+  // ---- forsiden hjemme ----
+  function fvHero(n) {
+    const s0 = start(), f0 = D.fly.find((f) => f.d === s0) || D.fly[0];
+    const rute = (D.meta && D.meta.rute) || D.steder.filter((s) => s.fra > s0 && s.til < slutt()).map((s) => [s.navn, 1]);
+    return `<section class="fv-hero" data-ferien role="button" tabindex="0" aria-label="Se ferien dag for dag">${KARST}
+      <div class="fv-eyebrow">Vietnam · ${esc(pen(s0))}</div>
+      <div class="fv-tall">${n}<small>${n === 1 ? "dag" : "dager"} igjen</small></div>
+      ${f0 ? `<div class="fv-under">${esc(f0.id)} fra ${esc(f0.fra)} kl. ${esc(f0.dep)}</div>` : ""}
+      <div class="fv-rute">${rute.map(([navn, vn]) => `<span class="${vn ? "vn" : ""}"><i></i>${esc(navn)}</span>`).join("")}</div>
+      <span class="fv-pille">Se ferien dag for dag${ikon("chev", "")}</span></section>`;
+  }
+  function fvKlokker() {
+    return `<div class="fv-klokker">${SONER.map(([navn, tz]) => { const k = klokkeData(tz);
+      return `<div class="fv-kl km${k.natt ? " natt" : ""}" data-sone="${tz}"><span>${navn}${tz === TZ && k.natt ? " · natt" : ""}</span><b class="ktid">${esc(k.tid)}</b></div>`; }).join("")}</div>`;
+  }
+  function fvDatoFlis(o) {
+    const idag = idagISO();
+    if (!o.d) return `<div class="fv-dato"><b>–</b><span>før</span></div>`;
+    const d = tilDato(o.d), rod = o.d < idag;
+    return `<div class="fv-dato${rod ? " rod" : o.d <= pluss(idag, 14) ? " gul" : ""}"><b>${d.getUTCDate()}</b><span>${MND[d.getUTCMonth()]}</span></div>`;
+  }
+  function fvForsideKort() {
+    const L = fvOppg(); FV = L;
+    const T = fvTall(L), apne = L.filter((o) => !fvGjort(o)), idag = idagISO();
+    const mnd = apne.filter((o) => o.d && o.d.slice(0, 7) === idag.slice(0, 7)).length;
+    const pst = T.total ? Math.round((T.gjort / T.total) * 100) : 0;
+    const rader = apne.slice(0, 3).map((o) => `<div class="fv-rad" data-fv="${L.indexOf(o)}" role="button" tabindex="0">${fvDatoFlis(o)}<div class="fv-tekst"><div class="fv-t">${md(o.t)}</div>${fvHvem(o) ? `<div class="fv-m"><span class="fv-hvem">${esc(fvHvem(o))}</span></div>` : ""}</div><span class="fv-pil">${ikon("chev", "")}</span></div>`).join("");
+    return `<section class="kort fv-kort"><div class="fv-hode"><h2>Før vi drar</h2><a href="#/for">Se alle ${T.apne} ›</a></div>
+      <div class="fv-bar"><i style="width:${pst}%"></i></div>
+      <div class="fv-frem"><span><b>${T.gjort}</b> av ${T.total} gjort</span><span>${mnd ? `${mnd} i ${MND_LANG[Number(idag.slice(5, 7)) - 1]}` : ""}</span></div>
+      ${rader || `<p class="krolle">Alt er gjort. God tur!</p>`}</section>`;
+  }
+  function sideHjemme() {
+    const idag = idagISO(), s0 = start(), n = mellom(idag, s0), navn = megNavn(), barn = erBarn();
+    IDET = {};
+    let h = hjemskjermHtml();
+    h += `<p class="hei">${navn ? `Hei, ${esc(navn)}!` : "Hei!"}</p>` + fvHero(n);
+    if (barn) h += faktaKort() + ordKort() + mineTingKort() + bingoRad();
+    else h += fvKlokker() + fvForsideKort();
+    return h + bunn();
+  }
+  // Én gang på dag 1: ting fra «Før vi drar» som ikke er krysset av
+  function fvIgjenLinje() {
+    const n = fvOppg().filter((o) => !fvGjort(o)).length;
+    return n ? `<a class="fv-igjen" href="#/for">${ikon("advarsel", "")}<span>${n} ${n === 1 ? "ting" : "ting"} fra «Før vi drar» er ikke krysset av</span>${ikon("chev", "")}</a>` : "";
+  }
+  // ---- hele lista ----
+  function fvRadHtml(o, i) {
+    const g = fvGjort(o);
+    return `<div class="fv-lrad${g ? " gjort" : ""}" data-fv="${i}" role="button" tabindex="0"><label class="fv-boks" aria-label="Gjort"><input type="checkbox" data-husk="${esc(o.key)}" ${g ? "checked" : ""}><span></span></label>
+      <div class="fv-tekst"><div class="fv-t">${md(o.t)}</div><div class="fv-m">${fvFrist(o)}${fvHvem(o) ? ` · ${esc(fvHvem(o))}` : ""}${o.s && /pågår|avgjøres/i.test(o.s) ? ` · <i>${esc(o.s.toLowerCase())}</i>` : ""}</div></div></div>`;
+  }
+  function sideFor() {
+    const L = fvOppg(); FV = L;
+    const T = fvTall(L), idag = idagISO(), m = meg(), barn = erBarn();
+    const vis2 = lagre.get(LS.forVis) === "veien" ? "veien" : "liste";
+    const tell = (f) => { const x = fvFilter; fvFilter = f; const n = L.filter((o) => !fvGjort(o) && fvMatch(o)).length; fvFilter = x; return n; };
+    const chips = [["alle", "Alle"]];
+    if (m && D.personer.some((p) => p.id === m)) chips.push(["meg", `Mine (${tell("meg")})`]);
+    if (!barn) { for (const id of voksneIds()) if (id !== m) chips.push([id, `${personNavn(id)} (${tell(id)})`]); if (barnIds().length) chips.push(["barn", `Jentene (${tell("barn")})`]); }
+    if (!chips.some((c) => c[0] === fvFilter)) fvFilter = "alle";
+    let h = tittel("Før vi drar", `<b>${T.gjort}</b> av ${T.total} gjort · <b>${T.apne}</b> igjen`);
+    h += `<div class="fv-seg" role="tablist"><button data-fvvis="liste" class="${vis2 === "liste" ? "p" : ""}" aria-selected="${vis2 === "liste"}">Liste</button><button data-fvvis="veien" class="${vis2 === "veien" ? "p" : ""}" aria-selected="${vis2 === "veien"}">Veien til Vietnam</button></div>`;
+    h += `<div class="fv-chips">${chips.map(([k, t]) => `<button data-fvfilter="${esc(k)}" class="${fvFilter === k ? "p" : ""}">${esc(t)}</button>`).join("")}</div>`;
+    const V = L.map((o, i) => ({ o, i })).filter((x) => fvMatch(x.o));
+    const apne = V.filter((x) => !fvGjort(x.o)), gjorte = V.filter((x) => fvGjort(x.o));
+    if (vis2 === "liste") {
+      const grupper = [];
+      const forfalt = apne.filter((x) => x.o.d && x.o.d < idag);
+      if (forfalt.length) grupper.push(["Frist passert", forfalt, "rod"]);
+      const mnd = {};
+      for (const x of apne) if (x.o.d && x.o.d >= idag) (mnd[x.o.d.slice(0, 7)] = mnd[x.o.d.slice(0, 7)] || []).push(x);
+      for (const k of Object.keys(mnd).sort()) grupper.push([stor1(MND_LANG[Number(k.slice(5, 7)) - 1]), mnd[k], ""]);
+      const udatert = apne.filter((x) => !x.o.d);
+      if (udatert.length) grupper.push(["Når som helst før avreise", udatert, ""]);
+      h += grupper.map(([t, xs, k]) => `<div class="fv-gtittel ${k}"><h3>${esc(t)}</h3><span>${xs.length}</span></div><div class="fv-gruppe">${xs.map((x) => fvRadHtml(x.o, x.i)).join("")}</div>`).join("") || `<p class="tom">Ingenting igjen her.</p>`;
+    } else h += fvVeien(apne, gjorte.length);
+    if (gjorte.length) h += `<details class="fold fv-gjortfold"><summary>${ikon("bestilt")}Krysset av i appen <span class="antall">(${gjorte.length})</span></summary><div class="innhold"><div class="fv-gruppe">${gjorte.map((x) => fvRadHtml(x.o, x.i)).join("")}</div></div></details>`;
+    h += `<p class="krolle fv-kilde">Lista kommer fra «${esc((D.forReise && D.forReise.kilde) || "huskelista")}». Det som krysses av, vises for hele familien og flyttes til «Gjort» ved neste oppdatering.</p>`;
+    return h + bunn();
+  }
+  // «Veien til Vietnam»: nå-strek, frister på datoen, måneder langt fram er lukket, avreisen som mål
+  function fvVeien(apne, antGjort) {
+    const idag = idagISO(), s0 = start(), grense = pluss(idag, 35);
+    let h = `<div class="fv-linje">`;
+    if (antGjort || (D.forReise && D.forReise.gjort)) h += `<div class="fv-gjortlinje">${ikon("bestilt", "")}${((D.forReise && D.forReise.gjort) || 0) + antGjort} ting er gjort</div>`;
+    const node = (d, xs, kl = "") => `<div class="fv-node ${kl}"><div class="fv-nd">${esc(d)}</div>${xs.map((x) => `<div class="fv-nkort" data-fv="${x.i}" role="button" tabindex="0"><label class="fv-boks" aria-label="Gjort"><input type="checkbox" data-husk="${esc(x.o.key)}"><span></span></label><div><div class="fv-t">${md(x.o.t)}</div><div class="fv-m">${x.o.avt ? `<span class="fv-frist gronn">time avtalt</span>${fvHvem(x.o) ? " · " : ""}` : ""}${esc(fvHvem(x.o))}</div></div></div>`).join("")}</div>`;
+    const forfalt = apne.filter((x) => x.o.d && x.o.d < idag);
+    if (forfalt.length) h += node("Frist passert", forfalt, "rod");
+    h += `<div class="fv-naa"><i></i>I dag · ${esc(pen(idag))}</div>`;
+    const dager = {};
+    for (const x of apne) if (x.o.d && x.o.d >= idag) (dager[x.o.d] = dager[x.o.d] || []).push(x);
+    const mndVist = {};
+    for (const d of Object.keys(dager).sort()) {
+      const mk = d.slice(0, 7);
+      if (d > grense && !fvApne[mk]) {
+        if (mndVist[mk]) continue; mndVist[mk] = 1;
+        const ant = Object.keys(dager).filter((x) => x.startsWith(mk) && x > grense).reduce((s, x) => s + dager[x].length, 0);
+        const navn = stor1(MND_LANG[Number(mk.slice(5, 7)) - 1]);
+        h += `<div class="fv-node mnd"><button class="fv-mndkort" data-fvmnd="${mk}">${esc(mndVist[mk] && Object.keys(dager).some((x) => x.startsWith(mk) && x <= grense) ? "Resten av " + navn.toLowerCase() : navn)}<span>${ant} ${ant === 1 ? "ting" : "ting"} ›</span></button></div>`;
+        continue;
+      }
+      const xs = dager[d];
+      h += node(stor1(pen(d)) + (xs.length > 2 ? ` · ${xs.length} frister` : ""), xs, d <= pluss(idag, 14) ? "gul" : xs.some((x) => x.o.avt) ? "avt" : "");
+    }
+    const udatert = apne.filter((x) => !x.o.d);
+    if (udatert.length) h += node("Når som helst før avreise", udatert);
+    h += `<div class="fv-node mal"><button class="fv-mal" data-ferien>${ikon("reise", "")}<span><b>${esc(stor1(pen(s0)))} · Avreise</b><small>Trykk for å se dag 1</small></span></button></div></div>`;
+    return h;
+  }
+  // ---- detaljark ----
+  function visFvArk(i) {
+    const o = FV[i]; if (!o) return;
+    const g = fvGjort(o), hvem = g ? personNavn(g.hvem) : "";
+    const naar = g ? new Date(g.t).toLocaleString("nb-NO", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
+    const f = o.hend && o.hend.fly ? flyEtterId(o.hend.fly) : null;
+    const avsnitt = String(o.m || "").split(/\s+\/\s+/).filter(Boolean).map((x) => `<p>${md(x)}</p>`).join("");
+    const inn = `<div class="ark-etikett">Før vi drar${o.d ? " · frist " + esc(pen(o.d)) : ""}</div><h2>${md(o.t)}</h2>
+      <div class="fv-meta">${fvFrist(o, true)}${fvHvem(o) ? `<span>${esc(fvHvem(o))}</span>` : ""}${o.s && /pågår|avgjøres/i.test(o.s) ? `<span>${esc(o.s)}</span>` : ""}</div>
+      <div class="fv-merk">${avsnitt}</div>${f && f.innsjekk ? `<div class="knapper">${knapp("web", f.innsjekk.url, "Sjekk inn nå")}<button class="ref" data-kopier="${esc(f.ref)}">Ref. ${esc(f.ref)}</button></div>` : ""}
+      <div class="fv-arkkn"><button class="knapp${g ? " knapp-lys" : ""}" data-fvgjort="${i}">${g ? "Ikke gjort likevel" : `${ikon("bestilt", "")}Marker som gjort`}</button></div>
+      ${g ? `<p class="krolle">Gjort${hvem ? " av " + esc(hvem) : ""} · ${esc(naar)}</p>` : ""}
+      <p class="krolle fv-kilde">${o.hend ? "Fra reiseplanen" : `Fra «${esc((D.forReise && D.forReise.kilde) || "huskelista")}»`} · krysset vises for hele familien</p>`;
+    const ov = $("#overlay");
+    ov.className = "overlay ark";
+    ov.innerHTML = `<div class="ark-flate" role="dialog" aria-modal="true"><div class="ark-topp"><span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div>${inn}</div>`;
+    ov.hidden = false; ov.scrollTop = 0;
+  }
+  const tilDag1 = () => { dagModus = true; valgtDag = start(); if (rute().side !== "idag") location.hash = "#/idag"; else vis(); window.scrollTo(0, 0); };
+  const tilHjemme = () => { dagModus = false; valgtDag = null; if (rute().side !== "idag") location.hash = "#/idag"; else vis(); window.scrollTo(0, 0); };
+  document.addEventListener("click", (e) => {
+    if (!D || !e.target.closest) return;
+    const fane = e.target.closest(".faner a[data-fane='idag']");
+    if (fane) { dagModus = false; valgtDag = null; if (rute().side === "idag") { e.preventDefault(); vis(); window.scrollTo(0, 0); } return; }
+    if (e.target.closest("[data-ferien]")) { e.preventDefault(); tilDag1(); return; }
+    if (e.target.closest("[data-hjemme]")) { e.preventDefault(); tilHjemme(); return; }
+    const t = e.target.closest("[data-fvvis],[data-fvfilter],[data-fvmnd],[data-fvgjort]");
+    if (t) {
+      e.preventDefault();
+      if (t.dataset.fvvis) { lagre.set(LS.forVis, t.dataset.fvvis); vis(); }
+      else if (t.dataset.fvfilter) { fvFilter = t.dataset.fvfilter; const y = window.scrollY; vis(); window.scrollTo(0, y); }
+      else if (t.dataset.fvmnd) { fvApne[t.dataset.fvmnd] = 1; const y = window.scrollY; vis(); window.scrollTo(0, y); }
+      else if (t.dataset.fvgjort) {
+        const o = FV[Number(t.dataset.fvgjort)]; if (!o) return;
+        const v = fvGjort(o) ? 0 : 1;
+        synkSett({ k: "x", r: "husk", l: "felles", n: o.key, v, hvem: meg() || "" });
+        lukkOverlay(); const y = window.scrollY; vis(); window.scrollTo(0, y);
+        if (v) toastAngre("Gjort – vises for hele familien", () => { synkSett({ k: "x", r: "husk", l: "felles", n: o.key, v: 0, hvem: meg() || "" }); vis(); window.scrollTo(0, y); });
+        else toast("Markert som ikke gjort");
+      }
+      return;
+    }
+    const r = e.target.closest("[data-fv]");
+    if (!r || !r.closest("main") || e.target.closest("a,label,input,button:not([data-fv])")) return;
+    e.preventDefault(); visFvArk(Number(r.dataset.fv));
+  });
+  document.addEventListener("keydown", (e) => {
+    if (!(e.key === "Enter" || e.key === " ") || !e.target.matches) return;
+    if (e.target.matches("[data-fv]")) { e.preventDefault(); visFvArk(Number(e.target.dataset.fv)); }
+    else if (e.target.matches("section[data-ferien]")) { e.preventDefault(); tilDag1(); }
+  });
+
+  // ---------- JENTENES FORSIDE (v44): fakta fra egne temaer, dagens ord, egne ting ----------
+  // Temaer og hvilke fakta som er sett, lagres per person på telefonen (vn.tema.<id>, vn.fakta.<id>).
+  let faktaNyVed = true, skjultFra = 0;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") skjultFra = Date.now();
+    else if (skjultFra && Date.now() - skjultFra > 5 * 60e3) faktaNyVed = true; // ny fakta når appen åpnes igjen
+  });
+  const lesJson = (k, std) => { try { const v = JSON.parse(lagre.get(k) || "null"); return v == null ? std : v; } catch { return std; } };
+  const faktaTema = () => { const v = lesJson(LS.tema + "." + meg(), null); return Array.isArray(v) ? v : null; };
+  const temaNavn = (k) => ((D.temaer || []).find((t) => t.k === k) || {}).navn || k;
+  function faktaVelg(tving) {
+    const tema = faktaTema(); if (!tema || !tema.length || !(D.fakta || []).length) return null;
+    const L = D.fakta.filter((f) => tema.includes(f.k)); if (!L.length) return null;
+    const nk = LS.fakta + "." + meg(), st = lesJson(nk, { s: [], n: "" });
+    const naa = L.find((f) => f.id === st.n);
+    if (naa && !tving && !faktaNyVed) return { f: naa, L, st };
+    let sett = new Set(st.s || []);
+    let igjen = L.filter((f) => !sett.has(f.id) && f.id !== st.n);
+    if (!igjen.length) { for (const f of L) sett.delete(f.id); igjen = L.filter((f) => f.id !== st.n); } // alle sett: begynn på nytt
+    const tIgjen = [...new Set(igjen.map((f) => f.k))], k = tIgjen[Math.floor(Math.random() * tIgjen.length)];
+    const blant = igjen.filter((f) => f.k === k), f = blant[Math.floor(Math.random() * blant.length)];
+    sett.add(f.id); faktaNyVed = false;
+    const ny = { s: [...sett], n: f.id, t: Date.now() }; lagre.set(nk, JSON.stringify(ny));
+    return { f, L, st: ny };
+  }
+  function faktaKort(kompakt) {
+    const x = faktaVelg(false);
+    if (!x) return `<section class="kort fv-tomfakta"><h2>Hva liker du?</h2><p class="krolle">Velg temaer, så får du en ny fakta hver gang du åpner appen.</p><div class="knapper"><a class="kb tel" href="#/tema">${ikon("stjerne", "")}Velg temaer</a></div></section>`;
+    const n = x.L.filter((f) => x.st.s.includes(f.id)).length;
+    return `<section class="fv-fakta${kompakt ? " kompakt" : ""}" data-tema="${esc(x.f.k)}"><div class="fv-fkat"><i></i>${esc(temaNavn(x.f.k))}</div>
+      <p class="fv-ft">${esc(x.f.t)}</p>
+      <div class="fv-fbunn"><span>${n} av ${x.L.length} sett${x.f.kilde && /^https:/.test(x.f.kilde) ? ` · <a href="${esc(x.f.kilde)}" target="_blank" rel="noopener noreferrer">Kilde</a>` : ""} · <a href="#/tema">Temaer</a></span><button class="fv-ny" data-faktany>↻ Ny fakta</button></div></section>`;
+  }
+  function ordKort() {
+    const F = (D.parlor && D.parlor.fraser) || []; if (!F.length) return "";
+    const i = ((mellom("2026-01-01", idagISO()) % F.length) + F.length) % F.length, x = F[i];
+    return `<section class="kort fv-ord"><div><div class="fv-eyebrow2">Dagens ord</div><div class="fv-vi" lang="vi">${esc(x.vi)}</div><div class="fv-no">${esc(x.no)}</div></div>
+      ${UTTALE ? `<button class="fv-lyd" data-uttale="${i}" aria-label="Hør uttalen">${HOYTTALER}</button>` : ""}</section>`;
+  }
+  function pakkTall(pid) {
+    const g = (egneKart()[pid] || {}).g || pakkOriginal(pid), navn = new Set();
+    for (const gr of g || []) for (const t of gr.ting || []) if (t.navn) navn.add(t.navn);
+    const r = idagISO() < start() ? "hjemme" : "vietnam", kr = (pakkLes()[r] || {})[pid] || {};
+    return { n: [...navn].filter((x) => kr[x]).length, av: navn.size };
+  }
+  function mineTingKort() {
+    const m = meg(), L = fvOppg(); FV = L;
+    const mine = L.map((o, i) => ({ o, i })).filter((x) => (x.o.a || []).includes(m) && !fvGjort(x.o));
+    const p = D.pakking && D.pakking.lister && D.pakking.lister[m] ? pakkTall(m) : null;
+    if (!mine.length && !p) return "";
+    return `<section class="kort fv-mine"><h2>Dine ting</h2>${mine.map((x) => fvRadHtml(x.o, x.i)).join("")}
+      ${p ? `<a class="fv-pakkrad" href="#/pakk"><span class="fv-dato fv-dikon">${ikon("bestilt", "")}</span><span class="fv-tekst"><span class="fv-t">Pakkelista di</span><span class="fv-m">${p.n} av ${p.av} pakket</span></span><span class="fv-pil">${ikon("chev", "")}</span></a>` : ""}</section>`;
+  }
+  function sideTema() {
+    const m = meg();
+    if (!m) return tittel("Hva liker du?") + `<p class="tom">Velg først hvem du er under Mer.</p>` + bunn();
+    const valgt = faktaTema() || [];
+    let h = tittel("Hva liker du?", "", "Velg så mange du vil. Faktaene på forsiden kommer fra det du har valgt – alle er sjekket mot en kilde.");
+    h += `<div class="fv-temaer">${(D.temaer || []).map((t) => { const n = (D.fakta || []).filter((f) => f.k === t.k).length; const p = valgt.includes(t.k);
+      return `<button data-tema="${esc(t.k)}" class="${p ? "p" : ""}" aria-pressed="${p}">${p ? `<span class="fv-hake">${ikon("bestilt", "")}</span>` : ""}${esc(t.navn)}<small>${n}</small></button>`; }).join("")}</div>`;
+    h += `<div class="knapper fv-temaknapp"><a class="knapp" href="#/idag">Ferdig</a></div>`;
+    return h + bunn();
+  }
+  document.addEventListener("click", (e) => {
+    if (!D || !e.target.closest) return;
+    const t = e.target.closest("[data-tema]");
+    if (t && t.tagName === "BUTTON" && rute().side === "tema") {
+      e.preventDefault();
+      const k = t.dataset.tema, v = faktaTema() || [], ny = v.includes(k) ? v.filter((x) => x !== k) : [...v, k];
+      lagre.set(LS.tema + "." + meg(), JSON.stringify(ny)); faktaNyVed = true; const y = window.scrollY; vis(); window.scrollTo(0, y); return;
+    }
+    if (e.target.closest("[data-faktany]")) {
+      e.preventDefault(); const el = e.target.closest(".fv-fakta"), komp = el && el.classList.contains("kompakt");
+      faktaVelg(true); if (el) el.outerHTML = faktaKort(komp);
+    }
+  });
+
+  // ---------- REISEBINGO (v44): brett på 4 × 4 per sted, hver kryss av det hun ser – fire på rad gir bingo ----------
+  // Runde {k:"b", id, sted, brett:[16], med:[id], av, c} · kryss {k:"x", r:"bingo", l:<runde>, n:"<person>|<rute>", v}. Nyeste runde er den som gjelder.
+  const BG_LINJER = [[0, 1, 2, 3], [4, 5, 6, 7], [8, 9, 10, 11], [12, 13, 14, 15], [0, 4, 8, 12], [1, 5, 9, 13], [2, 6, 10, 14], [3, 7, 11, 15], [0, 5, 10, 15], [3, 6, 9, 12]];
+  let bgStart = null, bgSe = null;
+  const bgRunder = () => Object.values(synkLes().p).filter((p) => p.k === "b" && Array.isArray(p.brett)).sort((a, b) => (b.c || 0) - (a.c || 0));
+  function bgKryss(rid) { // { person: { rute: tid } }
+    const o = {};
+    for (const p of Object.values(synkLes().p)) if (p.k === "x" && p.r === "bingo" && p.l === rid && p.v) { const [pid, i] = String(p.n).split("|"); (o[pid] = o[pid] || {})[i] = p.t; }
+    return o;
+  }
+  function bgBingo(k) { // tidspunktet personen fikk bingo (første fulle linje), ellers null
+    let best = null;
+    for (const l of BG_LINJER) if (l.every((i) => k && k[i])) { const t = Math.max(...l.map((i) => k[i])); if (best === null || t < best) best = t; }
+    return best;
+  }
+  const bgStedNavn = (id) => ((D.bingo && D.bingo.steder) || []).find((s) => s.id === id)?.navn || id;
+  function bgStandardSted() {
+    const idag = idagISO(), ids = ((D.bingo && D.bingo.steder) || []).map((s) => s.id);
+    if (idag < start() || idag >= slutt() || D.fly.some((f) => f.d === idag && /Singapore|København/.test(f.fra + f.til))) return "reisen";
+    const s = stedForDato(idag); return s && ids.includes(s.id) ? s.id : "overalt";
+  }
+  function bgNyttBrett(sted) {
+    const B = (D.bingo && D.bingo.steder) || [], s = B.find((x) => x.id === sted) || B[0], all = B.find((x) => x.id === "overalt");
+    const bland = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
+    const egne = bland(s.ting).slice(0, s.id === "overalt" ? 16 : 10), fyll = bland((all ? all.ting : []).filter((x) => !egne.includes(x)));
+    return bland([...egne, ...fyll].slice(0, 16));
+  }
+  function bingoRad() {
+    const r = bgRunder()[0], m = meg();
+    const t = r ? `${esc(bgStedNavn(r.sted))} · ${r.med.includes(m) ? `du har ${Object.keys(bgKryss(r.id)[m] || {}).length} av 16` : "du er ikke med i denne runden"}` : "Kryss av det du ser – fire på rad gir bingo";
+    return `<a class="kort fv-bingorad" href="#/bingo"><span class="fv-bgikon" aria-hidden="true"><i></i><i></i><i></i><i></i></span><span class="fv-tekst"><span class="fv-t">Reisebingo</span><span class="fv-m">${t}</span></span><span class="fv-pil">${ikon("chev", "")}</span></a>`;
+  }
+  function sideBingo() {
+    const m = meg(), R = bgRunder(), r = R[0];
+    let h = tittel("Reisebingo", "Kryss av det du ser. Fire på rad gir bingo.");
+    if (!m) return h + `<p class="tom">Velg først hvem du er under Mer.</p>` + bunn();
+    if (r) {
+      const K = bgKryss(r.id), med = r.med.filter((id) => D.personer.some((p) => p.id === id));
+      const bt = Object.fromEntries(med.map((id) => [id, bgBingo(K[id])]));
+      const vinnerT = Math.min(...med.map((id) => bt[id] ?? Infinity)), vinnere = med.filter((id) => bt[id] === vinnerT);
+      const se = med.includes(bgSe) ? bgSe : med.includes(m) ? m : med[0];
+      const min = se === m;
+      h += `<div class="fv-bghode"><b>${esc(bgStedNavn(r.sted))}</b><span>Startet ${esc(new Date(r.c).toLocaleString("nb-NO", { weekday: "short", day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }))}${r.av ? " av " + esc(personNavn(r.av)) : ""}</span></div>`;
+      if (isFinite(vinnerT)) h += `<div class="fv-bgvinner">BINGO! ${esc(stor1(vinnere.map((id) => (id === m ? "du" : personNavn(id))).join(" og ")))} fikk fire på rad først</div>`;
+      h += `<div class="fv-bgstilling">${med.map((id) => `<button data-bgse="${id}" class="${id === se ? "p" : ""}">${esc(personNavn(id))}<b>${Object.keys(K[id] || {}).length}</b>${bt[id] ? `<em>BINGO</em>` : ""}</button>`).join("")}</div>`;
+      if (!min) h += `<p class="krolle fv-bgse">Du ser brettet til ${esc(personNavn(se))}.${!med.includes(m) ? (erBarn() ? "" : " Du er ikke med i denne runden – jentene kan invitere deg.") : ""}</p>`;
+      const k = K[se] || {}, bl = BG_LINJER.filter((l) => l.every((i) => k[i])).flat();
+      h += `<div class="fv-brett${min ? "" : " les"}">${r.brett.map((x, i) => `<button data-bgrute="${i}" class="${k[i] ? "x" : ""}${bl.includes(i) ? " linje" : ""}" ${min ? "" : "disabled"} aria-pressed="${!!k[i]}">${esc(x)}</button>`).join("")}</div>`;
+      const ikkeMed = D.personer.filter((p) => !med.includes(p.id));
+      if (!med.includes(m) && erBarn()) h += `<div class="knapper"><button class="kb tel" data-bginv="${esc(m)}">Bli med i runden</button></div>`;
+      if (erBarn() && ikkeMed.some((p) => voksneIds().includes(p.id))) h += `<div class="fv-bginv"><span>Vil du ha med en voksen?</span><div class="knapper">${ikkeMed.filter((p) => voksneIds().includes(p.id)).map((p) => `<button class="kb" data-bginv="${esc(p.id)}">Inviter ${esc(p.navn)}</button>`).join("")}</div></div>`;
+    } else h += `<section class="kort"><p class="krolle">Ingen runde er i gang ennå.</p></section>`;
+    h += `<div class="knapper fv-bgny"><button class="knapp" data-bgny>${ikon("pluss", "")}Start ny bingo-runde</button></div>`;
+    const tidl = R.slice(1, 6);
+    if (tidl.length) h += `<div class="seksjonstittel">Tidligere runder</div><section class="kort fv-bghist">${tidl.map((x) => { const K = bgKryss(x.id), bt = x.med.map((id) => [id, bgBingo(K[id])]).filter((y) => y[1]); const min2 = Math.min(...bt.map((y) => y[1]));
+      return `<div><b>${esc(bgStedNavn(x.sted))}</b> <span class="krolle">${esc(new Date(x.c).toLocaleDateString("nb-NO", { day: "numeric", month: "numeric" }))}</span><span>${bt.length ? "Bingo: " + esc(bt.filter((y) => y[1] === min2).map((y) => personNavn(y[0])).join(" og ")) : "Ingen bingo"}</span></div>`; }).join("")}</section>`;
+    return h + bunn();
+  }
+  function visBgStart() {
+    const B = ((D.bingo && D.bingo.steder) || []), m = meg();
+    if (!bgStart) bgStart = { sted: bgStandardSted(), med: [...new Set([...barnIds(), m].filter(Boolean))] };
+    const inn = `<div class="ark-etikett">Reisebingo</div><h2>Ny runde</h2><p class="krolle">Hvor er dere? Brettet lages av ting man ser akkurat der.</p>
+      <div class="fv-chips fv-bgsted">${B.map((s) => `<button data-bgsted="${esc(s.id)}" class="${bgStart.sted === s.id ? "p" : ""}">${esc(s.navn)}</button>`).join("")}</div>
+      <p class="krolle" style="margin-top:14px">Hvem er med?</p>
+      <div class="fv-chips fv-bgmed">${D.personer.map((p) => `<button data-bgmed="${esc(p.id)}" class="${bgStart.med.includes(p.id) ? "p" : ""}">${esc(p.navn)}</button>`).join("")}</div>
+      <div class="fv-arkkn"><button class="knapp" data-bgstart ${bgStart.med.length ? "" : "disabled"}>Start runden</button></div>
+      <p class="krolle fv-kilde">Den forrige runden avsluttes og legges under «Tidligere runder».</p>`;
+    const ov = $("#overlay"); ov.className = "overlay ark";
+    ov.innerHTML = `<div class="ark-flate" role="dialog" aria-modal="true"><div class="ark-topp"><span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div>${inn}</div>`;
+    ov.hidden = false;
+  }
+  document.addEventListener("click", (e) => {
+    if (!D || !e.target.closest) return;
+    const t = e.target.closest("[data-bgny],[data-bgsted],[data-bgmed],[data-bgstart],[data-bgrute],[data-bginv],[data-bgse]");
+    if (!t) return;
+    e.preventDefault();
+    const m = meg(), r = bgRunder()[0];
+    if (t.hasAttribute("data-bgny")) { bgStart = null; visBgStart(); }
+    else if (t.dataset.bgsted) { bgStart.sted = t.dataset.bgsted; visBgStart(); }
+    else if (t.dataset.bgmed) { const id = t.dataset.bgmed; bgStart.med = bgStart.med.includes(id) ? bgStart.med.filter((x) => x !== id) : [...bgStart.med, id]; visBgStart(); }
+    else if (t.hasAttribute("data-bgstart")) {
+      if (!bgStart || !bgStart.med.length) return;
+      const id = "b" + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+      synkSett({ k: "b", id, sted: bgStart.sted, brett: bgNyttBrett(bgStart.sted), med: D.personer.map((p) => p.id).filter((x) => bgStart.med.includes(x)), av: m, c: Date.now() });
+      bgStart = null; bgSe = null; lukkOverlay(); vis(); window.scrollTo(0, 0); toast("Ny runde – lykke til!");
+    } else if (t.dataset.bgse) { bgSe = t.dataset.bgse; const y = window.scrollY; vis(); window.scrollTo(0, y); }
+    else if (t.dataset.bginv && r) {
+      const id = t.dataset.bginv; if (r.med.includes(id)) return;
+      synkSett({ ...r, med: D.personer.map((p) => p.id).filter((x) => r.med.includes(x) || x === id) });
+      const y = window.scrollY; vis(); window.scrollTo(0, y); toast(id === m ? "Du er med!" : `${personNavn(id)} er med i runden`);
+    } else if (t.dataset.bgrute && r && r.med.includes(m)) {
+      const i = t.dataset.bgrute, k = bgKryss(r.id)[m] || {}, v = k[i] ? 0 : 1, for0 = bgBingo(k);
+      synkSett({ k: "x", r: "bingo", l: r.id, n: m + "|" + i, v, hvem: m });
+      const y = window.scrollY; vis(); window.scrollTo(0, y);
+      if (v && !for0 && bgBingo(bgKryss(r.id)[m])) toast("BINGO! Fire på rad", 3500);
+    }
+  });
+
+  // ---------- DAGENS BESTE (v44): én linje per person per reisedag – blir en felles reisedagbok ----------
+  // Post {k:"d", id:"<dato>|<person>", d, hvem, tekst}
+  const dbLes = (d) => Object.values(synkLes().p).filter((p) => p.k === "d" && p.d === d && p.tekst);
+  function dagensBesteHtml(d) {
+    const m = meg(), L = dbLes(d), min = L.find((x) => x.hvem === m);
+    const andre = D.personer.map((p) => L.find((x) => x.hvem === p.id)).filter((x) => x && x.hvem !== m);
+    return `<section class="kort fv-db"><h2>${ikon("stjerne")}Dagens beste</h2>
+      ${andre.map((x) => `<p class="fv-dbl"><b>${esc(personNavn(x.hvem))}:</b> ${esc(x.tekst)}</p>`).join("")}
+      ${m ? `<div class="fv-dbny"><input id="dbTekst" maxlength="200" placeholder="Det beste i dag var …" value="${esc(min ? min.tekst : "")}" aria-label="Det beste i dag"><button class="kb tel" data-dblagre="${esc(d)}">Lagre</button></div>` : `<p class="krolle">Velg hvem du er under Mer for å skrive.</p>`}</section>`;
+  }
+  document.addEventListener("click", (e) => {
+    const b = D && e.target.closest && e.target.closest("[data-dblagre]"); if (!b) return;
+    e.preventDefault(); const m = meg(), inp = $("#dbTekst"); if (!m || !inp) return;
+    const d = b.dataset.dblagre, tekst = inp.value.trim();
+    synkSett({ k: "d", id: d + "|" + m, d, hvem: m, tekst });
+    inp.blur(); const y = window.scrollY; vis(); window.scrollTo(0, y); toast(tekst ? "Lagret – vises for hele familien" : "Fjernet");
+  });
+  document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target && e.target.id === "dbTekst") { e.preventDefault(); const b = $("[data-dblagre]"); if (b) b.click(); } });
+
   // ---------- SIDE: Mer ----------
   function sideMer() {
     const m = meg();
@@ -2311,7 +2698,10 @@
     h += `<div class="liste">
       <a href="#/fly"><span class="lik">${ikon("reise", "")}</span><span class="ltekst">Fly<small>Tider, seter og referanser</small></span><span class="pil"></span></a>
       <a href="#/hotell"><span class="lik">${ikon("hotell", "")}</span><span class="ltekst">Hotell<small>Referanser, innsjekk og adresse til sjåføren</small></span><span class="pil"></span></a>
+      <a href="#/for"><span class="lik">${ikon("kalender", "")}</span><span class="ltekst">Før vi drar<small>Alt som må gjøres før avreise – med frister</small></span><span class="pil"></span></a>
       <a href="#/pakk"><span class="lik">${ikon("bestilt", "")}</span><span class="ltekst">Pakkeliste<small>Kryss av før avreise og mellom stedene</small></span><span class="pil"></span></a>
+      <a href="#/bingo"><span class="lik">${ikon("stjerne", "")}</span><span class="ltekst">Reisebingo<small>Fire på rad – brett for hvert sted</small></span><span class="pil"></span></a>
+      ${erBarn() ? `<a href="#/tema"><span class="lik">${ikon("ideer", "")}</span><span class="ltekst">Hva liker du?<small>Temaer for faktaene på forsiden</small></span><span class="pil"></span></a>` : ""}
       <a href="#/kontakter"><span class="lik">${ikon("kontakt", "")}</span><span class="ltekst">Kontakter<small>Alle hoteller, sjåfører og guider – søkbar</small></span><span class="pil"></span></a>
       <a href="#/parlor"><span class="lik">${ikon("mat", "")}</span><span class="ltekst">Fraser, tips og priser<small>Si det på vietnamesisk · drikkepenger · vanlige priser</small></span><span class="pil"></span></a>
       <a href="#/nod"><span class="lik rod">${ikon("sykehus", "")}</span><span class="ltekst">Nød og helse<small>Nødnumre, sykehus, forsikring</small></span><span class="pil"></span></a>
@@ -2329,21 +2719,22 @@
   }
 
   // ---------- ruting ----------
-  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk" };
+  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", bingo: "Reisebingo", tema: "Temaer" };
   const rute = () => { const [, side = "idag", arg, del] = (location.hash.startsWith("#/") ? location.hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
   function vis() {
     if (!D) return;
     const { side, arg, del } = rute();
     const html = side === "reisen" ? sideReisen() : side === "sted" ? sideSted(arg) : side === "mat" ? sideMat(arg) : side === "kontakter" ? sideKontakter()
-      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : sideIdag();
+      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : sideIdag();
     $("#innhold").innerHTML = html;
     sistVistDato = idagISO();
-    const fane = side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
+    const fane = ["for", "bingo", "tema"].includes(side) ? "idag" : side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
     $$(".faner a").forEach((a) => { const on = a.dataset.fane === fane; a.classList.toggle("aktiv", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     $("#toppTittel").textContent = side === "sted" ? (stedEtterId(arg) || {}).navn || "" : TITLER[side] || "";
     const tb = $("#tilbake");
     if (side === "sted") { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
     else if (["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
+    else if (["for", "bingo", "tema"].includes(side)) { tb.hidden = false; tb.href = "#/idag"; tb.querySelector("span").textContent = "I dag"; }
     else if (side === "sok") { tb.hidden = false; tb.href = sokFra; tb.querySelector("span").textContent = "Tilbake"; }
     else tb.hidden = true;
     $("#sos").hidden = side === "nod";
@@ -2360,7 +2751,7 @@
   let sistVistDato = null;
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState !== "visible" || !D) return;
-    if (sistVistDato && sistVistDato !== idagISO()) { valgtDag = null; vis(); }
+    if (sistVistDato && sistVistDato !== idagISO()) { valgtDag = null; dagModus = false; vis(); }
     else if (rute().side === "idag") vis();
   });
   const skyggeTopp = () => $("#topp").classList.toggle("skygge", window.scrollY > 24);
@@ -2570,7 +2961,9 @@
     if (Math.abs(dx) > 70 && Math.abs(dx) > Math.abs(dy) * 1.6) byttDag(dx < 0 ? 1 : -1);
   }, { passive: true });
   function byttDag(n) {
-    const s0 = start(), s1 = slutt();
+    const s0 = start(), s1 = slutt(), idag = idagISO();
+    if (idag < s0 && !dagModus) { if (n === 1) tilDag1(); return; } // sveip på forsiden åpner dag 1
+    if (idag < s0 && n === -1 && valgtDag <= s0) { tilHjemme(); return; }
     valgtDag = n === 0 ? idagISO() : pluss(valgtDag, n);
     if (valgtDag < s0) valgtDag = s0;
     if (valgtDag > s1) valgtDag = s1;
@@ -2625,6 +3018,7 @@
     41: "Trykk på et setenummer for å se hvor dere sitter i flyet",
     42: "«Husk underveis» er lukket og grønn til noe må gjøres – og oppgavene sier tydeligere hva som gjelder",
     43: "Reisen-kartet viser hvor vi er – tilbakelagt strekning, flyet i lufta og dagene som er igjen",
+    44: "Ny forside hjemme med nedtelling og «Før vi drar» – og fakta, dagens ord og reisebingo for jentene",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -3266,9 +3660,9 @@
   setInterval(() => {
     if (!D || document.visibilityState !== "visible") return;
     synkTikk++; const nodkort = !$("#overlay").hidden && AK.skjerm === "nod";
-    if (nodkort || synkTikk % 3 === 0) synk();
+    if (nodkort || rute().side === "bingo" || synkTikk % 3 === 0) synk();
   }, 10000);
-  window.addEventListener("hashchange", () => { if (D && ["pakk", "tlogg", "stat"].includes(rute().side)) { tpGjenBekreft = null; if (rute().side === "stat") B.tving = true; synk(); } });
+  window.addEventListener("hashchange", () => { if (D && ["pakk", "tlogg", "stat", "for", "bingo"].includes(rute().side)) { tpGjenBekreft = null; if (rute().side === "stat") B.tving = true; synk(); } });
   window.addEventListener("online", () => { if (D) hentKurs().then((ny) => { if (ny && rute().side === "penger") vis(); }); });
   async function oppstart() {
     nett();
