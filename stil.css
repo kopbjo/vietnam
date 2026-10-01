@@ -1486,3 +1486,13 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fv-dbny { display: flex; gap: 8px; margin-top: 6px; }
 .fv-dbny input { flex: 1; min-width: 0; min-height: 44px; border-radius: 12px; border: .5px solid var(--linje); background: var(--bg); color: var(--tekst); padding: 8px 12px; font: inherit; font-size: 16px; }
 .fv-merk p { font-size: .92rem; line-height: 1.5; margin: 0 0 10px; }
+/* v45: gjort-lista og resortets aktiviteter */
+.fv-gjortlenke { color: var(--dempet); text-decoration: none; } .fv-gjortlenke b { color: var(--tekst); }
+.fv-ok { flex: none; width: 26px; height: 26px; margin-top: 1px; border-radius: 50%; background: var(--aksent-lys); display: grid; place-items: center; }
+.fv-ok svg { width: 15px; height: 15px; fill: none; stroke: var(--aksent); stroke-width: 2.6; stroke-linecap: round; stroke-linejoin: round; }
+.fv-gjortfold .fv-gtittel:first-child { margin-top: 4px; }
+.fv-resort { list-style: none; padding: 0; margin: 0; }
+ul.fv-resort li { display: grid; grid-template-columns: 5.2em 1fr; gap: 10px; padding: 7px 0; border-top: .5px solid var(--linje); }
+ul.fv-resort li:first-child { border-top: 0; }
+.fv-rkl { font-weight: 650; font-variant-numeric: tabular-nums; color: var(--dempet); white-space: nowrap; }
+.fv-gjortfold .fv-lrad.gjort .fv-t { text-decoration: none; color: var(--tekst); }

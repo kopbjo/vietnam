@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 44, tid: "2026-10-01 kl. 00:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 45, tid: "2026-10-01 kl. 08:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -767,7 +767,7 @@
   }
   // Resortprogrammet som forslag i tidslinja: «08–10 Dragedrift» → tid + tittel
   const resortRader = (d) => (D.resortProgram[String(ukedag(d))] || []).map((p) => {
-    const m = String(p).match(/^(\d{1,2}(?::\d{2})?)(?:–(\d{1,2}(?::\d{2})?))?\s+(.+)$/);
+    const m = String(p).match(/^(\d{1,2}(?::\d{2})?)(?:–(\d{1,2}(?::\d{2})?)?)?\s+(.+)$/);
     if (!m) return { d, t: "", tittel: p, forslag: 1, sortMin: -1 };
     const hm = (x) => (x.includes(":") ? x : x + ":00");
     return { d, t: m[2] ? `${m[1]}–${m[2]}` : m[1], tittel: m[3], forslag: 1, sortMin: minutter(hm(m[1])), sluttMin: m[2] ? minutter(hm(m[2])) : null };
@@ -836,6 +836,7 @@
     if (fri) h += `<section class="kort fridag2"><h2>Fri dag – ingenting bestilt</h2><p class="krolle">Forslag – ikke bestilt:</p><div class="knapper">
       ${antIde ? `<button class="kb" data-ideark>${ikon("ideer", "")}Ideer (${ideAntall(d)})</button>` : ""}
       ${antMat ? `<a class="kb" href="#/mat/${esc(sId)}">${ikon("mat", "")}Mat (${antMat})</a>` : ""}
+      ${resort ? `<button class="kb" data-rull="resortprog">${ikon("ideer", "")}På resortet</button>` : ""}
       <button class="kb tel" data-avtny="dag">${ikon("pluss", "")}Legg til plan</button></div></section>`;
 
     // ---- tidslinja ----
@@ -873,7 +874,6 @@
     };
     const naaStrek = `<div class="naastrek" aria-label="Nå"><span>${esc(hhmm(Date.now()))}</span><i></i></div>`;
     let liste = rader;
-    if (fri && resort) liste = [...rader, ...resortRader(d)].sort((a, b) => sortMin(a) - sortMin(b));
     let tl = "", strek = !erIdag;
     for (const e of liste) {
       if (!strek && sortMin(e) >= 0 && sortMin(e) > nm) { tl += naaStrek; strek = true; }
@@ -904,10 +904,13 @@
     h += `<section class="kort dag">${tl ? `<div class="tl">${tl}</div>` : tom}${nattHtml}${imorgen}
       <button class="pny avtny" data-avtny="dag">${ikon("pluss", "")}Legg til avtale eller møtested</button></section>`;
 
-    if (resort && !fri) {
-      const prog = D.resortProgram[String(ukedag(d))] || [];
-      h += `<details class="fold" id="resortprog"><summary>${ikon("kalender")}På resortet <span class="antall">(${esc(DAGER[ukedag(d)])})</span></summary><div class="innhold"><ul class="program">${prog.map((p) => `<li>${esc(p)}</li>`).join("")}</ul><p class="krolle" style="margin-top:8px">Fra resortets aktivitetskalender – kan endres etter vær.</p></div></details>`;
-    } else if (fri && resort) h += `<p class="krolle resortkilde">Resortets aktivitetskalender – kan endres etter vær.</p>`;
+    // Resortets program er mulige aktiviteter – ikke noe som er bestemt. Egen lukket seksjon, sortert på klokkeslett (v45).
+    if (resort) {
+      const prog = resortRader(d).sort((a, b) => sortMin(a) - sortMin(b));
+      h += `<details class="fold" id="resortprog"><summary>${ikon("ideer")}På resortet <span class="antall">· mulige aktiviteter (${prog.length})</span></summary><div class="innhold">
+        <p class="krolle" style="margin:0 0 8px">Ikke bestilt – det dere har lyst til. Fra resortets aktivitetskalender for ${esc(DAGER[ukedag(d)])}, kan endres etter vær.</p>
+        <ul class="program fv-resort">${prog.map((x) => `<li><span class="fv-rkl">${esc(x.t ? (x.sluttMin == null && x.t.indexOf("–") < 0 ? "fra " + x.t : x.t) : "")}</span><span>${esc(x.tittel)}</span></li>`).join("")}</ul></div></details>`;
+    }
     if (reise && d <= idag) h += dagensBesteHtml(d);
     if (reise && erBarn()) h += faktaKort(true) + bingoRad();
     return h + bunn();
@@ -2364,7 +2367,7 @@
     const rader = apne.slice(0, 3).map((o) => `<div class="fv-rad" data-fv="${L.indexOf(o)}" role="button" tabindex="0">${fvDatoFlis(o)}<div class="fv-tekst"><div class="fv-t">${md(o.t)}</div>${fvHvem(o) ? `<div class="fv-m"><span class="fv-hvem">${esc(fvHvem(o))}</span></div>` : ""}</div><span class="fv-pil">${ikon("chev", "")}</span></div>`).join("");
     return `<section class="kort fv-kort"><div class="fv-hode"><h2>Før vi drar</h2><a href="#/for">Se alle ${T.apne} ›</a></div>
       <div class="fv-bar"><i style="width:${pst}%"></i></div>
-      <div class="fv-frem"><span><b>${T.gjort}</b> av ${T.total} gjort</span><span>${mnd ? `${mnd} i ${MND_LANG[Number(idag.slice(5, 7)) - 1]}` : ""}</span></div>
+      <div class="fv-frem"><a class="fv-gjortlenke" href="#/for/gjort"><b>${T.gjort}</b> av ${T.total} gjort ›</a><span>${mnd ? `${mnd} i ${MND_LANG[Number(idag.slice(5, 7)) - 1]}` : ""}</span></div>
       ${rader || `<p class="krolle">Alt er gjort. God tur!</p>`}</section>`;
   }
   function sideHjemme() {
@@ -2412,7 +2415,12 @@
       if (udatert.length) grupper.push(["Når som helst før avreise", udatert, ""]);
       h += grupper.map(([t, xs, k]) => `<div class="fv-gtittel ${k}"><h3>${esc(t)}</h3><span>${xs.length}</span></div><div class="fv-gruppe">${xs.map((x) => fvRadHtml(x.o, x.i)).join("")}</div>`).join("") || `<p class="tom">Ingenting igjen her.</p>`;
     } else h += fvVeien(apne, gjorte.length);
-    if (gjorte.length) h += `<details class="fold fv-gjortfold"><summary>${ikon("bestilt")}Krysset av i appen <span class="antall">(${gjorte.length})</span></summary><div class="innhold"><div class="fv-gruppe">${gjorte.map((x) => fvRadHtml(x.o, x.i)).join("")}</div></div></details>`;
+    // Gjort (v45): det som er krysset av i appen + «Gjort»-arket i huskelista – lukket som standard
+    const GL = (D.forReise && D.forReise.gjortListe) || [], antG = gjorte.length + (GL.length || (D.forReise && D.forReise.gjort) || 0);
+    if (antG) h += `<details class="fold fv-gjortfold" id="fvgjort"${rute().arg === "gjort" ? " open" : ""}><summary>${ikon("bestilt")}Gjort <span class="antall">(${antG})</span></summary><div class="innhold">
+      ${gjorte.length ? `<div class="fv-gtittel"><h3>Krysset av i appen</h3><span>${gjorte.length}</span></div><div class="fv-gruppe">${gjorte.map((x) => fvRadHtml(x.o, x.i)).join("")}</div>` : ""}
+      ${GL.length ? `${gjorte.length ? `<div class="fv-gtittel"><h3>Fra huskelista</h3><span>${GL.length}</span></div>` : ""}<div class="fv-gruppe">${GL.map((g, i) => `<div class="fv-lrad gjort" data-fvg="${i}" role="button" tabindex="0"><span class="fv-ok">${ikon("bestilt", "")}</span><div class="fv-tekst"><div class="fv-t">${md(g.t)}</div><div class="fv-m">${esc(g.f || "")}${fvHvem(g) ? ` · ${esc(fvHvem(g))}` : ""}</div></div></div>`).join("")}</div>`
+        : `<p class="krolle">${(D.forReise && D.forReise.gjort) || 0} ting er ført som gjort i «Gjort»-arket i huskelista.</p>`}</div></details>`;
     h += `<p class="krolle fv-kilde">Lista kommer fra «${esc((D.forReise && D.forReise.kilde) || "huskelista")}». Det som krysses av, vises for hele familien og flyttes til «Gjort» ved neste oppdatering.</p>`;
     return h + bunn();
   }
@@ -2463,6 +2471,15 @@
     ov.innerHTML = `<div class="ark-flate" role="dialog" aria-modal="true"><div class="ark-topp"><span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div>${inn}</div>`;
     ov.hidden = false; ov.scrollTop = 0;
   }
+  function visFvGjortArk(i) {
+    const g = ((D.forReise && D.forReise.gjortListe) || [])[i]; if (!g) return;
+    const avsnitt = String(g.m || "").split(/\s+\/\s+/).filter(Boolean).map((x) => `<p>${md(x)}</p>`).join("");
+    const ov = $("#overlay"); ov.className = "overlay ark";
+    ov.innerHTML = `<div class="ark-flate" role="dialog" aria-modal="true"><div class="ark-topp"><span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div>
+      <div class="ark-etikett">${esc(/^gjort\b/i.test(g.f || "") ? g.f : "Gjort" + (g.f ? " · " + g.f : ""))}</div><h2>${md(g.t)}</h2>${fvHvem(g) ? `<div class="fv-meta"><span>${esc(fvHvem(g))}</span></div>` : ""}<div class="fv-merk">${avsnitt}</div>
+      <p class="krolle fv-kilde">Fra «Gjort»-arket i «${esc((D.forReise && D.forReise.kilde) || "huskelista")}»</p></div>`;
+    ov.hidden = false; ov.scrollTop = 0;
+  }
   const tilDag1 = () => { dagModus = true; valgtDag = start(); if (rute().side !== "idag") location.hash = "#/idag"; else vis(); window.scrollTo(0, 0); };
   const tilHjemme = () => { dagModus = false; valgtDag = null; if (rute().side !== "idag") location.hash = "#/idag"; else vis(); window.scrollTo(0, 0); };
   document.addEventListener("click", (e) => {
@@ -2487,6 +2504,8 @@
       }
       return;
     }
+    const gr = e.target.closest("[data-fvg]");
+    if (gr && gr.closest("main")) { e.preventDefault(); visFvGjortArk(Number(gr.dataset.fvg)); return; }
     const r = e.target.closest("[data-fv]");
     if (!r || !r.closest("main") || e.target.closest("a,label,input,button:not([data-fv])")) return;
     e.preventDefault(); visFvArk(Number(r.dataset.fv));
@@ -2494,6 +2513,7 @@
   document.addEventListener("keydown", (e) => {
     if (!(e.key === "Enter" || e.key === " ") || !e.target.matches) return;
     if (e.target.matches("[data-fv]")) { e.preventDefault(); visFvArk(Number(e.target.dataset.fv)); }
+    else if (e.target.matches("[data-fvg]")) { e.preventDefault(); visFvGjortArk(Number(e.target.dataset.fvg)); }
     else if (e.target.matches("section[data-ferien]")) { e.preventDefault(); tilDag1(); }
   });
 
@@ -2743,6 +2763,7 @@
     if (side === "penger") koblOmregner();
     if (side === "kontakter") koblSok();
     if (side === "sok") koblSokAlt();
+    if (side === "for" && arg === "gjort") setTimeout(() => { const el = document.getElementById("fvgjort"); if (el) { el.open = true; el.scrollIntoView({ block: "start" }); } }, 60);
     if (side === "sted" && del) setTimeout(() => { const el = document.getElementById(del); if (el) { el.open = true; el.scrollIntoView({ block: "start" }); } }, 60);
     skyggeTopp();
   }
@@ -3019,6 +3040,7 @@
     42: "«Husk underveis» er lukket og grønn til noe må gjøres – og oppgavene sier tydeligere hva som gjelder",
     43: "Reisen-kartet viser hvor vi er – tilbakelagt strekning, flyet i lufta og dagene som er igjen",
     44: "Ny forside hjemme med nedtelling og «Før vi drar» – og fakta, dagens ord og reisebingo for jentene",
+    45: "Se det som er gjort i «Før vi drar» – og resortets aktiviteter i egen lukket seksjon",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
