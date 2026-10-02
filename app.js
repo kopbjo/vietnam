@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 45, tid: "2026-10-01 kl. 08:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 46, tid: "2026-10-02 kl. 12:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -791,7 +791,7 @@
     if (reise) h += klokkeMini();
 
     const sted = stedForDato(d), natt = overnatting(d), sc = dagStedChip(d);
-    const chips = sc.html + vaerChip(d, sc.flytt);
+    const chips = sc.html + vaerChip(d, sc.flytt) + luftChip(d) + sjoChip(d);
     if (chips) h += `<div class="dchips">${chips}</div>`;
 
     // Programmet = bestilt (reiseinfoen) + det familien har lagt til selv (synk) + utsjekk utledet fra hotellet
@@ -928,9 +928,11 @@
   }
   // Detaljark nedenfra: trykk på en rad, flybilletten, hotellet i natt eller været
   function visDagArk(id) {
-    const x = id === "vaer" ? null : IDET[id];
+    const x = ["vaer", "luft", "sjo"].includes(id) ? null : IDET[id];
     let inn = "";
     if (id === "vaer") inn = vaerHtml(valgtDag);
+    else if (id === "luft") inn = luftHtml(valgtDag);
+    else if (id === "sjo") inn = sjoHtml(valgtDag);
     else if (!x) return;
     else if (x.hotellSted) { const s = x.hotellSted; inn = `<div class="ark-etikett">Overnatting · ${esc(s.dato)}</div><div class="hotell">${hotellInnhold(s, false)}${notatHtml(s)}</div>`; }
     else if (x.egen) {
@@ -953,6 +955,8 @@
     if (e.target.id === "overlay" && e.target.classList.contains("ark")) { lukkOverlay(); return; }
     const v = e.target.closest("[data-ivaer]");
     if (v) { e.preventDefault(); visDagArk("vaer"); return; }
+    if (e.target.closest("[data-iluft]")) { e.preventDefault(); visDagArk("luft"); return; }
+    if (e.target.closest("[data-isjo]")) { e.preventDefault(); visDagArk("sjo"); return; }
     const r = e.target.closest("[data-idet]");
     if (!r || !r.closest("main")) return;
     // Knapper, lenker, avkrysning, beløp og rom-sjekken inne i raden skal virke som før
@@ -1728,10 +1732,10 @@
   // Handlinger som telles (første treff vinner)
   const BRUK_KLIKK = [["a[href^='tel:']", "ring"], ["a[href*='wa.me']", "whatsapp"], ["a[href*='google.com/maps']", "kart"], ["#sos", "sos"], ["#sokknapp", "sok"],
     ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-frase]", "frase"],
-    ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary,[data-ivaer]", "vaer"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
+    ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary,[data-ivaer]", "vaer"], ["[data-iluft]", "luft"], ["[data-isjo]", "sjo"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
     ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-setekart]", "setekart"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["a[target='_blank']", "lenke"]];
   const HANDLINGER = { ring: "Ringte", whatsapp: "Åpnet WhatsApp", kart: "Åpnet kart", sos: "Trykket SOS", sok: "Åpnet søk", hk: "Åpnet ⟦k1⟧", hknod: "Nødskjermen på ⟦k1⟧",
-    tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været",
+    tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været", luft: "Åpnet luftkvaliteten", sjo: "Åpnet bølger og vind",
     hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", dag: "Byttet dag",
     lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", setekart: "Åpnet setekart", detalj: "Åpnet detaljer i I dag", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen" };
   document.addEventListener("click", (e) => {
@@ -3041,6 +3045,7 @@
     43: "Reisen-kartet viser hvor vi er – tilbakelagt strekning, flyet i lufta og dagene som er igjen",
     44: "Ny forside hjemme med nedtelling og «Før vi drar» – og fakta, dagens ord og reisebingo for jentene",
     45: "Se det som er gjort i «Før vi drar» – og resortets aktiviteter i egen lukket seksjon",
+    46: "Luftkvalitet i byene, bølger og vind på snorkledagen – og når sola står opp og går ned (under været)",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -3300,7 +3305,169 @@
       h += `</div>${tekst ? `<p class="vmerk">${tekst}</p>` : ""}`;
     }
     if (n && !x) h += `<div class="vnormal"><span>Vanlig på denne tiden</span><b>${n.maks}° / ${n.min}°</b><small>regn ca. ${n.regnPst} % av dagene · vind ${n.vind} m/s</small></div>`;
+    h += solHtml(d, v);
     return h + `</section>`;
+  }
+
+  // ---------- luft og sjø (v46): Open-Meteo Air Quality + Marine – gratis, uten nøkkel; vises bare der det er relevant ----------
+  // Luft: dager i byene i D.luft (samme sted som værmeldingen). Sjø: dagene i D.sjo (f.eks. snorkling). Varsel lagres så det vises uten nett.
+  const AQK = [[50, "God", "god", 1], [100, "Moderat", "moderat", 2], [150, "Usunn for følsomme", "litt usunn", 3], [200, "Usunn", "usunn", 4], [300, "Svært usunn", "svært usunn", 5], [1e9, "Farlig", "farlig", 6]];
+  const aqKl = (x) => AQK.find(([g]) => x <= g);
+  const AQ_RAD = {
+    1: "Fin luft – ingen grunn til å endre planene.",
+    2: "Greit for de fleste. Den som er ekstra følsom for luftforurensning, kan ta det litt roligere ute.",
+    3: "Greit for vanlige turer. Den som er følsom for luftforurensning, bør unngå lang og hard aktivitet ute.",
+    4: "Dårlig luft. Kort tid ute er greit, men legg lange gåturer til den beste delen av dagen og velg gjerne innendørs ting ellers. Munnbind av typen N95/KF94 hjelper.",
+    5: "Svært dårlig luft. Hold dere mest inne med lukkede vinduer, og bruk N95/KF94-munnbind ute.",
+    6: "Farlig nivå. Hold dere inne og bruk N95/KF94-munnbind ute.",
+  };
+  const lkSamme = (a, b) => a && b && a.lat === b.lat && a.lon === b.lon;
+  function luftSted(d) { const v = vaerSted(d); return v ? (D.luft || []).find((l) => lkSamme(l, v)) : null; }
+  const lkNokkel = (p, v) => `vn.${p}.${v.lat},${v.lon}`;
+  const lkLes = (p, v) => { try { return JSON.parse(lagre.get(lkNokkel(p, v)) || "null"); } catch { return null; } };
+  const lkPaagaar = {};
+  // Hent og lagre; ved ferdig hentet tegnes I dag (og et åpent luft-/sjøark) på nytt
+  async function lkHent(p, v, url, tolk) {
+    const k = lkNokkel(p, v), c = lkLes(p, v);
+    if (lkPaagaar[k] || !navigator.onLine || (c && Date.now() - c.t < 2 * 3600e3)) return;
+    lkPaagaar[k] = 1;
+    try {
+      const r = await fetch(url, { cache: "no-store", referrerPolicy: "no-referrer" });
+      if (!r.ok) throw new Error(r.status);
+      lagre.set(k, JSON.stringify({ t: Date.now(), dager: tolk(await r.json()) }));
+      if (rute().side === "idag") vis();
+      const o = $("#overlay");
+      if (o && !o.hidden) { const a = o.querySelector("[data-lk]"); if (a) visDagArk(a.dataset.lk); }
+    } catch {} finally { delete lkPaagaar[k]; }
+  }
+  // Timeverdier → per dag: høyeste, snitt og verdiene kl. 9/14/19 (samme som været)
+  function perDag(tider, felt, dagtid) {
+    const dager = {};
+    tider.forEach((t, i) => {
+      const [dag, kl] = t.split("T"), h = Number(kl.slice(0, 2)), x = (dager[dag] = dager[dag] || { h: {} });
+      x.h[h] = Object.fromEntries(Object.entries(felt).map(([n, a]) => [n, vTall(a[i])]));
+    });
+    for (const x of Object.values(dager)) {
+      const timer = Object.entries(x.h).filter(([h]) => !dagtid || (h >= dagtid[0] && h <= dagtid[1]));
+      x.maks = (n) => Math.max(...timer.map(([, v]) => v[n]).filter((v) => v != null));
+    }
+    return dager;
+  }
+  const hentLuft = (l) => lkHent("luft", l, `https://air-quality-api.open-meteo.com/v1/air-quality?latitude=${l.lat}&longitude=${l.lon}&timezone=auto&forecast_days=7&hourly=us_aqi,pm2_5`, (j) => {
+    const ut = {}, H = j.hourly;
+    Object.entries(perDag(H.time, { a: H.us_aqi, p: H.pm2_5 })).forEach(([d, x]) => {
+      const alle = Object.entries(x.h).filter(([, v]) => v.a != null);
+      if (alle.length < 18) return;
+      const ute = alle.filter(([h]) => h >= 7 && h <= 21).sort((a, b) => a[1].a - b[1].a);
+      const pm = alle.map(([, v]) => v.p).filter((v) => v != null);
+      ut[d] = { maks: Math.max(...alle.map(([, v]) => v.a)), pm: pm.length ? Math.round(pm.reduce((s, v) => s + v, 0) / pm.length) : null,
+        timer: [9, 14, 19].map((h) => [h, x.h[h] ? x.h[h].a : null]), best: ute.length ? [Number(ute[0][0]), ute[0][1].a] : null };
+    });
+    return ut;
+  });
+  const lkPrikk = (n) => `<span class="lk-prikk lk-aq${n}" aria-hidden="true"></span>`;
+  function luftChip(d) {
+    const l = luftSted(d); if (!l) return "";
+    hentLuft(l);
+    const c = lkLes("luft", l), x = c && c.dager[d], n = l.normal && l.normal[d];
+    let t;
+    if (x) { const k = aqKl(x.maks); t = `${lkPrikk(k[3])}Luft: ${k[2]}`; }
+    else if (n) { const k = aqKl(n[0]); t = `${lkPrikk(k[3])}Luft: ${k[2]}<i>normalt</i>`; }
+    else return "";
+    return `<button class="dchip" data-iluft="${esc(d)}" aria-label="Luftkvaliteten – trykk for detaljer">${t}</button>`;
+  }
+  function luftHtml(d) {
+    const l = luftSted(d); if (!l) return "";
+    hentLuft(l);
+    const c = lkLes("luft", l), x = c && c.dager[d], n = l.normal && l.normal[d];
+    let h = `<section class="kort vaer lk-kort" data-lk="luft"><div class="vtopp"><h2>Luften i ${esc(l.navn)}</h2>`;
+    if (x) {
+      const k = aqKl(x.maks), naar = new Date(c.t);
+      h += `<span class="vtid">${naar.toDateString() === new Date().toDateString() ? `oppdatert kl. ${hhmm(c.t)}` : `oppdatert ${naar.toLocaleDateString("nb-NO", { day: "numeric", month: "short" })}`}${navigator.onLine ? "" : " · lagret"}</span></div>
+        <div class="vhoved"><span class="lk-tall lk-aq${k[3]}">${x.maks}</span><div><div class="lk-kat">${esc(k[1])}</div><div class="vbeskr">Luftkvalitet (AQI), dårligste time${x.pm != null ? ` · PM2,5 ca. ${x.pm} µg/m³` : ""}</div></div></div>
+        <p class="lk-rad">${esc(AQ_RAD[k[3]])}</p>
+        <div class="vtimer">${x.timer.map(([t, a]) => `<div><span>${t === 9 ? "Morgen" : t === 14 ? "Dag" : "Kveld"}</span>${a != null ? `${lkPrikk(aqKl(a)[3])}<b>${a}</b><small>${esc(aqKl(a)[2])}</small>` : "<b>–</b>"}</div>`).join("")}</div>
+        ${x.best && x.maks - x.best[1] >= 20 ? `<p class="vmerk">Best luft rundt kl. ${String(x.best[0]).padStart(2, "0")} (${x.best[1]}).</p>` : ""}`;
+    } else {
+      const dagerTil = mellom(idagISO(), d);
+      const tekst = dagerTil > 6 ? `Varselet for luften kommer ca. ${pen(pluss(d, -6), false)}.` : dagerTil < 0 ? "" : c ? "Denne dagen er ikke med i varselet ennå." : navigator.onLine ? "Henter varsel …" : "Varselet hentes når telefonen har nett.";
+      h += `</div>${tekst ? `<p class="vmerk">${tekst}</p>` : ""}`;
+      if (n) { const k = aqKl(n[0]);
+        h += `<div class="vnormal"><span>Vanlig på denne tiden</span><b>${lkPrikk(k[3])} ${esc(k[1])} (${n[0]})</b><small>dårligste time i døgnet · AQI over 150 på ${n[3]} % av dagene, over 100 på ${n[2]} %</small></div>
+          <p class="lk-rad">${esc(AQ_RAD[k[3]])}</p>`; }
+    }
+    return h + `<p class="vmerk">AQI etter amerikansk skala (0–500), beregnet fra en luftmodell – ikke målestasjoner. Apper som IQAir kan vise litt andre tall.</p></section>`;
+  }
+
+  // Sjøen: bølgehøyde (havet like utenfor), dønning, vindbølger, sjøtemperatur + vind fra værmeldingen for stedet
+  const SJOK = [[0.5, "Rolig sjø", "rolig", 1, "Fine forhold for båttur og snorkling."], [1, "Litt bølger", "litt bølger", 2, "Greit for snorkling, men båtturen kan bli litt humpete og sikten i vannet litt dårligere."],
+    [1.5, "Urolig sjø", "urolig", 3, "Båtturen kan bli humpete. Spør operatøren om turen går som planlagt."], [1e9, "Høye bølger", "høye bølger", 4, "Snorkleturer blir ofte flyttet eller avlyst i slike bølger – sjekk med operatøren."]];
+  const sjoKl = (x) => SJOK.find(([g]) => x < g);
+  const sjoDag = (d) => D.sjo && D.sjo[d];
+  const mFmt = (x) => (x == null || !isFinite(x) ? "–" : String(Math.round(x * 10) / 10).replace(".", ","));
+  const hentSjo = (s) => lkHent("sjo", s, `https://marine-api.open-meteo.com/v1/marine?latitude=${s.lat}&longitude=${s.lon}&timezone=auto&forecast_days=16&hourly=wave_height,swell_wave_height,wind_wave_height,wave_direction,sea_surface_temperature`, (j) => {
+    const ut = {}, H = j.hourly;
+    Object.entries(perDag(H.time, { b: H.wave_height, s: H.swell_wave_height, v: H.wind_wave_height, r: H.wave_direction, t: H.sea_surface_temperature }, [7, 17])).forEach(([d, x]) => {
+      const b = x.maks("b"); if (!isFinite(b)) return;
+      const tt = Object.entries(x.h).filter(([h]) => h >= 7 && h <= 17).map(([, v]) => v.t).filter((v) => v != null);
+      ut[d] = { b, s: x.maks("s"), v: x.maks("v"), r: x.h[10] ? x.h[10].r : null, t: tt.length ? tt.reduce((a, v) => a + v, 0) / tt.length : null, timer: [8, 11, 14].map((h) => [h, x.h[h] ? x.h[h].b : null]) };
+    });
+    return ut;
+  });
+  const BOLGE = '<svg class="lk-bolge" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2M2 15c2.5 0 2.5-2 5-2s2.5 2 5 2 2.5-2 5-2 2.5 2 5 2"/></svg>';
+  function sjoChip(d) {
+    const s = sjoDag(d); if (!s) return "";
+    hentSjo(s);
+    const c = lkLes("sjo", s), x = c && c.dager[d], n = s.normal;
+    let t;
+    if (x) t = `${BOLGE}Sjøen ${mFmt(x.b)} m<i>${esc(sjoKl(x.b)[2])}</i>`;
+    else if (n) t = `${BOLGE}Sjøen ca. ${mFmt(n.bolgeMedian)} m<i>normalt</i>`;
+    else return "";
+    return `<button class="dchip" data-isjo="${esc(d)}" aria-label="Bølger og vind – trykk for detaljer">${t}</button>`;
+  }
+  function sjoHtml(d) {
+    const s = sjoDag(d); if (!s) return "";
+    hentSjo(s);
+    const c = lkLes("sjo", s), x = c && c.dager[d], n = s.normal;
+    const vs = s.vind ? (hentVaer(s.vind), vaerLes(s.vind)) : null, vx = vs && vs.dager[d];
+    let h = `<section class="kort vaer lk-kort" data-lk="sjo"><div class="vtopp"><h2>${esc(s.tittel || "Sjøen")}</h2>`;
+    if (x) {
+      const k = sjoKl(x.b), naar = new Date(c.t);
+      h += `<span class="vtid">${naar.toDateString() === new Date().toDateString() ? `oppdatert kl. ${hhmm(c.t)}` : `oppdatert ${naar.toLocaleDateString("nb-NO", { day: "numeric", month: "short" })}`}${navigator.onLine ? "" : " · lagret"}</span></div>
+        <div class="vhoved"><span class="lk-tall lk-sj${k[3]}">${mFmt(x.b)}<small> m</small></span><div><div class="lk-kat">${esc(k[1])}</div><div class="vbeskr">Høyeste bølger kl. 7–17${s.navn ? ` · ${esc(s.navn)}` : ""}</div></div></div>
+        <p class="lk-rad">${esc(k[4])}</p>
+        <div class="vfakta">
+          <div><span>Vind</span><b>${vx ? `${rund(vx.vind)} m/s` : "–"}</b><small>${vx ? `${vx.retn != null ? `fra ${retning(vx.retn)}` : ""}${vx.kast != null ? ` · kast ${rund(vx.kast)}` : ""}` : "fra værmeldingen"}</small></div>
+          <div><span>Sjøen</span><b>${x.t != null ? `${rund(x.t)} °C` : "–"}</b><small>dønning ${mFmt(x.s)} m · vindbølger ${mFmt(x.v)} m</small></div>
+        </div>
+        <div class="vtimer">${x.timer.map(([t, b]) => `<div><span>kl. ${String(t).padStart(2, "0")}</span><b>${mFmt(b)} m</b><small>${b != null ? esc(sjoKl(b)[2]) : ""}</small></div>`).join("")}</div>
+        ${mellom(idagISO(), d) > 5 ? `<p class="vmerk">Bølgevarsel over fem dager fram er usikkert.</p>` : ""}`;
+    } else {
+      const dagerTil = mellom(idagISO(), d);
+      const tekst = dagerTil > 8 ? `Bølgevarselet kommer ca. ${pen(pluss(d, -8), false)}.` : dagerTil < 0 ? "" : c ? "Denne dagen er ikke med i varselet ennå." : navigator.onLine ? "Henter bølgevarsel …" : "Varselet hentes når telefonen har nett.";
+      h += `</div>${tekst ? `<p class="vmerk">${tekst}</p>` : ""}`;
+      if (n) h += `<div class="vnormal"><span>Vanlig i slutten av desember</span><b>Bølger rundt ${mFmt(n.bolgeMedian)} m</b><small>høyeste i døgnet · over 1 m omtrent én dag av fire · sjøen ca. ${rund(n.sjotemp[1])} °C</small></div>`;
+    }
+    return h + `<p class="vmerk">Varselet gjelder åpent hav like ved øyene. Inne i le av øyene er det ofte roligere.</p></section>`;
+  }
+
+  // Sola opp og ned – regnes ut på telefonen (virker uten nett, alle dager)
+  function solTider(d, lat, lon) {
+    const r = Math.PI / 180, sin = (x) => Math.sin(x * r), cos = (x) => Math.cos(x * r);
+    const n = Math.round(Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10), 12) / 864e5 + 2440587.5 - 2451545);
+    const js = n - lon / 360, M = ((357.5291 + 0.98560028 * js) % 360 + 360) % 360;
+    const C = 1.9148 * sin(M) + 0.02 * sin(2 * M) + 0.0003 * sin(3 * M), L = (M + C + 282.9372) % 360;
+    const jt = 2451545 + js + 0.0053 * sin(M) - 0.0069 * sin(2 * L), dekl = Math.asin(sin(L) * sin(23.4397)) / r;
+    const cw = (sin(-0.833) - sin(lat) * sin(dekl)) / (cos(lat) * cos(dekl));
+    if (cw > 1 || cw < -1) return null;
+    const w = Math.acos(cw) / r / 360, ms = (j) => (j - 2440587.5) * 864e5;
+    return { opp: ms(jt - w), ned: ms(jt + w) };
+  }
+  function solHtml(d, v) {
+    const s = solTider(d, v.lat, v.lon); if (!s) return "";
+    const tz = v.lon > 60 ? TZ : "Europe/Oslo", kl = (t) => new Date(t).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit", timeZone: tz });
+    const m = Math.round((s.ned - s.opp) / 6e4);
+    return `<div class="lk-sol"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17h18M7 17a5 5 0 0 1 10 0M12 6v2.5M5.6 9.6l1.6 1.6M18.4 9.6l-1.6 1.6"/></svg><span>Sola opp <b>${kl(s.opp)}</b> · ned <b>${kl(s.ned)}</b></span><small>${Math.floor(m / 60)} t ${m % 60} min lys</small></div>`;
   }
 
   // ---------- valuta ----------

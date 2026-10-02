@@ -1496,3 +1496,24 @@ ul.fv-resort li { display: grid; grid-template-columns: 5.2em 1fr; gap: 10px; pa
 ul.fv-resort li:first-child { border-top: 0; }
 .fv-rkl { font-weight: 650; font-variant-numeric: tabular-nums; color: var(--dempet); white-space: nowrap; }
 .fv-gjortfold .fv-lrad.gjort .fv-t { text-decoration: none; color: var(--tekst); }
+
+/* ---------- luft, sjø og sol (v46) ---------- */
+.lk-prikk { display: inline-block; width: 10px; height: 10px; border-radius: 50%; flex: none; vertical-align: 1px; }
+.lk-aq1, .lk-sj1 { background: #2e9e4f; color: #fff; }
+.lk-aq2, .lk-sj2 { background: #e0b400; color: #2a2100; }
+.lk-aq3, .lk-sj3 { background: #ef7d00; color: #fff; }
+.lk-aq4, .lk-sj4 { background: #d93025; color: #fff; }
+.lk-aq5 { background: #8e3fa8; color: #fff; }
+.lk-aq6 { background: #7e0023; color: #fff; }
+.lk-tall { display: inline-flex; align-items: center; justify-content: center; gap: 1px; min-width: 64px; height: 64px; padding: 0 10px; border-radius: 16px; font-size: 1.7rem; font-weight: 750; letter-spacing: -.02em; flex: none; }
+.lk-tall small { font-size: .9rem; font-weight: 650; margin-top: 8px; }
+.lk-kat { font-size: 1.25rem; font-weight: 700; }
+.lk-rad { margin: 0 0 10px; font-size: .92rem; }
+.vnormal + .lk-rad { margin-top: 10px; }
+.lk-kort .vtimer .lk-prikk { margin-bottom: 2px; }
+.vnormal b .lk-prikk { margin-right: 2px; }
+.dchip .lk-prikk { margin-right: 1px; }
+.dchip svg.lk-bolge { width: 18px; height: 18px; stroke: #2f7fd8; }
+.lk-sol { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 9px 12px; border-radius: 12px; background: var(--flate2); font-size: .9rem; }
+.lk-sol svg { width: 22px; height: 22px; fill: none; stroke: #f5b400; stroke-width: 2; stroke-linecap: round; flex: none; }
+.lk-sol small { margin-left: auto; color: var(--dempet); font-size: .8rem; }
