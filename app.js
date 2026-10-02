@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 47, tid: "2026-10-02 kl. 16:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 48, tid: "2026-10-02 kl. 18:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3048,6 +3048,7 @@
     45: "Se det som er gjort i «Før vi drar» – og resortets aktiviteter i egen lukket seksjon",
     46: "Luftkvalitet i byene, bølger og vind på snorkledagen – og når sola står opp og går ned (under været)",
     47: "Live flystatus fra døgnet før avgang (forsinkelse, gate, bagasjebånd) – og hvor punktlige flyvningene våre pleier å være",
+    48: "Punktligheten for flyvningene vises allerede nå (fornyes hver uke)",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -3532,7 +3533,8 @@
       fxTegn();
     } catch {} finally { delete fxPaagaar["f" + id]; }
   }
-  // Punktlighet: hentes fra 10 dager før avgang, høyst én gang i uka (vilkårene: maks 7 dager gammel)
+  // Punktlighet: fram til 1. desember for alle flyvningene, deretter fra 10 dager før avgang – høyst én gang i uka (vilkårene: maks 7 dager gammel)
+  const FX_UKENTLIG_TIL = Date.UTC(2026, 11, 1);
   const fxMin = (s) => { if (!s) return null; const neg = s.startsWith("-"), [h, m] = s.replace("-", "").split(":").map(Number); return (neg ? -1 : 1) * (h * 60 + m); };
   function fxSammendrag(liste) {
     const vinter = (e) => /-(1[12]|0[1-3])-/.test(e.fromUtc || "");
@@ -3548,7 +3550,7 @@
   async function fxHentPunkt(f) {
     if (!D.flydata || !D.flydata.nokkel || !navigator.onLine) return;
     const a = fxAvg(f), naa = Date.now();
-    if (naa < a - 10 * 864e5 || naa > fxAnk(f)) return;
+    if ((naa >= FX_UKENTLIG_TIL && naa < a - 10 * 864e5) || naa > fxAnk(f)) return;
     const p = fxPost("g", f.id);
     if (fxPaagaar["g" + f.id] || (p && naa - p.h < FX_MAKS_ALDER)) return;
     fxPaagaar["g" + f.id] = 1;
