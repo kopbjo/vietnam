@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 49, tid: "2026-10-02 kl. 19:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 50, tid: "2026-10-03 kl. 03:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1375,6 +1375,7 @@
   function sidePenger() {
     const ki = kursInfo(), kurs = ki.kurs;
     let h = tittel("Penger");
+    h += sjRad();
     h += `<section class="kort"><h2>${ikon("penger")}Omregner</h2><div class="omregner">
       <label>Dong (₫)<input id="vnd" inputmode="numeric" placeholder="100 000"></label>
       <label>Kroner<input id="nok" inputmode="decimal" placeholder="36"></label>
@@ -1466,7 +1467,7 @@
     return S.tilst;
   }
   const synkLagre = () => lagre.set(LS.synk, JSON.stringify(synkLes()));
-  const postNokkel = (p) => JSON.stringify(p.k === "x" ? ["x", p.r, p.l, p.n] : p.k === "n" ? ["n", p.r, p.l] : p.k === "e" ? ["e", p.id] : p.k === "a" ? ["a", p.id] : p.k === "u" ? ["u", p.id] : p.k === "b" ? ["b", p.id] : p.k === "d" ? ["d", p.id] : p.k === "f" ? ["f", p.id] : p.k === "g" ? ["g", p.id] : ["l", p.l]);
+  const postNokkel = (p) => JSON.stringify(p.k === "x" ? ["x", p.r, p.l, p.n] : p.k === "n" ? ["n", p.r, p.l] : p.k === "e" ? ["e", p.id] : p.k === "a" ? ["a", p.id] : p.k === "u" ? ["u", p.id] : p.k === "b" ? ["b", p.id] : p.k === "d" ? ["d", p.id] : p.k === "f" ? ["f", p.id] : p.k === "g" ? ["g", p.id] : p.k === "m" ? ["m", p.id] : ["l", p.l]);
   function synkSett(p) {
     const s = synkLes(), k = postNokkel(p);
     p.t = Math.max(Date.now(), ((s.p[k] || {}).t || 0) + 1);
@@ -1547,6 +1548,7 @@
       let p; try { p = await synkDekrypter(d.fields.c.stringValue); } catch { continue; }
       if (p && p.k === "t") { brukMottak(p); continue; } // bruksstatistikk ligger i eget lager (vn.bruk)
       const k = postNokkel(p), her = s.p[k];
+      if (p.k === "m") { delete p.st; if (ts) { if (!her || p.t > her.t) p.st = tsMs(ts); else if (her.t === p.t && !her.st) { her.st = tsMs(ts); endret = true; } } } // skattejakt: tidspunkt fra databasen
       if (!her || p.t > her.t) { s.p[k] = p; delete s.u[k]; endret = true; }
     }
     s.s = maks; synkLagre(); return endret;
@@ -1588,7 +1590,7 @@
   function synkOppdaterVisning() {
     tpOppdater();
     const nyOppd = oppdFornyVedEndring();
-    if ((!nyOppd && !["pakk", "idag", "sted", "claude", "for", "bingo", "fly"].includes(rute().side)) || pakkRediger || pakkNy !== null || !$("#overlay").hidden) return;
+    if ((!nyOppd && !["pakk", "idag", "sted", "claude", "for", "bingo", "fly", "skatt", "penger"].includes(rute().side)) || pakkRediger || pakkNy !== null || !$("#overlay").hidden) return;
     const f = document.activeElement; if (f && f.matches && f.matches("input,textarea")) return;
     const y = window.scrollY; vis(); window.scrollTo(0, y);
   }
@@ -1734,11 +1736,11 @@
   const BRUK_KLIKK = [["a[href^='tel:']", "ring"], ["a[href*='wa.me']", "whatsapp"], ["a[href*='google.com/maps']", "kart"], ["#sos", "sos"], ["#sokknapp", "sok"],
     ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-frase]", "frase"],
     ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary,[data-ivaer]", "vaer"], ["[data-iluft]", "luft"], ["[data-isjo]", "sjo"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
-    ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-setekart]", "setekart"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["a[target='_blank']", "lenke"]];
+    ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-setekart]", "setekart"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["[data-sjmynt]", "skatt"], ["[data-sjhintja]", "skatthint"], ["a[target='_blank']", "lenke"]];
   const HANDLINGER = { ring: "Ringte", whatsapp: "Åpnet WhatsApp", kart: "Åpnet kart", sos: "Trykket SOS", sok: "Åpnet søk", hk: "Åpnet ⟦k1⟧", hknod: "Nødskjermen på ⟦k1⟧",
     tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været", luft: "Åpnet luftkvaliteten", sjo: "Åpnet bølger og vind",
     hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", dag: "Byttet dag",
-    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", setekart: "Åpnet setekart", detalj: "Åpnet detaljer i I dag", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen" };
+    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", setekart: "Åpnet setekart", detalj: "Åpnet detaljer i I dag", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen", skatt: "Fant gullmynt", skatthint: "Brukte hint i skattejakten" };
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest) return;
     const bn = e.target.closest(".bunn");
@@ -2380,8 +2382,8 @@
     IDET = {};
     let h = hjemskjermHtml();
     h += `<p class="hei">${navn ? `Hei, ${esc(navn)}!` : "Hei!"}</p>` + fvHero(n);
-    if (barn) h += faktaKort() + ordKort() + mineTingKort() + bingoRad();
-    else h += fvKlokker() + fvForsideKort();
+    if (barn) h += sjKort() + faktaKort() + ordKort() + mineTingKort() + bingoRad();
+    else h += fvKlokker() + fvForsideKort() + sjRad();
     return h + bunn();
   }
   // Én gang på dag 1: ting fra «Før vi drar» som ikke er krysset av
@@ -2716,6 +2718,347 @@
   });
   document.addEventListener("keydown", (e) => { if (e.key === "Enter" && e.target && e.target.id === "dbTekst") { e.preventDefault(); const b = $("[data-dblagre]"); if (b) b.click(); } });
 
+  // ---------- SKATTEJAKT (v50): én gullmynt per jente per dag, gjemt et sted i appen ----------
+  // Oppsettet ligger i reiseinfoen (D.skatt: start, slutt, kl, verdi, hintVerdi, gatedager, fro, vansk, plasser) og bildet i D.bilder.mynt.
+  // Hver jente har sin egen mynt på sitt eget sted. Søndager (gatedager) er det en gåte i stedet. Hint = metalldetektor, men halv verdi.
+  // Poster (k:"m"): funn {id:"<dato>|<person>", d, hvem, sted, hint, verdi, enh, c} · hint {id:"<dato>|<person>|h", d, hvem, enh, c}
+  //                 · utbetalt {id:"u|<person>|<ms>", hvem, belop, av, c}. Servertiden (st) legges på lokalt når posten hentes fra databasen.
+  const SJ_TZ = "Europe/Oslo";
+  const SJ_FMT = new Intl.DateTimeFormat("sv-SE", { timeZone: SJ_TZ, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", hourCycle: "h23" });
+  const sjOslo = (ms) => { const f = SJ_FMT.formatToParts(new Date(ms)), g = (t) => (f.find((x) => x.type === t) || {}).value; return { d: `${g("year")}-${g("month")}-${g("day")}`, min: Number(g("hour")) * 60 + Number(g("minute")) }; };
+  const SJ = () => (D && D.skatt && D.bilder && D.bilder.mynt ? D.skatt : null);
+  const sjKr = (v) => (Math.round(v * 100) % 100 ? v.toFixed(2).replace(".", ",") : String(Math.round(v)).replace(/\B(?=(\d{3})+(?!\d))/g, " ")) + " kr";
+  const sjBilde = (cls = "") => `<img class="sj-img ${cls}" src="${D.bilder.mynt}" alt="" draggable="false">`;
+  const sjMaks = () => { const S = SJ(); return (mellom(S.start, S.slutt) + 1) * S.verdi; };
+  // Jaktdagen nå: datoen (norsk tid) hvis mynten er gjemt nå, ellers null. fase: "for" | "natt" | "aktiv" | "over"
+  function sjNaa() {
+    const S = SJ(), o = sjOslo(Date.now());
+    if (o.d < S.start) return { fase: "for", d: null };
+    if (o.d > S.slutt) return { fase: "over", d: null };
+    if (o.min < S.kl * 60) return { fase: "natt", d: o.d };
+    return { fase: "aktiv", d: o.d };
+  }
+  const sjPost = (id) => synkLes().p[JSON.stringify(["m", id])];
+  const sjFunnPost = (d, pid) => { const p = sjPost(d + "|" + pid); return p && p.hvem === pid ? p : null; };
+  const sjHintPost = (d, pid) => sjPost(d + "|" + pid + "|h");
+  const sjAlle = () => Object.values(synkLes().p).filter((p) => p.k === "m");
+  // Gyldig: registrert hos databasen mellom kl. 05:45 samme dag og kl. 12 dagen etter (norsk tid). Uten servertid ennå: venter.
+  function sjStatus(p) {
+    if (!p.st) return "venter";
+    const o = sjOslo(p.st);
+    if ((o.d === p.d && o.min >= SJ().kl * 60 - 15) || (o.d === pluss(p.d, 1) && o.min < 12 * 60)) return "ok";
+    return "ugyldig";
+  }
+  // Hver telefon kan finne én mynt per dag – å bytte til søsterens profil gir ikke en mynt til
+  const sjLaast = (d, pid) => sjAlle().some((p) => p.d === d && p.id === d + "|" + p.hvem && p.hvem !== pid && p.enh === enhet());
+  // ---- planen: hvor mynten ligger hver dag for hver jente (lik på alle telefoner – regnes ut fra frøet i reiseinfoen) ----
+  let SJ_PLAN = null;
+  function sjPlan() {
+    if (SJ_PLAN && SJ_PLAN.D === D) return SJ_PLAN.p;
+    const S = SJ(), barn = barnIds(), plan = {};
+    let h = 2166136261; for (const c of String(S.fro)) { h ^= c.charCodeAt(0); h = Math.imul(h, 16777619) >>> 0; }
+    let a = h || 1; const tilf = () => { a = (a + 0x6D2B79F5) >>> 0; let t = a; t = Math.imul(t ^ (t >>> 15), t | 1); t ^= t + Math.imul(t ^ (t >>> 7), t | 61); return ((t ^ (t >>> 14)) >>> 0) / 4294967296; };
+    const velg = (vekter) => { const sum = vekter.reduce((x, y) => x + y, 0); let r = tilf() * sum; for (let i = 0; i < vekter.length; i++) { r -= vekter[i]; if (r < 0) return i + 1; } return vekter.length; };
+    const brukt = {};
+    for (let d = S.start; d <= S.slutt; d = pluss(d, 1)) {
+      const gate = (S.gatedager || []).includes(ukedag(d)), lor = ukedag(d) === 6, opptatt = new Set();
+      const fase = d < "2026-11-01" ? 0 : d < "2026-12-01" ? 1 : 2;
+      plan[d] = {};
+      for (const pid of barn) {
+        const v = (S.vansk || {})[pid] || 0;
+        let w = [[6, 3, 1], [3, 5, 2], [1, 4, 5]][fase].slice();
+        if (v) w = [w[0] * 0.5, w[1], w[2] * 1.6 + 0.5];
+        if (lor) w = [0, w[1] * 0.5, w[2] * 2 + 2];
+        const nr = mellom(S.start, d);
+        if (nr < 3) w = [1, 0, 0]; else if (nr < 7) w = [6, 2, 0]; // første dager: lett, så de kommer i gang
+        const niva = velg(w), nylig = new Set((brukt[pid] || []).slice(-14));
+        const ok = (x) => !opptatt.has(x.id) && !nylig.has(x.id);
+        let L = S.plasser.filter((x) => (gate ? x.g : x.n === niva) && ok(x));
+        if (!L.length) L = S.plasser.filter((x) => (gate ? x.g : true) && ok(x));
+        if (!L.length) L = S.plasser.filter((x) => !opptatt.has(x.id));
+        const x = L[Math.floor(tilf() * L.length)];
+        opptatt.add(x.id); (brukt[pid] = brukt[pid] || []).push(x.id);
+        plan[d][pid] = { plass: x, gate: gate && x.g ? x.g : "" };
+      }
+    }
+    SJ_PLAN = { D, p: plan };
+    return plan;
+  }
+  const sjPlassFor = (d, pid) => (sjPlan()[d] || {})[pid] || null;
+  // Dagens mynt for den som bruker telefonen – null hvis den er funnet, ikke gjemt ennå eller brukeren er voksen
+  function sjMin() {
+    if (!SJ() || !erBarn()) return null;
+    const n = sjNaa(), m = meg(); if (n.fase !== "aktiv") return null;
+    if (sjFunnPost(n.d, m) || sjLaast(n.d, m)) return null;
+    const x = sjPlassFor(n.d, m); return x ? { d: n.d, m, ...x } : null;
+  }
+  const sjFane = (side) => (["for", "bingo", "tema", "skatt"].includes(side) ? "idag" : side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : side);
+  const sjRiktigSide = (P) => { const r = rute(); return P.dag ? r.side === "idag" && dagModus && valgtDag === P.dag : r.side === P.s && (!P.a || r.arg === P.a); };
+  // ---- mynten legges inn på siden etter at den er tegnet ----
+  function sjPlasser() {
+    $$("[data-sjmynt]").forEach((e) => { const r = e.closest(".sj-rad"); (r || e).remove(); });
+    const x = sjMin();
+    if (x && sjRiktigSide(x.plass) && (!x.plass.krav || $(x.plass.krav))) {
+      const P = x.plass, inn = $("#innhold");
+      let L = $$(P.q, inn); if (P.t) L = L.filter((el) => el.textContent.includes(P.t));
+      let el = L.length ? L[(P.i || 0) < 0 ? L.length + P.i : Math.min(P.i || 0, L.length - 1)] : null, hvor = P.p || "inn";
+      if (!el) { el = $(".bunn", inn); hvor = "for"; }
+      if (el) {
+        const str = x.gate ? 44 : [0, 34, 28, 24][P.n] || 28;
+        let rot = 0; for (const c of P.id) rot = (rot * 31 + c.charCodeAt(0)) % 50; rot -= 25;
+        const b = `<button class="sj-mynt${x.gate ? " sj-glitter" : ""}" data-sjmynt style="--sj:${str}px;--sjr:${rot}deg" aria-label="Gullmynt">${sjBilde()}</button>`;
+        if (hvor === "hj") { if (getComputedStyle(el).position === "static") el.style.position = "relative"; el.insertAdjacentHTML("beforeend", b.replace("sj-mynt", "sj-mynt sj-hj")); }
+        else if (hvor === "etter") el.insertAdjacentHTML("afterend", `<div class="sj-rad">${b}</div>`);
+        else if (hvor === "for") el.insertAdjacentHTML("beforebegin", `<div class="sj-rad">${b}</div>`);
+        else {
+          let mal = el;
+          if (hvor === "fold") { const det = el.matches("details") ? el : el.querySelector("details"); if (det) mal = $(":scope > .innhold", det) || det; }
+          else if (el.matches("details")) mal = $(":scope > .innhold", el) || el;
+          mal.insertAdjacentHTML("beforeend", `<div class="sj-rad">${b}</div>`);
+        }
+      }
+    }
+    sjDetektor();
+  }
+  // ---- metalldetektoren (hint) ----
+  const SJ_VARME = ["Kaldt", "Lunkent", "Varmt", "Varmere!", "Brennhett!"];
+  function sjVarme(x) {
+    const P = x.plass, r = rute();
+    if (!sjRiktigSide(P)) {
+      if (P.dag && r.side === "idag" && dagModus && valgtDag) { const a = Math.abs(mellom(valgtDag, P.dag)); return a <= 2 ? 3 : a <= 6 ? 2 : 1; }
+      if (P.s === "sted" && r.side === "sted") return 2;
+      return sjFane(P.dag ? "idag" : P.s) === sjFane(r.side) ? 1 : 0;
+    }
+    const m = $("[data-sjmynt]");
+    if (!m) return 2; // riktig side, men noe må velges (f.eks. en annen liste)
+    const det = m.closest("details:not([open])"); if (det) return 2;
+    const rc = m.getBoundingClientRect(), hoyde = window.innerHeight;
+    if (rc.bottom > 60 && rc.top < hoyde - 70) return 4;
+    return Math.abs(rc.top - hoyde / 2) < hoyde * 1.2 ? 3 : 2;
+  }
+  const SJ_DET_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 13v8"/><circle cx="12" cy="10" r="2.2"/><path d="M7.5 5.5a6.4 6.4 0 0 0 0 9M16.5 5.5a6.4 6.4 0 0 1 0 9M4.6 2.8a10.4 10.4 0 0 0 0 14.4M19.4 2.8a10.4 10.4 0 0 1 0 14.4"/></svg>';
+  function sjDetektor() {
+    let el = $("#sjDet");
+    const x = sjMin(), paa = x && sjHintPost(x.d, x.m);
+    if (!paa) { if (el) el.hidden = true; return; }
+    if (!el) { document.body.insertAdjacentHTML("beforeend", '<div id="sjDet" class="sj-det" role="status" aria-live="polite" hidden></div>'); el = $("#sjDet"); }
+    const v = sjVarme(x);
+    if (el.dataset.v !== String(v)) {
+      el.dataset.v = String(v); el.className = "sj-det v" + v;
+      el.innerHTML = `${SJ_DET_SVG}<span>${SJ_VARME[v]}</span><i class="sj-skala"><b style="width:${(v + 1) * 20}%"></b></i>`;
+    }
+    el.hidden = false;
+  }
+  let sjRaf = 0;
+  window.addEventListener("scroll", () => { if (!sjRaf && D && $("#sjDet") && !$("#sjDet").hidden) sjRaf = requestAnimationFrame(() => { sjRaf = 0; sjDetektor(); }); }, { passive: true });
+  document.addEventListener("toggle", () => { if (D && SJ()) sjDetektor(); }, true);
+  // ---- kista ----
+  function sjKiste(pid) {
+    const F = sjAlle().filter((p) => p.id === p.d + "|" + pid && p.hvem === pid && p.d).sort((a, b) => (a.d < b.d ? -1 : 1));
+    const godkjent = F.filter((p) => sjStatus(p) !== "ugyldig");
+    const tjent = godkjent.reduce((s, p) => s + (Number(p.verdi) || 0), 0);
+    const betalt = sjAlle().filter((p) => p.hvem === pid && String(p.id).startsWith("u|")).reduce((s, p) => s + (Number(p.belop) || 0), 0);
+    return { F, godkjent, tjent, betalt, igjen: Math.max(0, Math.round((tjent - betalt) * 100) / 100), hint: godkjent.filter((p) => p.hint).length, ugyldig: F.length - godkjent.length };
+  }
+  const sjDagTekst = (d) => stor1(pen(d));
+  // Ukeraden: mandag–søndag, mynt for funnet dag
+  function sjUke(pid, d0) {
+    const S = SJ(), idag = sjOslo(Date.now()).d, man = pluss(d0, -((ukedag(d0) + 6) % 7));
+    return `<div class="sj-uke">${[0, 1, 2, 3, 4, 5, 6].map((i) => {
+      const d = pluss(man, i), f = sjFunnPost(d, pid), ute = d < S.start || d > S.slutt;
+      const kl = ute ? "ute" : f ? (sjStatus(f) === "ugyldig" ? "bom" : f.hint ? "halv" : "full") : d < idag ? "bom" : d === idag ? "idag" : "";
+      return `<span class="${kl}"><i>${f && kl !== "bom" ? sjBilde() : ""}</i>${["man", "tir", "ons", "tor", "fre", "lør", "søn"][i]}</span>`; }).join("")}</div>`;
+  }
+  // ---- jentenes kort på forsiden ----
+  function sjKort() {
+    const S = SJ(); if (!S || !erBarn()) return "";
+    const m = meg(), n = sjNaa(), K = sjKiste(m), idagD = sjOslo(Date.now()).d;
+    let eyebrow = "Skattejakt", tittelT = "", under = "", ekstra = "", etter = "", ikonH = sjBilde("sj-kortmynt");
+    const lenkeRegler = `<button class="sj-lenke" data-sjintro>Slik virker det</button>`;
+    if (n.fase === "for") { tittelT = `Pappas skattejakt starter ${pen(S.start)} kl. ${String(S.kl).padStart(2, "0")}`; under = `Hver dag gjemmer pappa en gullmynt til deg et sted i appen. Hver mynt er verdt ${sjKr(S.verdi)}.`; }
+    else if (n.fase === "over") {
+      tittelT = "Skattejakten er over";
+      under = `Du fant ${K.godkjent.length} ${K.godkjent.length === 1 ? "mynt" : "mynter"} og tjente ${sjKr(K.tjent)}.` + (K.igjen > 0 ? ` Pengene kommer på Vipps ${pen(S.utbetaling || pluss(S.slutt, 1))}.` : K.betalt ? " Alt er betalt ut." : "");
+    } else {
+      eyebrow = `Skattejakt · ${pen(n.d)}`;
+      const f = sjFunnPost(n.d, m), x = sjPlassFor(n.d, m), hint = sjHintPost(n.d, m), siste = n.d === S.slutt;
+      if (n.fase === "natt") { tittelT = n.d === S.start ? `Skattejakten starter i dag kl. ${String(S.kl).padStart(2, "0")}` : `Dagens mynt gjemmes kl. ${String(S.kl).padStart(2, "0")}`; under = n.d === S.start ? `Første mynt gjemmes kl. ${String(S.kl).padStart(2, "0")}. Hver mynt er verdt ${sjKr(S.verdi)}.` : `Sov godt – mynten er på plass kl. ${String(S.kl).padStart(2, "0")}.`; ikonH = sjBilde("sj-kortmynt sj-sover"); }
+      else if (f) { tittelT = "Du fant dagens mynt!"; under = `+${sjKr(Number(f.verdi) || 0)} i kista. ${siste ? `Det var den siste mynten – pengene kommer på Vipps ${pen(S.utbetaling || pluss(S.slutt, 1))}.` : `Neste mynt gjemmes i morgen kl. ${String(S.kl).padStart(2, "0")}.`}`; }
+      else if (sjLaast(n.d, m)) { tittelT = "Denne telefonen har funnet en mynt i dag"; under = "Hver telefon kan bare finne én mynt per dag. Let på din egen telefon."; }
+      else {
+        ikonH = `<span class="sj-ukjent" aria-hidden="true">?</span>`;
+        if (x && x.gate) { tittelT = "Dagens gåte"; ekstra = `<p class="sj-gate">«${esc(x.gate)}»</p>`; under = "Finn stedet i appen – der ligger mynten godt synlig."; }
+        else { tittelT = "Pappas gullmynt er gjemt et sted i appen"; under = `Finn den før midnatt og trykk på den, så får du ${sjKr(S.verdi)}.`; }
+        etter = hint ? `<p class="sj-hintpaa">${SJ_DET_SVG}<span>Metalldetektoren er på · mynten er verdt <b>${sjKr(S.hintVerdi)}</b></span></p>`
+          : `<button class="sj-hintknapp" data-sjhint>${SJ_DET_SVG}<span>Bruk hint</span><small>mynten blir verdt ${sjKr(S.hintVerdi)}</small></button>`;
+      }
+    }
+    const uke = n.fase === "aktiv" || n.fase === "natt" ? sjUke(m, n.d) : "";
+    return `<section class="sj-kort" aria-label="Skattejakt"><div class="sj-hode"><div><div class="sj-eyebrow">${esc(eyebrow)}</div><h2>${esc(tittelT)}</h2></div>${ikonH}</div>
+      ${ekstra}<p class="sj-under">${esc(under)}</p>${etter}${uke}
+      <div class="sj-bunnrad">${lenkeRegler}<a class="sj-kistelenke" href="#/skatt" data-ingen-valuta>Kista di <b>${esc(sjKr(K.tjent))}</b> ›</a></div></section>`;
+  }
+  // ---- kompakt rad for de voksne (forsiden og Penger) og for jentene på Penger ----
+  function sjRad() {
+    const S = SJ(); if (!S) return "";
+    const n = sjNaa();
+    if (erBarn()) { const K = sjKiste(meg()); return `<a class="kort sj-vrad" href="#/skatt" data-ingen-valuta>${sjBilde("sj-vmynt")}<span class="sj-vt"><b>Skattekista di</b><span>${K.godkjent.length} ${K.godkjent.length === 1 ? "mynt" : "mynter"} · ${esc(sjKr(K.tjent))}</span></span><span class="fv-pil">${ikon("chev", "")}</span></a>`; }
+    const barn = barnIds();
+    const sum = barn.map((id) => `${esc(personNavn(id))} ${esc(sjKr(sjKiste(id).tjent))}`).join(" · ");
+    let i = "";
+    if (n.fase === "aktiv") i = barn.map((id) => `${esc(personNavn(id))} ${sjFunnPost(n.d, id) ? "✓" : "leter"}`).join(" · ");
+    else if (n.fase === "for") i = `Starter ${pen(S.start)} kl. ${String(S.kl).padStart(2, "0")}`;
+    else if (n.fase === "over") { const igjen = barn.reduce((s, id) => s + sjKiste(id).igjen, 0); i = igjen > 0 ? `Utbetaling ${pen(S.utbetaling || pluss(S.slutt, 1))}: ${sjKr(igjen)}` : "Ferdig – alt er betalt"; }
+    else i = `Ny mynt kl. ${String(S.kl).padStart(2, "0")}`;
+    return `<a class="kort sj-vrad" href="#/skatt" data-ingen-valuta>${sjBilde("sj-vmynt")}<span class="sj-vt"><b>Skattejakten</b><span>${sum}</span><span>${i}</span></span><span class="fv-pil">${ikon("chev", "")}</span></a>`;
+  }
+  // ---- siden: kista (jentene) / oversikten (de voksne) ----
+  let sjSe = null;
+  function sjKalender(pid) {
+    const S = SJ(), idag = sjOslo(Date.now()).d;
+    const mnd = []; for (let k = S.start.slice(0, 7); k <= S.slutt.slice(0, 7); ) { mnd.push(k); const [y, mm] = k.split("-").map(Number); k = mm === 12 ? `${y + 1}-01` : `${y}-${String(mm + 1).padStart(2, "0")}`; }
+    return mnd.map((k) => {
+      const forste = k + "-01", tom = (ukedag(forste) + 6) % 7, celler = [];
+      for (let i = 0; i < tom; i++) celler.push(`<span class="t"></span>`);
+      let ant = 0, mulige = 0;
+      for (let d = forste; d.slice(0, 7) === k; d = pluss(d, 1)) {
+        const nr = Number(d.slice(8)), f = sjFunnPost(d, pid), med = d >= S.start && d <= S.slutt;
+        if (med && d <= idag) mulige++;
+        let kl = !med ? "ute" : f && sjStatus(f) !== "ugyldig" ? (f.hint ? "halv" : "full") : d < idag ? "bom" : d === idag ? "idag" : "";
+        if (kl === "full" || kl === "halv") ant++;
+        celler.push(`<span class="${kl}" title="${esc(pen(d))}">${kl === "full" || kl === "halv" ? sjBilde() : ""}<em>${nr}</em></span>`);
+      }
+      return `<section class="kort sj-mnd"><div class="sj-mndhode"><h2>${esc(stor1(MND_LANG[Number(k.slice(5, 7)) - 1]))}</h2><span>${mulige ? `${ant} av ${mulige} ${mulige === 1 ? "dag" : "dager"}` : "kommer"}</span></div>
+        <div class="sj-kalhode">${["M", "T", "O", "T", "F", "L", "S"].map((x) => `<span>${x}</span>`).join("")}</div><div class="sj-kal">${celler.join("")}</div></section>`;
+    }).join("");
+  }
+  function sjFunnListe(pid, voksen) {
+    const K = sjKiste(pid); if (!K.F.length) return "";
+    const plass = (id) => (SJ().plasser.find((x) => x.id === id) || {}).navn || "";
+    return `<div class="seksjonstittel">Funn</div><section class="kort sj-funn">${[...K.F].reverse().slice(0, voksen ? 80 : 30).map((p) => { const st = sjStatus(p);
+      return `<div class="sj-frad${st === "ugyldig" ? " ugyldig" : ""}">${sjBilde("sj-fmynt")}<div><b>${esc(sjDagTekst(p.d))}</b><span>${p.c ? "kl. " + esc(new Date(p.c).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })) + " · " : ""}${esc(plass(p.sted))}${p.hint ? " · med hint" : ""}${st === "venter" ? " · registreres når telefonen er på nett" : st === "ugyldig" ? " · teller ikke (klokka på telefonen stemte ikke)" : ""}</span></div><em>${esc(sjKr(Number(p.verdi) || 0))}</em></div>`; }).join("")}</section>`;
+  }
+  function sideSkatt() {
+    const S = SJ(); if (!S) return tittel("Skattejakt") + `<p class="tom">Ingen skattejakt her.</p>` + bunn();
+    const n = sjNaa(), kurs = kursInfo().kurs;
+    if (erBarn()) {
+      const m = meg(), K = sjKiste(m);
+      let h = tittel("Skattekista");
+      h += `<section class="sj-kiste"><div class="sj-eyebrow">Kista di</div><div class="sj-sum">${esc(sjKr(K.tjent).replace(" kr", ""))}<small>kr</small></div>
+        <div class="sj-vnd">ca. ${esc(Math.round(K.tjent * kurs / 1000) * 1000 > 0 ? (Math.round(K.tjent * kurs / 1000) * 1000).toLocaleString("nb-NO") : "0")} ₫ i Vietnam</div>
+        <div class="sj-chips"><span>${K.godkjent.length} ${K.godkjent.length === 1 ? "mynt" : "mynter"}</span>${K.hint ? `<span>${K.hint} med hint</span>` : ""}<span>Maks ${esc(sjKr(sjMaks()))}</span></div>
+        <div class="sj-stabel" aria-hidden="true">${[0, 1, 2, 3, 4].slice(0, Math.max(1, Math.min(5, Math.ceil(K.godkjent.length / 8) || 1))).map((i) => sjBilde("s" + i)).join("")}</div></section>`;
+      if (n.fase !== "for") h += sjKalender(m);
+      if (K.betalt) h += `<section class="kort sj-betalt"><div class="sj-mndhode"><h2>Fått på Vipps</h2><b>${esc(sjKr(K.betalt))}</b></div>${K.igjen > 0 ? `<p class="krolle">${esc(sjKr(K.igjen))} kommer senere.</p>` : ""}</section>`;
+      else h += `<p class="krolle sj-utbet">Pappa vipper pengene til deg ${esc(pen(S.utbetaling || pluss(S.slutt, 1)))}.</p>`;
+      h += sjFunnListe(m, false);
+      h += `<div class="knapper sj-reglerknapp"><button class="kb" data-sjintro>Slik virker skattejakten</button></div>`;
+      return h + bunn();
+    }
+    // De voksne: begge jentene, i dag, utbetaling og kalender
+    const barn = barnIds(); if (!sjSe || !barn.includes(sjSe)) sjSe = barn[0];
+    let h = tittel("Skattejakten", `${esc(pen(S.start))} – ${esc(pen(S.slutt))} · ${esc(sjKr(S.verdi))} per mynt, ${esc(sjKr(S.hintVerdi))} med hint`);
+    h += `<div class="sj-par">${barn.map((id) => { const K = sjKiste(id); return `<div class="kort sj-person"><span class="sj-pnavn">${esc(personNavn(id))}</span><b>${esc(sjKr(K.tjent))}</b><span>${K.godkjent.length} ${K.godkjent.length === 1 ? "mynt" : "mynter"}${K.hint ? ` · ${K.hint} med hint` : ""}</span></div>`; }).join("")}</div>`;
+    if (n.fase === "aktiv" || n.fase === "natt") {
+      h += `<div class="seksjonstittel">I dag · ${esc(pen(n.d))}</div><section class="kort sj-idag">${barn.map((id) => {
+        const f = sjFunnPost(n.d, id), x = sjPlassFor(n.d, id), hint = sjHintPost(n.d, id);
+        const status = n.fase === "natt" ? "Gjemmes kl. " + String(S.kl).padStart(2, "0") : f ? `Fant den kl. ${new Date(f.c).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })}${f.hint ? " med hint" : ""} · +${sjKr(Number(f.verdi) || 0)}` : hint ? "Leter – med metalldetektor" : "Leter";
+        return `<div class="sj-irad${f ? " funnet" : ""}"><i></i><div><b>${esc(personNavn(id))}</b><span>${esc(status)}</span>${x ? `<details class="sj-hvor"><summary>Hvor er mynten?</summary><p>${x.gate ? `Gåte: «${esc(x.gate)}»<br>` : ""}${esc(x.plass.navn)}</p></details>` : ""}</div></div>`; }).join("")}
+        <p class="krolle">Trenger noen hjelp, kan dere gi et muntlig hint uten at mynten mister verdi.</p></section>`;
+    }
+    // Utbetaling
+    const utd = S.utbetaling || pluss(S.slutt, 1);
+    h += `<div class="seksjonstittel">Utbetaling · ${esc(pen(utd))}</div><section class="kort sj-utbetaling">${barn.map((id) => { const K = sjKiste(id);
+      return `<div class="sj-urad"><div><b>${esc(personNavn(id))}</b><span>Tjent ${esc(sjKr(K.tjent))}${K.betalt ? ` · betalt ${esc(sjKr(K.betalt))}` : ""}</span></div>${K.igjen > 0 ? `<button class="kb tel" data-sjbetal="${esc(id)}">${esc(sjKr(K.igjen))} betalt</button>` : `<span class="sj-ok">${K.tjent ? "Betalt" : "–"}</span>`}</div>`; }).join("")}
+      <p class="krolle">Send beløpet på Vipps, og trykk på knappen etterpå. Da ser jentene det i kista si.</p></section>`;
+    if (n.fase !== "for") {
+      h += `<div class="seksjonstittel">Kalender</div><div class="fv-chips sj-velg">${barn.map((id) => `<button data-sjse="${esc(id)}" class="${id === sjSe ? "p" : ""}">${esc(personNavn(id))}</button>`).join("")}</div>`;
+      h += sjKalender(sjSe) + sjFunnListe(sjSe, true);
+    }
+    h += `<p class="krolle sj-fot">Myntene gjemmes automatisk – på forskjellige steder for hver av jentene, og vanskeligere utover høsten. Hver telefon kan bare finne én mynt per dag, og funnene får tidspunkt fra databasen, så det hjelper ikke å stille klokka.</p>`;
+    return h + bunn();
+  }
+  // ---- introduksjonen (første gang jentene åpner appen etter at skattejakten kom) ----
+  function sjIntro() {
+    const S = SJ(); if (!S) return;
+    const n = sjNaa(), fra = n.fase === "for" ? `Fra ${pen(S.start)}` : n.fase === "natt" && n.d === S.start ? `Fra i dag kl. ${String(S.kl).padStart(2, "0")}` : "Hver dag";
+    const o = $("#overlay"); o.className = "overlay sj-intro";
+    o.innerHTML = `<div class="sj-introinn" role="dialog" aria-modal="true" aria-labelledby="sjIntroT">
+      <div class="sj-snurr">${sjBilde()}</div>
+      <h1 id="sjIntroT">Pappas skattejakt</h1>
+      <p class="sj-ingress">${esc(fra)} til ${esc(pen(S.slutt))} gjemmer pappa en gullmynt til deg et sted i appen.</p>
+      <ol class="sj-regler">
+        <li><b>Ny mynt hver morgen kl. ${String(S.kl).padStart(2, "0")}.</b> Finn den før midnatt og trykk på den.</li>
+        <li><b>Hver mynt er verdt ${esc(sjKr(S.verdi))}.</b> Du kan finne én mynt per dag.</li>
+        <li><b>Søndager får du en gåte</b> om reisen. Løs den, så vet du hvor mynten ligger.</li>
+        <li class="sj-viktig"><b>Står du fast? Bruk hint.</b> Da får du en metalldetektor som blir varmere jo nærmere du kommer. <b>Men da halveres verdien:</b> mynten blir verdt ${esc(sjKr(S.hintVerdi))} i stedet for ${esc(sjKr(S.verdi))}.</li>
+        <li><b>Dere har hver deres mynt</b>, gjemt på forskjellige steder. Det hjelper ikke å tipse hverandre.</li>
+        <li><b>Pengene kommer på Vipps ${esc(pen(S.utbetaling || pluss(S.slutt, 1)))}.</b> Du kan tjene opptil ${esc(sjKr(sjMaks()))}.</li>
+      </ol>
+      <button class="knapp knapp-stor sj-start" data-sjstart>Start jakten!</button>
+      <p class="sj-introfot">Du finner reglene igjen i skattekista di.</p></div>`;
+    o.hidden = false; o.scrollTop = 0;
+  }
+  function sjIntroSjekk() {
+    const S = SJ(); if (!S || !erBarn() || !$("#overlay").hidden) return;
+    if (lagre.get("vn.sjIntro." + meg()) || sjOslo(Date.now()).d > S.slutt) return;
+    sjIntro();
+  }
+  // ---- hint: bekreft i et ark ----
+  function sjHintArk() {
+    const S = SJ(), ov = $("#overlay"); ov.className = "overlay ark";
+    ov.innerHTML = `<div class="ark-flate sj-hintark" role="dialog" aria-modal="true"><div class="ark-topp"><span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div>
+      <div class="ark-etikett">Hint</div><h2>Vil du bruke metalldetektoren?</h2>
+      <p>Den viser om du er nær mynten: kaldt, lunkent, varmt – og brennhett når den er på skjermen.</p>
+      <div class="sj-halv"><div><s>${esc(sjKr(S.verdi))}</s><b>${esc(sjKr(S.hintVerdi))}</b></div><span>Med hint er dagens mynt verdt <b>halvparten</b>. Det gjelder bare i dag.</span></div>
+      <div class="fv-arkkn sj-arkkn"><button class="knapp" data-sjhintja>Ja, slå på detektoren</button><button class="knapp knapp-lys" data-sjhintnei>Nei, jeg leter selv</button></div></div>`;
+    ov.hidden = false;
+  }
+  // ---- funnet! ----
+  function sjFinn() {
+    const S = SJ(), x = sjMin(); if (!x) return;
+    const hint = !!sjHintPost(x.d, x.m), verdi = hint ? S.hintVerdi : S.verdi;
+    synkSett({ k: "m", id: x.d + "|" + x.m, d: x.d, hvem: x.m, sted: x.plass.id, hint: hint ? 1 : 0, verdi, enh: enhet(), c: Date.now() });
+    sjPlasser();
+    const K = sjKiste(x.m), siste = x.d === S.slutt, kurs = kursInfo().kurs;
+    const konf = Array.from({ length: 26 }, (_, i) => `<i style="--x:${(i * 37) % 100}%;--d:${(i * 53) % 900}ms;--r:${(i * 71) % 360}deg;--f:${i % 5}"></i>`).join("");
+    const ov = $("#overlay"); ov.className = "overlay sj-funnet";
+    ov.innerHTML = `<div class="sj-konf" aria-hidden="true">${konf}</div><div class="sj-funninn" role="dialog" aria-modal="true" aria-labelledby="sjFunnT">
+      <div class="sj-straaler" aria-hidden="true"></div><div class="sj-snurr stor">${sjBilde()}</div>
+      <h1 id="sjFunnT">Du fant pappas gullmynt!</h1><div class="sj-pluss">+${esc(sjKr(verdi))}</div>
+      <p class="sj-kis">Kista di: ${esc(sjKr(K.tjent))} · ca. ${esc((Math.round(K.tjent * kurs / 1000) * 1000).toLocaleString("nb-NO"))} ₫</p>
+      <p class="sj-smaa">${siste ? `Det var den siste mynten! Pengene kommer på Vipps ${esc(pen(S.utbetaling || pluss(S.slutt, 1)))}.` : `Neste mynt gjemmes i morgen kl. ${String(S.kl).padStart(2, "0")}.`}${navigator.onLine ? "" : "<br>Funnet registreres når telefonen er på nett igjen."}</p>
+      <div class="sj-funnkn"><a class="knapp knapp-stor" href="#/skatt" data-sjkiste>Se kista</a><button class="knapp knapp-lys" data-sjlukk>Lukk</button></div></div>`;
+    ov.hidden = false; ov.scrollTop = 0;
+  }
+  document.addEventListener("click", (e) => {
+    if (!D || !e.target.closest) return;
+    if (e.target.closest("[data-sjmynt]")) { e.preventDefault(); e.stopPropagation(); sjFinn(); return; }
+  }, true);
+  document.addEventListener("click", (e) => {
+    if (!D || !e.target.closest || !SJ()) return;
+    const t = e.target.closest("[data-sjhint],[data-sjhintja],[data-sjhintnei],[data-sjintro],[data-sjstart],[data-sjlukk],[data-sjkiste],[data-sjbetal],[data-sjse]");
+    if (!t) return;
+    if (t.hasAttribute("data-sjhint")) { e.preventDefault(); sjHintArk(); }
+    else if (t.hasAttribute("data-sjhintja")) {
+      e.preventDefault(); const x = sjMin(); lukkOverlay();
+      if (x && !sjHintPost(x.d, x.m)) synkSett({ k: "m", id: x.d + "|" + x.m + "|h", d: x.d, hvem: x.m, enh: enhet(), c: Date.now() });
+      const y = window.scrollY; vis(); window.scrollTo(0, y); toast("Metalldetektoren er på – den blir varmere jo nærmere du kommer", 4200);
+    }
+    else if (t.hasAttribute("data-sjhintnei") || t.hasAttribute("data-sjlukk")) { e.preventDefault(); lukkOverlay(); const y = window.scrollY; vis(); window.scrollTo(0, y); }
+    else if (t.hasAttribute("data-sjkiste")) { lukkOverlay(); }
+    else if (t.hasAttribute("data-sjintro")) { e.preventDefault(); sjIntro(); }
+    else if (t.hasAttribute("data-sjstart")) { e.preventDefault(); lagre.set("vn.sjIntro." + meg(), "1"); lukkOverlay(); const y = window.scrollY; vis(); window.scrollTo(0, y); }
+    else if (t.dataset.sjse) { e.preventDefault(); sjSe = t.dataset.sjse; const y = window.scrollY; vis(); window.scrollTo(0, y); }
+    else if (t.dataset.sjbetal) {
+      e.preventDefault(); const id = t.dataset.sjbetal, K = sjKiste(id); if (!(K.igjen > 0)) return;
+      const pid = "u|" + id + "|" + Date.now(), belop = K.igjen;
+      synkSett({ k: "m", id: pid, hvem: id, belop, av: meg() || "", c: Date.now() });
+      const y = window.scrollY; vis(); window.scrollTo(0, y);
+      toastAngre(`${sjKr(belop)} til ${personNavn(id)} er ført som betalt`, () => { synkSett({ k: "m", id: pid, hvem: id, belop: 0, av: meg() || "", c: Date.now() }); vis(); window.scrollTo(0, y); });
+    }
+  });
+
   // ---------- SIDE: Mer ----------
   function sideMer() {
     const m = meg();
@@ -2744,22 +3087,23 @@
   }
 
   // ---------- ruting ----------
-  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", bingo: "Reisebingo", tema: "Temaer" };
+  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", bingo: "Reisebingo", tema: "Temaer", skatt: "Skattejakt" };
   const rute = () => { const [, side = "idag", arg, del] = (location.hash.startsWith("#/") ? location.hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
   function vis() {
     if (!D) return;
     const { side, arg, del } = rute();
     const html = side === "reisen" ? sideReisen() : side === "sted" ? sideSted(arg) : side === "mat" ? sideMat(arg) : side === "kontakter" ? sideKontakter()
-      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : sideIdag();
+      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : side === "skatt" ? sideSkatt() : sideIdag();
     $("#innhold").innerHTML = html;
     sistVistDato = idagISO();
-    const fane = ["for", "bingo", "tema"].includes(side) ? "idag" : side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
+    const fane = side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
     $$(".faner a").forEach((a) => { const on = a.dataset.fane === fane; a.classList.toggle("aktiv", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     $("#toppTittel").textContent = side === "sted" ? (stedEtterId(arg) || {}).navn || "" : TITLER[side] || "";
     const tb = $("#tilbake");
     if (side === "sted") { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
     else if (["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
-    else if (["for", "bingo", "tema"].includes(side)) { tb.hidden = false; tb.href = "#/idag"; tb.querySelector("span").textContent = "I dag"; }
+    else if (["for", "bingo", "tema"].includes(side) || (side === "skatt" && erBarn())) { tb.hidden = false; tb.href = "#/idag"; tb.querySelector("span").textContent = "I dag"; }
+    else if (side === "skatt") { tb.hidden = false; tb.href = "#/penger"; tb.querySelector("span").textContent = "Penger"; }
     else if (side === "sok") { tb.hidden = false; tb.href = sokFra; tb.querySelector("span").textContent = "Tilbake"; }
     else tb.hidden = true;
     $("#sos").hidden = side === "nod";
@@ -2771,8 +3115,9 @@
     if (side === "for" && arg === "gjort") setTimeout(() => { const el = document.getElementById("fvgjort"); if (el) { el.open = true; el.scrollIntoView({ block: "start" }); } }, 60);
     if (side === "sted" && del) setTimeout(() => { const el = document.getElementById(del); if (el) { el.open = true; el.scrollIntoView({ block: "start" }); } }, 60);
     skyggeTopp();
+    if (SJ()) sjPlasser();
   }
-  window.addEventListener("hashchange", () => { vis(); window.scrollTo(0, 0); });
+  window.addEventListener("hashchange", () => { vis(); window.scrollTo(0, 0); if (SJ()) sjDetektor(); });
   // Appen kan ligge åpen i bakgrunnen over natta: ved ny dag, hopp til dagens dato igjen.
   let sistVistDato = null;
   document.addEventListener("visibilitychange", () => {
@@ -2799,7 +3144,7 @@
   }
   function koblSok() {
     const inp = $("#sok");
-    inp.addEventListener("input", () => { sokTekst = inp.value; $("#kliste").innerHTML = kontaktListe(); });
+    inp.addEventListener("input", () => { sokTekst = inp.value; $("#kliste").innerHTML = kontaktListe(); if (SJ()) sjPlasser(); });
   }
 
   // ---------- SIDE: Søk (i reiseinfoen som allerede er dekryptert på telefonen – virker uten nett; pakkelistene er ikke med) ----------
@@ -3050,6 +3395,7 @@
     47: "Live flystatus fra døgnet før avgang (forsinkelse, gate, bagasjebånd) – og hvor punktlige flyvningene våre pleier å være",
     48: "Punktligheten for flyvningene vises allerede nå (fornyes hver uke)",
     49: "Kildehenvisningen for flydata står nå sammen med tallene",
+    50: "Skattejakt: en gullmynt gjemt i appen hver dag til jentene – se oversikten under Penger",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -3753,7 +4099,7 @@
   }
   document.addEventListener("click", (e) => {
     const b = e.target.closest && e.target.closest("[data-hvem]"); if (!b || !D) return;
-    lagre.set(LS.meg, b.dataset.hvem); lukkOverlay(); vis(); toast(`Hei, ${personNavn(b.dataset.hvem)}!`);
+    lagre.set(LS.meg, b.dataset.hvem); lukkOverlay(); vis(); toast(`Hei, ${personNavn(b.dataset.hvem)}!`); sjIntroSjekk();
   });
   const lukkOverlay = () => { uttaleStopp(); $("#overlay").hidden = true; $("#overlay").innerHTML = ""; };
 
@@ -3991,7 +4337,7 @@
   // ---------- oppstart ----------
   async function lasOpp(p, n) {
     D0 = D = await dekrypter(n, p); K = n; synkMigrer(); D = oppdBruk(D0); tpMigrer(); $("#faner").hidden = false; vis(); tpVarsel(); brukStart();
-    if (!meg() && $("#overlay").hidden) visHvem();
+    if (!meg() && $("#overlay").hidden) visHvem(); else sjIntroSjekk();
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch {}
     synk();
     hentetMelding();
@@ -4008,7 +4354,7 @@
     synkTikk++; const nodkort = !$("#overlay").hidden && AK.skjerm === "nod";
     if (nodkort || rute().side === "bingo" || synkTikk % 3 === 0) synk();
   }, 10000);
-  window.addEventListener("hashchange", () => { if (D && ["pakk", "tlogg", "stat", "for", "bingo"].includes(rute().side)) { tpGjenBekreft = null; if (rute().side === "stat") B.tving = true; synk(); } });
+  window.addEventListener("hashchange", () => { if (D && ["pakk", "tlogg", "stat", "for", "bingo", "skatt"].includes(rute().side)) { tpGjenBekreft = null; if (rute().side === "stat") B.tving = true; synk(); } });
   window.addEventListener("online", () => { if (D) hentKurs().then((ny) => { if (ny && rute().side === "penger") vis(); }); });
   async function oppstart() {
     nett();
