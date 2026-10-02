@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 48, tid: "2026-10-02 kl. 18:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 49, tid: "2026-10-02 kl. 19:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3049,6 +3049,7 @@
     46: "Luftkvalitet i byene, bølger og vind på snorkledagen – og når sola står opp og går ned (under været)",
     47: "Live flystatus fra døgnet før avgang (forsinkelse, gate, bagasjebånd) – og hvor punktlige flyvningene våre pleier å være",
     48: "Punktligheten for flyvningene vises allerede nå (fornyes hver uke)",
+    49: "Kildehenvisningen for flydata står nå sammen med tallene",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -3607,7 +3608,7 @@
     if (x) {
       const s = x.s, rad = (navn, e, sted) => e ? `<div><span>${navn}</span><b>${esc(e.ny || e.pl || "–")}</b>${e.ny && e.pl && e.ny !== e.pl ? `<small><s>${esc(e.pl)}</s></small>` : ""}<small>${[e.term ? "terminal " + esc(e.term) : "", e.gate ? "gate " + esc(e.gate) : "", e.baand ? "bånd " + esc(e.baand) : ""].filter(Boolean).join(" · ") || esc(sted)}</small></div>` : "";
       h += `<div class="fs-blokk"><div class="fs-topp"><span class="fs-pille fs-${x.kl}">${esc(x.tekst)}</span><span class="vtid">oppdatert kl. ${hhmm(x.h)}</span></div>
-        <div class="vfakta">${rad("Avgang", s.avg, f.fra)}${rad("Ankomst", s.ank, f.til)}</div>${s.fly ? `<p class="vmerk">${esc(s.fly)}</p>` : ""}</div>`;
+        <div class="vfakta">${rad("Avgang", s.avg, f.fra)}${rad("Ankomst", s.ank, f.til)}</div>${s.fly ? `<p class="vmerk">${esc(s.fly)}</p>` : ""}<p class="fs-kilde">Flydata: AeroDataBox</p></div>`;
     } else if (f.d >= idagISO()) {
       const a = fxAvg(f), igjen = a - Date.now();
       h += `<p class="vmerk fs-snart">${igjen > 24 * 3600e3 ? "Live status (forsinkelse, gate, bagasjebånd) vises fra døgnet før avgang." : navigator.onLine ? "Henter live status …" : "Live status hentes når telefonen har nett."}</p>`;
@@ -3621,9 +3622,9 @@
           <small>${z.n} flyvninger ${pen(z.fra, false)}–${pen(z.til, false)}</small></div>`;
       };
       h += `<details class="flydet fs-punkt"><summary>Punktlighet</summary>${del("Ankomst:", g.ank)}${del("Avgang:", g.avg)}
-        <p class="vmerk fs-forkl"><span><i class="t"></i>før tiden</span><span><i class="r"></i>i rute</span><span><i class="g1"></i>15–30 min</span><span><i class="g2"></i>30–60 min</span><span><i class="rd"></i>over 1 t</span></p></details>`;
-    } else if (g && !g.ank && !g.avg && gOk) h += `<p class="vmerk">Ingen punktlighetsstatistikk for denne flyvningen.</p>`;
-    return h && (x || g) ? h + `<p class="fs-kilde">Flydata: AeroDataBox</p>` : h;
+        <p class="vmerk fs-forkl"><span><i class="t"></i>før tiden</span><span><i class="r"></i>i rute</span><span><i class="g1"></i>15–30 min</span><span><i class="g2"></i>30–60 min</span><span><i class="rd"></i>over 1 t</span></p><p class="fs-kilde">Flydata: AeroDataBox</p></details>`;
+    } else if (g && !g.ank && !g.avg && gOk) h += `<p class="vmerk">Ingen punktlighetsstatistikk for denne flyvningen hos AeroDataBox.</p>`;
+    return h;
   }
 
   // ---------- valuta ----------
