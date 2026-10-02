@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 46, tid: "2026-10-02 kl. 12:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 47, tid: "2026-10-02 kl. 16:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -227,6 +227,7 @@
         <div class="pil">→</div>
         <div class="h"><div class="tid">${esc(f.arr)}${f.arrPluss ? "<sup>+1</sup>" : ""}</div><div class="sted"><b>${esc(f.til)}</b>${f.tilT ? " · " + esc(f.tilT) : ""}</div></div>
       </div>
+      ${fxBlokk(f)}
       <div class="fmeta"><span>Ref. <button class="ref" data-kopier="${esc(f.ref)}">${esc(f.ref)}</button></span>
         ${mitt ? (skKan(f) ? skKnapp(f, m, `Ditt sete ${esc(mitt)} <small>· Setekart ›</small>`, "dittsete") : `<span class="dittsete">Ditt sete ${esc(mitt)}</span>`) : `<span><b>Seter</b> ${skKnapp(f, "", esc(f.seterTekst || (f.seter ? Object.values(f.seter).sort().join(", ") : "")) + (skKan(f) ? " ›" : ""))}</span>`}</div>
       ${f.info ? `<div class="finfo">${md(f.info)}</div>` : ""}
@@ -864,7 +865,7 @@
         if (kn) under += `<div class="knapper">${kn}</div>`;
       }
       if (f) { const m = meg(), mitt = f.seter && m ? f.seter[m] : "";
-        under += `<button class="billett" data-idet="${id}"><span>${mitt ? `Sete <b>${esc(mitt)}</b>` : `Seter ${esc(f.seterTekst || (f.seter ? Object.values(f.seter).sort().join(", ") : "–"))}`}</span><span>Ref. <span class="ref">${esc(f.ref)}</span></span><span class="bpil">Billett ›</span></button>`; }
+        under += `<button class="billett" data-idet="${id}"><span>${mitt ? `Sete <b>${esc(mitt)}</b>` : `Seter ${esc(f.seterTekst || (f.seter ? Object.values(f.seter).sort().join(", ") : "–"))}`}</span><span>Ref. <span class="ref">${esc(f.ref)}</span></span><span class="bpil">Billett ›</span></button>`; under += fxPille(f); }
       if (e === utRad) {
         under += vedUt.map((o) => `<div class="tr-under">${huskRad(o, "div")}</div>`).join("");
         if (flytt && romOk) under += romSjekkHtml(false);
@@ -1465,7 +1466,7 @@
     return S.tilst;
   }
   const synkLagre = () => lagre.set(LS.synk, JSON.stringify(synkLes()));
-  const postNokkel = (p) => JSON.stringify(p.k === "x" ? ["x", p.r, p.l, p.n] : p.k === "n" ? ["n", p.r, p.l] : p.k === "e" ? ["e", p.id] : p.k === "a" ? ["a", p.id] : p.k === "u" ? ["u", p.id] : p.k === "b" ? ["b", p.id] : p.k === "d" ? ["d", p.id] : ["l", p.l]);
+  const postNokkel = (p) => JSON.stringify(p.k === "x" ? ["x", p.r, p.l, p.n] : p.k === "n" ? ["n", p.r, p.l] : p.k === "e" ? ["e", p.id] : p.k === "a" ? ["a", p.id] : p.k === "u" ? ["u", p.id] : p.k === "b" ? ["b", p.id] : p.k === "d" ? ["d", p.id] : p.k === "f" ? ["f", p.id] : p.k === "g" ? ["g", p.id] : ["l", p.l]);
   function synkSett(p) {
     const s = synkLes(), k = postNokkel(p);
     p.t = Math.max(Date.now(), ((s.p[k] || {}).t || 0) + 1);
@@ -1587,7 +1588,7 @@
   function synkOppdaterVisning() {
     tpOppdater();
     const nyOppd = oppdFornyVedEndring();
-    if ((!nyOppd && !["pakk", "idag", "sted", "claude", "for", "bingo"].includes(rute().side)) || pakkRediger || pakkNy !== null || !$("#overlay").hidden) return;
+    if ((!nyOppd && !["pakk", "idag", "sted", "claude", "for", "bingo", "fly"].includes(rute().side)) || pakkRediger || pakkNy !== null || !$("#overlay").hidden) return;
     const f = document.activeElement; if (f && f.matches && f.matches("input,textarea")) return;
     const y = window.scrollY; vis(); window.scrollTo(0, y);
   }
@@ -3046,6 +3047,7 @@
     44: "Ny forside hjemme med nedtelling og «Før vi drar» – og fakta, dagens ord og reisebingo for jentene",
     45: "Se det som er gjort i «Før vi drar» – og resortets aktiviteter i egen lukket seksjon",
     46: "Luftkvalitet i byene, bølger og vind på snorkledagen – og når sola står opp og går ned (under været)",
+    47: "Live flystatus fra døgnet før avgang (forsinkelse, gate, bagasjebånd) – og hvor punktlige flyvningene våre pleier å være",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -3468,6 +3470,158 @@
     const tz = v.lon > 60 ? TZ : "Europe/Oslo", kl = (t) => new Date(t).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit", timeZone: tz });
     const m = Math.round((s.ned - s.opp) / 6e4);
     return `<div class="lk-sol"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 17h18M7 17a5 5 0 0 1 10 0M12 6v2.5M5.6 9.6l1.6 1.6M18.4 9.6l-1.6 1.6"/></svg><span>Sola opp <b>${kl(s.opp)}</b> · ned <b>${kl(s.ned)}</b></span><small>${Math.floor(m / 60)} t ${m % 60} min lys</small></div>`;
+  }
+
+  // ---------- flystatus og punktlighet (v47): AeroDataBox via RapidAPI – nøkkel i D.flydata (kryptert) ----------
+  // Gratisnivået har 400 enheter i måneden (status = 2, punktlighet = 6). Derfor hentes det bare i korte vinduer,
+  // og svaret deles via synk ({k:"f"} status, {k:"g"} punktlighet), så bare én telefon henter om gangen.
+  // Vilkårene på gratisnivået: kilden skal vises («Flydata: AeroDataBox»), og data skal ikke lagres i mer enn 7 dager.
+  const FX_VERT = "aerodatabox.p.rapidapi.com";
+  const FX_TZ = (sted) => (/singapore/i.test(sted) ? 8 : /hanoi|da nang|phu quoc|ho chi minh|saigon/i.test(sted) ? 7 : 1); // timer foran UTC i des/jan
+  const fxUtc = (d, kl, tz) => { const [h, m] = String(kl || "00:00").split(":").map(Number); return Date.UTC(+d.slice(0, 4), +d.slice(5, 7) - 1, +d.slice(8, 10), h, m) - tz * 3600e3; };
+  const fxAvg = (f) => fxUtc(f.d, f.dep, FX_TZ(f.fra));
+  const fxAnk = (f) => fxUtc(f.arrPluss ? pluss(f.d, 1) : f.d, f.arr, FX_TZ(f.til));
+  const FX_MAKS_ALDER = 7 * 864e5;
+  // Hvor ofte statusen bør hentes nå: hver 4. time døgnet før, hver halvtime fra 3 t før til like etter avgang,
+  // hver 1,5 time i lufta og hvert 20. minutt den siste timen før landing – ellers aldri
+  function fxIntervall(f, naa = Date.now()) {
+    const a = fxAvg(f), b = fxAnk(f);
+    if (naa < a - 24 * 3600e3 || naa > b + 45 * 60e3) return 0;
+    if (naa < a - 3 * 3600e3) return 4 * 3600e3;
+    if (naa < a + 30 * 60e3) return 30 * 60e3;
+    if (naa < b - 3600e3) return 90 * 60e3;
+    return 20 * 60e3;
+  }
+  const fxPost = (k, id) => synkLes().p[JSON.stringify([k, id])] || null;
+  const fxId = (f) => f.id + "|" + f.d;
+  const fxPaagaar = {};
+  // Lokal sperre mot uhell: høyst 30 kall per telefon per døgn
+  function fxKvote() {
+    let q; try { q = JSON.parse(lagre.get("vn.flykall") || "null"); } catch {}
+    const dag = idagISO(); if (!q || q.d !== dag) q = { d: dag, n: 0 };
+    if (q.n >= 30) return false;
+    q.n++; lagre.set("vn.flykall", JSON.stringify(q)); return true;
+  }
+  async function fxKall(sti) {
+    const r = await fetch(`https://${FX_VERT}${sti}`, { cache: "no-store", referrerPolicy: "no-referrer", headers: { "x-rapidapi-key": D.flydata.nokkel, "x-rapidapi-host": FX_VERT } });
+    if (r.status === 204) return null;
+    if (!r.ok) throw new Error(r.status);
+    return r.json();
+  }
+  const fxKl = (t) => (t && t.local ? t.local.slice(11, 16) : "");
+  const fxMs = (t) => (t && t.utc ? Date.parse(t.utc.replace(" ", "T").replace(/Z?$/, "Z")) : null);
+  function fxTolk(j) {
+    const x = Array.isArray(j) ? (j.find((y) => y.codeshareStatus === "IsOperator") || j[0]) : null;
+    if (!x) return null;
+    const ende = (e) => (e ? { pl: fxKl(e.scheduledTime), ny: fxKl(e.revisedTime || e.predictedTime), plMs: fxMs(e.scheduledTime), nyMs: fxMs(e.revisedTime || e.predictedTime), faktisk: fxKl(e.runwayTime),
+      term: e.terminal || "", gate: e.gate || "", skranke: e.checkInDesk || "", baand: e.baggageBelt || "" } : null);
+    return { st: x.status || "Unknown", avg: ende(x.departure), ank: ende(x.arrival), fly: (x.aircraft && x.aircraft.model) || "", oppd: x.lastUpdatedUtc || "" };
+  }
+  async function fxHentStatus(f) {
+    if (!D.flydata || !D.flydata.nokkel || !navigator.onLine) return;
+    const iv = fxIntervall(f); if (!iv) return;
+    const id = fxId(f), p = fxPost("f", id);
+    if (fxPaagaar["f" + id] || (p && Date.now() - p.h < iv)) return;
+    fxPaagaar["f" + id] = 1;
+    try {
+      // Først: har en av de andre telefonene nettopp hentet? (synk henter postene deres)
+      if (D.synk && Date.now() - (synkLes().ok || 0) > 120e3) { await synk(); const q = fxPost("f", id); if (q && Date.now() - q.h < iv) { fxTegn(); return; } }
+      if (!fxKvote()) return;
+      const s = fxTolk(await fxKall(`/flights/number/${encodeURIComponent(f.id)}/${f.d}?withAircraftImage=false&withLocation=false`));
+      synkSett({ k: "f", id, h: Date.now(), s });
+      fxTegn();
+    } catch {} finally { delete fxPaagaar["f" + id]; }
+  }
+  // Punktlighet: hentes fra 10 dager før avgang, høyst én gang i uka (vilkårene: maks 7 dager gammel)
+  const fxMin = (s) => { if (!s) return null; const neg = s.startsWith("-"), [h, m] = s.replace("-", "").split(":").map(Number); return (neg ? -1 : 1) * (h * 60 + m); };
+  function fxSammendrag(liste) {
+    const vinter = (e) => /-(1[12]|0[1-3])-/.test(e.fromUtc || "");
+    const brukbar = (liste || []).filter((e) => e.numConsideredFlights >= 10 && !(fxMin(e.medianDelay) === 0 && (e.delayPercentiles || []).every((p) => fxMin(p.delay) === 0)));
+    const e = brukbar.filter(vinter).sort((a, b) => b.numConsideredFlights - a.numConsideredFlights)[0] || brukbar.sort((a, b) => (a.toUtc < b.toUtc ? 1 : -1))[0];
+    if (!e) return null;
+    const P = Object.fromEntries((e.delayPercentiles || []).map((p) => [p.percentile, fxMin(p.delay)]));
+    const b = e.numFlightsDelayedBrackets || [], pct = (fn) => Math.round(100 * b.filter(fn).reduce((s, x) => s + (x.percentage || 0), 0));
+    return { n: e.numConsideredFlights, fra: (e.fromUtc || "").slice(0, 10), til: (e.toUtc || "").slice(0, 10), med: fxMin(e.medianDelay), p90: P[90],
+      tidlig: pct((x) => fxMin(x.delayedTo) != null && fxMin(x.delayedTo) <= -15), rute: pct((x) => fxMin(x.delayedFrom) === -15),
+      f15: pct((x) => fxMin(x.delayedFrom) === 15), f30: pct((x) => fxMin(x.delayedFrom) === 30), f60: pct((x) => fxMin(x.delayedFrom) >= 60) };
+  }
+  async function fxHentPunkt(f) {
+    if (!D.flydata || !D.flydata.nokkel || !navigator.onLine) return;
+    const a = fxAvg(f), naa = Date.now();
+    if (naa < a - 10 * 864e5 || naa > fxAnk(f)) return;
+    const p = fxPost("g", f.id);
+    if (fxPaagaar["g" + f.id] || (p && naa - p.h < FX_MAKS_ALDER)) return;
+    fxPaagaar["g" + f.id] = 1;
+    try {
+      if (D.synk && Date.now() - (synkLes().ok || 0) > 120e3) { await synk(); const q = fxPost("g", f.id); if (q && Date.now() - q.h < FX_MAKS_ALDER) { fxTegn(); return; } }
+      if (!fxKvote()) return;
+      const j = await fxKall(`/flights/${encodeURIComponent(f.id)}/delays`);
+      synkSett({ k: "g", id: f.id, h: Date.now(), avg: j ? fxSammendrag(j.origins) : null, ank: j ? fxSammendrag(j.destinations) : null });
+      fxTegn();
+    } catch {} finally { delete fxPaagaar["g" + f.id]; }
+  }
+  function fxTegn() {
+    if (!["idag", "fly"].includes(rute().side) || !trygtAaTegne()) return;
+    const o = $("#overlay"); if (o && !o.hidden) return;
+    const y = window.scrollY; vis(); window.scrollTo(0, y);
+  }
+  // Mens appen er åpen: sjekk hvert minutt om noe skal hentes (kallene over avgjør selv om det er på tide)
+  setInterval(() => { if (D && D.flydata && document.visibilityState === "visible") D.fly.forEach((f) => { fxHentStatus(f); fxHentPunkt(f); }); }, 60e3);
+
+  const FX_ST = { Expected: "Planlagt", CheckIn: "Innsjekk åpen", Boarding: "Ombordstigning", GateClosed: "Gaten er stengt", Departed: "Har tatt av", EnRoute: "I lufta",
+    Approaching: "Inn for landing", Arrived: "Landet", Delayed: "Forsinket", Canceled: "Kansellert", CanceledUncertain: "Kan være kansellert", Diverted: "Landet et annet sted", Unknown: "Ukjent status" };
+  const fxForsink = (e) => (e && e.plMs && e.nyMs ? Math.round((e.nyMs - e.plMs) / 6e4) : null);
+  const fxVarighet = (m) => (Math.abs(m) >= 60 ? `${Math.floor(Math.abs(m) / 60)} t${Math.abs(m) % 60 ? ` ${Math.abs(m) % 60} min` : ""}` : `${Math.abs(m)} min`);
+  // Status som pille + én linje: «Forsinket 25 min · avgang 16:30 · gate 12»
+  function fxStatus(f) {
+    fxHentStatus(f);
+    const p = fxPost("f", fxId(f));
+    if (!p || !p.s || Date.now() - p.h > FX_MAKS_ALDER) return null;
+    const s = p.s, landet = s.st === "Arrived", tatt = ["Departed", "EnRoute", "Approaching"].includes(s.st) || landet;
+    const fa = fxForsink(s.avg), fk = fxForsink(s.ank), fors = tatt ? fk : fa;
+    let kl = "gronn", tekst;
+    if (/^Cancel/.test(s.st) || s.st === "Diverted") { kl = "rod"; tekst = FX_ST[s.st]; }
+    else if (landet) tekst = fk != null && fk >= 15 ? `Landet ${fxVarighet(fk)} forsinket` : fk != null && fk <= -10 ? `Landet ${fxVarighet(fk)} før tiden` : "Landet";
+    else if (fors != null && fors >= 15) { kl = fors >= 60 ? "rod" : "gul"; tekst = `${tatt ? FX_ST[s.st] + " · " : ""}${fxVarighet(fors)} forsinket`; }
+    else if (s.st === "Unknown") { kl = "gra"; tekst = FX_ST.Unknown; }
+    else tekst = ["Expected", "Delayed"].includes(s.st) ? "I rute" : FX_ST[s.st] || "I rute";
+    if (landet && fk != null && fk >= 15) kl = fk >= 60 ? "rod" : "gul";
+    const deler = [];
+    if (!tatt && s.avg) { if (s.avg.ny && s.avg.ny !== s.avg.pl) deler.push(`ny avgang <b>${esc(s.avg.ny)}</b>`); if (s.avg.skranke) deler.push(`skranke ${esc(s.avg.skranke)}`); if (s.avg.gate) deler.push(`gate <b>${esc(s.avg.gate)}</b>`); }
+    if (s.ank) { if (s.ank.ny && s.ank.ny !== s.ank.pl && !landet) deler.push(`lander ca. <b>${esc(s.ank.ny)}</b>`); if (landet && s.ank.baand) deler.push(`bagasjebånd <b>${esc(s.ank.baand)}</b>`); }
+    return { kl, tekst, linje: deler.join(" · "), h: p.h, s };
+  }
+  function fxPille(f) {
+    fxHentPunkt(f);
+    const x = fxStatus(f); if (!x) return "";
+    return `<div class="fs-linje"><span class="fs-pille fs-${x.kl}">${esc(x.tekst)}</span>${x.linje ? `<span>${x.linje}</span>` : ""}</div>`;
+  }
+  // Hele blokken i flykortet: status, terminal/gate/bånd og punktlighet
+  function fxBlokk(f) {
+    if (!D.flydata) return "";
+    fxHentPunkt(f);
+    const x = fxStatus(f), g = fxPost("g", f.id), gOk = g && Date.now() - g.h <= FX_MAKS_ALDER;
+    let h = "";
+    if (x) {
+      const s = x.s, rad = (navn, e, sted) => e ? `<div><span>${navn}</span><b>${esc(e.ny || e.pl || "–")}</b>${e.ny && e.pl && e.ny !== e.pl ? `<small><s>${esc(e.pl)}</s></small>` : ""}<small>${[e.term ? "terminal " + esc(e.term) : "", e.gate ? "gate " + esc(e.gate) : "", e.baand ? "bånd " + esc(e.baand) : ""].filter(Boolean).join(" · ") || esc(sted)}</small></div>` : "";
+      h += `<div class="fs-blokk"><div class="fs-topp"><span class="fs-pille fs-${x.kl}">${esc(x.tekst)}</span><span class="vtid">oppdatert kl. ${hhmm(x.h)}</span></div>
+        <div class="vfakta">${rad("Avgang", s.avg, f.fra)}${rad("Ankomst", s.ank, f.til)}</div>${s.fly ? `<p class="vmerk">${esc(s.fly)}</p>` : ""}</div>`;
+    } else if (f.d >= idagISO()) {
+      const a = fxAvg(f), igjen = a - Date.now();
+      h += `<p class="vmerk fs-snart">${igjen > 24 * 3600e3 ? "Live status (forsinkelse, gate, bagasjebånd) vises fra døgnet før avgang." : navigator.onLine ? "Henter live status …" : "Live status hentes når telefonen har nett."}</p>`;
+    }
+    if (gOk && (g.ank || g.avg)) {
+      const del = (navn, z) => {
+        if (!z) return "";
+        const sent = z.f30 + z.f60, vanlig = z.med <= -3 ? `${fxVarighet(z.med)} før rute` : z.med >= 3 ? `${fxVarighet(z.med)} forsinket` : "på rutetid";
+        return `<div class="fs-stat"><b>${navn}</b> vanligvis ${vanlig}. 9 av 10 ${z.p90 <= 0 ? "før rutetid" : `innen ${z.p90} min`}. Over 30 min forsinket: ${sent} %.
+          <div class="fs-bar" aria-hidden="true"><i class="t" style="width:${z.tidlig}%"></i><i class="r" style="width:${z.rute}%"></i><i class="g1" style="width:${z.f15}%"></i><i class="g2" style="width:${z.f30}%"></i><i class="rd" style="width:${z.f60}%"></i></div>
+          <small>${z.n} flyvninger ${pen(z.fra, false)}–${pen(z.til, false)}</small></div>`;
+      };
+      h += `<details class="flydet fs-punkt"><summary>Punktlighet</summary>${del("Ankomst:", g.ank)}${del("Avgang:", g.avg)}
+        <p class="vmerk fs-forkl"><span><i class="t"></i>før tiden</span><span><i class="r"></i>i rute</span><span><i class="g1"></i>15–30 min</span><span><i class="g2"></i>30–60 min</span><span><i class="rd"></i>over 1 t</span></p></details>`;
+    } else if (g && !g.ank && !g.avg && gOk) h += `<p class="vmerk">Ingen punktlighetsstatistikk for denne flyvningen.</p>`;
+    return h && (x || g) ? h + `<p class="fs-kilde">Flydata: AeroDataBox</p>` : h;
   }
 
   // ---------- valuta ----------

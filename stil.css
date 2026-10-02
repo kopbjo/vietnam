@@ -1517,3 +1517,29 @@ ul.fv-resort li:first-child { border-top: 0; }
 .lk-sol { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 9px 12px; border-radius: 12px; background: var(--flate2); font-size: .9rem; }
 .lk-sol svg { width: 22px; height: 22px; fill: none; stroke: #f5b400; stroke-width: 2; stroke-linecap: round; flex: none; }
 .lk-sol small { margin-left: auto; color: var(--dempet); font-size: .8rem; }
+
+/* ---------- flystatus og punktlighet (v47) ---------- */
+.fs-linje { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; font-size: .85rem; color: var(--dempet); }
+.fs-linje b { color: var(--tekst); }
+.fs-pille { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+.fs-gronn { background: var(--gronn-bg); color: var(--gronn); }
+.fs-gul { background: var(--gul-bg); color: var(--gul); }
+.fs-rod { background: var(--rod); color: var(--rod-tekst); }
+.fs-gra { background: var(--flate2); color: var(--dempet); }
+.fs-blokk { margin: 10px 0 4px; }
+.fs-topp { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+.fs-blokk .vfakta small s { opacity: .8; }
+.fs-snart { margin: 8px 0 0; }
+.fs-stat { margin: 6px 0 10px; font-size: .9rem; }
+.fs-stat small { display: block; color: var(--dempet); font-size: .78rem; margin-top: 3px; }
+.fs-bar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 6px; background: var(--flate2); }
+.fs-bar i, .fs-forkl i { display: block; height: 100%; }
+.fs-forkl { display: flex; flex-wrap: wrap; gap: 4px 12px; }
+.fs-forkl span { white-space: nowrap; display: inline-flex; align-items: center; gap: 4px; }
+.fs-forkl i { display: inline-block; width: 10px; height: 10px; border-radius: 3px; }
+.fs-bar .t, .fs-forkl .t { background: #4f8fd6; }
+.fs-bar .r, .fs-forkl .r { background: #2e9e4f; }
+.fs-bar .g1, .fs-forkl .g1 { background: #e0b400; }
+.fs-bar .g2, .fs-forkl .g2 { background: #ef7d00; }
+.fs-bar .rd, .fs-forkl .rd { background: #d93025; }
+.fs-kilde { font-size: .72rem; color: var(--dempet); margin: 4px 0 0; text-align: right; }
