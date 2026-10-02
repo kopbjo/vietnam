@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 50, tid: "2026-10-03 kl. 03:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 51, tid: "2026-10-03 kl. 00:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -2720,7 +2720,7 @@
 
   // ---------- SKATTEJAKT (v50): én gullmynt per jente per dag, gjemt et sted i appen ----------
   // Oppsettet ligger i reiseinfoen (D.skatt: start, slutt, kl, verdi, hintVerdi, gatedager, fro, vansk, plasser) og bildet i D.bilder.mynt.
-  // Hver jente har sin egen mynt på sitt eget sted. Søndager (gatedager) er det en gåte i stedet. Hint = metalldetektor, men halv verdi.
+  // Hver jente har sin egen mynt på sitt eget sted. Gåtedager (gatedager, nå ingen) gir gåte i stedet. Hint = metalldetektor, men halv verdi.
   // Poster (k:"m"): funn {id:"<dato>|<person>", d, hvem, sted, hint, verdi, enh, c} · hint {id:"<dato>|<person>|h", d, hvem, enh, c}
   //                 · utbetalt {id:"u|<person>|<ms>", hvem, belop, av, c}. Servertiden (st) legges på lokalt når posten hentes fra databasen.
   const SJ_TZ = "Europe/Oslo";
@@ -2767,7 +2767,7 @@
       for (const pid of barn) {
         const v = (S.vansk || {})[pid] || 0;
         let w = [[6, 3, 1], [3, 5, 2], [1, 4, 5]][fase].slice();
-        if (v) w = [w[0] * 0.5, w[1], w[2] * 1.6 + 0.5];
+        if (v) w = [w[0] * (1 - 0.5 * v), w[1], w[2] * (1 + 0.6 * v) + 0.5 * v]; // v = 0 (lettere) … 1 (vanskeligere)
         if (lor) w = [0, w[1] * 0.5, w[2] * 2 + 2];
         const nr = mellom(S.start, d);
         if (nr < 3) w = [1, 0, 0]; else if (nr < 7) w = [6, 2, 0]; // første dager: lett, så de kommer i gang
@@ -2961,10 +2961,10 @@
     h += `<div class="sj-par">${barn.map((id) => { const K = sjKiste(id); return `<div class="kort sj-person"><span class="sj-pnavn">${esc(personNavn(id))}</span><b>${esc(sjKr(K.tjent))}</b><span>${K.godkjent.length} ${K.godkjent.length === 1 ? "mynt" : "mynter"}${K.hint ? ` · ${K.hint} med hint` : ""}</span></div>`; }).join("")}</div>`;
     if (n.fase === "aktiv" || n.fase === "natt") {
       h += `<div class="seksjonstittel">I dag · ${esc(pen(n.d))}</div><section class="kort sj-idag">${barn.map((id) => {
-        const f = sjFunnPost(n.d, id), x = sjPlassFor(n.d, id), hint = sjHintPost(n.d, id);
+        const f = sjFunnPost(n.d, id), hint = sjHintPost(n.d, id);
         const status = n.fase === "natt" ? "Gjemmes kl. " + String(S.kl).padStart(2, "0") : f ? `Fant den kl. ${new Date(f.c).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })}${f.hint ? " med hint" : ""} · +${sjKr(Number(f.verdi) || 0)}` : hint ? "Leter – med metalldetektor" : "Leter";
-        return `<div class="sj-irad${f ? " funnet" : ""}"><i></i><div><b>${esc(personNavn(id))}</b><span>${esc(status)}</span>${x ? `<details class="sj-hvor"><summary>Hvor er mynten?</summary><p>${x.gate ? `Gåte: «${esc(x.gate)}»<br>` : ""}${esc(x.plass.navn)}</p></details>` : ""}</div></div>`; }).join("")}
-        <p class="krolle">Trenger noen hjelp, kan dere gi et muntlig hint uten at mynten mister verdi.</p></section>`;
+        return `<div class="sj-irad${f ? " funnet" : ""}"><i></i><div><b>${esc(personNavn(id))}</b><span>${esc(status)}</span></div></div>`; }).join("")}
+        <p class="krolle">Hvor myntene ligger, vises ikke i appen – ellers kunne jentene finne det ved å bytte bruker under Mer.</p></section>`;
     }
     // Utbetaling
     const utd = S.utbetaling || pluss(S.slutt, 1);
@@ -2990,7 +2990,7 @@
       <ol class="sj-regler">
         <li><b>Ny mynt hver morgen kl. ${String(S.kl).padStart(2, "0")}.</b> Finn den før midnatt og trykk på den.</li>
         <li><b>Hver mynt er verdt ${esc(sjKr(S.verdi))}.</b> Du kan finne én mynt per dag.</li>
-        <li><b>Søndager får du en gåte</b> om reisen. Løs den, så vet du hvor mynten ligger.</li>
+        ${(S.gatedager || []).length ? `<li><b>Søndager får du en gåte</b> om reisen. Løs den, så vet du hvor mynten ligger.</li>` : ""}
         <li class="sj-viktig"><b>Står du fast? Bruk hint.</b> Da får du en metalldetektor som blir varmere jo nærmere du kommer. <b>Men da halveres verdien:</b> mynten blir verdt ${esc(sjKr(S.hintVerdi))} i stedet for ${esc(sjKr(S.verdi))}.</li>
         <li><b>Dere har hver deres mynt</b>, gjemt på forskjellige steder. Det hjelper ikke å tipse hverandre.</li>
         <li><b>Pengene kommer på Vipps ${esc(pen(S.utbetaling || pluss(S.slutt, 1)))}.</b> Du kan tjene opptil ${esc(sjKr(sjMaks()))}.</li>
@@ -3396,6 +3396,7 @@
     48: "Punktligheten for flyvningene vises allerede nå (fornyes hver uke)",
     49: "Kildehenvisningen for flydata står nå sammen med tallene",
     50: "Skattejakt: en gullmynt gjemt i appen hver dag til jentene – se oversikten under Penger",
+    51: "Skattejakt: mynt hver dag (ingen gåter), like vanskelig for begge",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
