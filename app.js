@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 51, tid: "2026-10-03 kl. 00:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 52, tid: "2026-10-03 kl. 12:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -2619,13 +2619,14 @@
   const bgStedNavn = (id) => ((D.bingo && D.bingo.steder) || []).find((s) => s.id === id)?.navn || id;
   function bgStandardSted() {
     const idag = idagISO(), ids = ((D.bingo && D.bingo.steder) || []).map((s) => s.id);
+    if (idag < start() && ids.includes("hjemme")) return "hjemme"; // før avreise: brett med ting hjemme (v52)
     if (idag < start() || idag >= slutt() || D.fly.some((f) => f.d === idag && /Singapore|København/.test(f.fra + f.til))) return "reisen";
     const s = stedForDato(idag); return s && ids.includes(s.id) ? s.id : "overalt";
   }
   function bgNyttBrett(sted) {
     const B = (D.bingo && D.bingo.steder) || [], s = B.find((x) => x.id === sted) || B[0], all = B.find((x) => x.id === "overalt");
     const bland = (a) => { a = [...a]; for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
-    const egne = bland(s.ting).slice(0, s.id === "overalt" ? 16 : 10), fyll = bland((all ? all.ting : []).filter((x) => !egne.includes(x)));
+    const egne = bland(s.ting).slice(0, s.id === "overalt" || s.alene ? 16 : 10), fyll = bland((all ? all.ting : []).filter((x) => !egne.includes(x)));
     return bland([...egne, ...fyll].slice(0, 16));
   }
   function bingoRad() {
@@ -3397,6 +3398,7 @@
     49: "Kildehenvisningen for flydata står nå sammen med tallene",
     50: "Skattejakt: en gullmynt gjemt i appen hver dag til jentene – se oversikten under Penger",
     51: "Skattejakt: mynt hver dag (ingen gåter), like vanskelig for begge",
+    52: "Reisebingo: ny kategori «Før vi reiser» – prøv bingo hjemme før avreise",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
