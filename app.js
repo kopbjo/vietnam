@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 52, tid: "2026-10-03 kl. 12:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 53, tid: "2026-10-04 kl. 15:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -209,6 +209,8 @@
       ${nummer.length ? `<div class="krolle" style="margin-top:6px">${nummer.map(esc).join(" · ")}</div>` : ""}
     </div>`;
   }
+  // Kontakten slik den gjelder én bestemt dag (v53): k.dager[dato] overstyrer rolle/bruk/merk i dagsvisningen
+  const kontaktPaDag = (k, d) => { const x = k && d && k.dager && k.dager[d]; return x ? { ...k, ...x } : k; };
   const kontakterHtml = (ids) => (ids || []).map((id) => kontaktHtml(kontaktEtterId(id))).join("");
 
   function flyKort(f) {
@@ -755,7 +757,7 @@
   // «Betale i dag»: oppgaver som starter med «Betal», «Betal …» i merknaden og hotell som betales ved ankomst/utsjekk
   function betalIdag(d, hend, utH, natt) {
     const linjer = [], sett = new Set();
-    const tall = (s) => String(s).replace(/\D/g, "");
+    const tall = (s) => (String(s).match(/\d[\d\s.,]*\d|\d/) || [""])[0].replace(/\D/g, ""); // første beløp (ikke klokkeslett senere i teksten)
     const legg = (tekst, belop) => { const k = tall(belop || tekst); if (k && sett.has(k)) return; if (k) sett.add(k); linjer.push(tekst); };
     for (const e of hend) {
       if (e.oppgave && /^betal\b/i.test(e.tittel)) legg(`${e.tittel.replace(/^betal\s+/i, "")}${e.merk ? ": " + e.merk : ""}`, e.merk || e.tittel);
@@ -944,7 +946,7 @@
     } else {
       const f = flyForHend(x), k = x.kontakt ? kontaktEtterId(x.kontakt) : null, s = x.sted;
       inn = `<div class="ark-etikett">${x.t ? (KL_RE.test(x.t) ? "kl. " + esc(x.t) : esc(x.t)) + " · " : ""}${esc(pen(x.d))}</div><h2>${md(x.tittel)}</h2>${x.merk ? `<p>${md(x.merk)}</p>` : ""}
-        ${f ? flyKort(f) : ""}${x.avledet && s ? `<div class="hotell">${hotellInnhold(s, false)}</div>` : ""}${k ? `<div class="kort arkkontakt">${kontaktHtml(k)}</div>` : ""}`;
+        ${f ? flyKort(f) : ""}${x.avledet && s ? `<div class="hotell">${hotellInnhold(s, false)}</div>` : ""}${k ? `<div class="kort arkkontakt">${kontaktHtml(kontaktPaDag(k, x.d))}</div>` : ""}`;
     }
     const o = $("#overlay");
     o.className = "overlay ark";
@@ -1997,6 +1999,16 @@
     if (v < pluss(start(), -14) || v > pluss(slutt(), 3)) oFeil(`${navn} ${v} er utenfor reisen`);
     return v;
   };
+  const oKDager = (v) => {
+    if (typeof v !== "object" || Array.isArray(v)) oFeil("«dager» må være {\"ÅÅÅÅ-MM-DD\":{\"rolle\":\"…\",\"bruk\":\"…\"}}");
+    const u = {};
+    for (const [dt, x] of Object.entries(v)) {
+      const dd = oDato(dt, "dag i «dager»"); if (!x || typeof x !== "object" || Array.isArray(x)) oFeil(`«dager» ${dd} må være {"rolle":…,"bruk":…}`);
+      const y = {}; for (const f of ["rolle", "bruk", "merk"]) if (f in x) y[f] = oTekst(x[f], f, f === "rolle" ? 160 : 600) || "";
+      u[dd] = y;
+    }
+    return u;
+  };
   const oTid = (v, navn = "tid", tom = true) => {
     if ((v === undefined || v === null || v === "") && tom) return "";
     if (v === "kveld" && tom) return v;
@@ -2069,6 +2081,8 @@
         if ("knapper" in op) k.knapper = oKnapper(op.knapper);
         if ("bruk" in op) k.bruk = oTekst(op.bruk, "bruk") || "";
         if ("merk" in op) k.merk = oTekst(op.merk, "merk") || "";
+        // Ny samlet tekst uten «dager» → den nye teksten gjelder alle dager
+        if ("dager" in op) { if (op.dager) k.dager = oKDager(op.dager); else delete k.dager; } else if ("rolle" in op || "bruk" in op || "merk" in op) delete k.dager;
         if (i >= 0) d.kontakter[i] = k; else d.kontakter.push(k);
         return `${gammel ? "Endret kontakt" : "Ny kontakt"}: ${k.navn}${k.rolle ? " – " + k.rolle : ""}`;
       }
@@ -2197,7 +2211,7 @@
       '1. {"type":"ny_hendelse","dato":"ÅÅÅÅ-MM-DD","tid":"TT:MM" eller "","sted":"<sted-id>","tittel":"…","merk":"…","oppgave":false,"kontakt":"<kontakt-id>"}  (oppgave:true = noe vi må huske å gjøre; kontakt er valgfri)',
       '2. {"type":"endre_hendelse","dato":"<dato>","tittel":"<nøyaktig eksisterende tittel>","ny":{bare feltene som endres: dato, tid, sted, tittel, merk, oppgave, kontakt}}',
       '3. {"type":"fjern_hendelse","dato":"<dato>","tittel":"<nøyaktig eksisterende tittel>"}',
-      '4. {"type":"kontakt","id":"<ny eller eksisterende id: små bokstaver, tall og bindestrek>","navn":"…","rolle":"hvem de er for oss","sted":"<sted-id> eller alle","gruppe":"Transport|Overnatting|Aktiviteter|Mat|Annet","knapper":[["wa|tel|mail|web","<nummer med landskode, e-post eller https-lenke>","<knappetekst, f.eks. WhatsApp guiden>"]],"bruk":"når vi skal kontakte dem","merk":"annet, f.eks. bookingref"}  (eksisterende id = bare feltene som står, endres)',
+      '4. {"type":"kontakt","id":"<ny eller eksisterende id: små bokstaver, tall og bindestrek>","navn":"…","rolle":"hvem de er for oss","sted":"<sted-id> eller alle","gruppe":"Transport|Overnatting|Aktiviteter|Mat|Annet","knapper":[["wa|tel|mail|web","<nummer med landskode, e-post eller https-lenke>","<knappetekst, f.eks. WhatsApp guiden>"]],"bruk":"når vi skal kontakte dem","merk":"annet, f.eks. bookingref"}  (eksisterende id = bare feltene som står, endres. Valgfritt: "dager":{"ÅÅÅÅ-MM-DD":{"rolle":"…","bruk":"…"}} = det som gjelder akkurat den dagen – vises i dagsvisningen)',
       '5. {"type":"fly","id":"<eksisterende flynummer>","endre":{bare det som endres: nyttNr, dato, avgang, ankomst, ankomstPlussDag (true/false), fraTerminal, tilTerminal, info, seter:{"<person>":"12A"}}}',
       '6. {"type":"hotell","sted":"<sted-id>","endre":{bare det som endres: navn, adresse, ref, inn, ut, rom, betaling}}',
       '7. {"type":"seksjon","sted":"<sted-id>","tittel":"f.eks. Bestilt: Båttur","stil":"bestilt|info|advarsel|ankomst|avreise","rader":[["Hva","…"],["Henting","…"],["Betaling","…"]],"tekst":["…"],"kontakter":["<kontakt-id>"]}  (samme tittel på samme sted = endrer den: bare «stil», «rader», «tekst» og «kontakter» som står, byttes ut – skriv da alle radene)',
@@ -3176,7 +3190,7 @@
     [...D.hendelser].sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : minutter(a.t) - minutter(b.t))).forEach((e) => {
       const k = e.kontakt ? kontaktEtterId(e.kontakt) : null;
       const naar = `${pen(e.d)}${e.t ? (e.t === "kveld" ? " · kveld" : " kl. " + e.t) : ""}`;
-      legg("program", e.tittel, [naar, stedNavn(e.sted), e.oppgave ? "Husk" : ""].filter(Boolean).join(" · "), [e.merk, k && k.navn, k && k.rolle],
+      legg("program", e.tittel, [naar, stedNavn(e.sted), e.oppgave ? "Husk" : ""].filter(Boolean).join(" · "), [e.merk, k && k.navn, k && kontaktPaDag(k, e.d).rolle],
         { hash: "#/idag", sel: ".tidslinje li", tekst: rensMd(e.tittel), for: () => { valgtDag = e.d; } }, k ? () => ringeKnapper(k) : null);
     });
     D.kontakter.forEach((k) => legg("kontakt", k.navn, [k.rolle, k.sted === "alle" ? k.gruppe : stedNavn(k.sted)].filter(Boolean).join(" · "),
@@ -3399,6 +3413,7 @@
     50: "Skattejakt: en gullmynt gjemt i appen hver dag til jentene – se oversikten under Penger",
     51: "Skattejakt: mynt hver dag (ingen gåter), like vanskelig for begge",
     52: "Reisebingo: ny kategori «Før vi reiser» – prøv bingo hjemme før avreise",
+    53: "I dag: detaljene viser bare det som gjelder den dagen",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
