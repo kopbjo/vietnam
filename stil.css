@@ -1742,3 +1742,20 @@ dl.info-rader dd { line-height: 1.45; }
 .tidvalg > span { color: #555; font-size: .9rem; }
 .af select.tiddel { margin-top: 8px; font-size: .95rem; min-height: 44px; }
 .tr > .kl.kl-ord, li > .kl.kl-ord { font-size: .78rem; hyphens: manual; -webkit-hyphens: manual; overflow-wrap: normal; padding-top: 6px; }
+
+/* ---------- v57: kortet fra stedssiden i detaljarket + navigasjon ---------- */
+.tr.harkort > .inn > .tt::after { content: none; }
+.tr-mer { display: inline-flex; align-items: center; margin-top: 4px; color: var(--aksent); font-size: .86rem; font-weight: 650; }
+.tr.ferdig .tr-mer { color: var(--dempet); }
+.ark-topp .arktilbake { position: absolute; top: 4px; left: 0; min-height: 38px; padding: 0 14px 0 8px; display: inline-flex; align-items: center; gap: 2px; background: var(--flate2); color: var(--tekst); border: 0; border-radius: 99px; font: inherit; font-weight: 600; }
+.ark-topp .arktilbake svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
+.arkkort { margin-top: 16px; }
+.arkkort-fra { display: flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin: 0 0 6px; }
+.arkkort-fra svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.arkkort > .kort, .ark-flate > .kort { margin-bottom: 0; }
+.arkkort > .hotell { background: var(--flate); border: .5px solid var(--linje); border-radius: var(--r); padding: 14px 16px; }
+.arkkort > .arkide, .ark-flate > .arkide { background: var(--flate); border: .5px solid var(--linje); border-radius: var(--r); padding: 4px 16px 8px; }
+.arkide .ide:first-child { border-top: 0; }
+.ark-flate .kort.arkkontakt { margin-top: 12px; }
+.arkgaa { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 14px; padding: 6px 0; color: var(--aksent); font-weight: 600; font-size: .92rem; text-decoration: none; }
+.arkgaa svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }

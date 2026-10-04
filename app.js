@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 56, tid: "2026-10-04 kl. 17:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 57, tid: "2026-10-04 kl. 15:45" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -952,11 +952,14 @@
       }
       if (f) { const m = meg(), mitt = f.seter && m ? f.seter[m] : "";
         under += `<button class="billett" data-idet="${id}"><span>${mitt ? `Sete <b>${esc(mitt)}</b>` : `Seter ${esc(f.seterTekst || (f.seter ? Object.values(f.seter).sort().join(", ") : "–"))}`}</span><span>Ref. <span class="ref">${esc(f.ref)}</span></span><span class="bpil">Billett ›</span></button>`; under += fxPille(f); }
+      // v57: raden har et kort fra stedssiden – vis tydelig at det finnes mer (flyraden har «Billett ›»)
+      const merInfo = !!e.kort && !f && !a;
+      if (merInfo) under += `<div class="tr-mer">Mer info<span aria-hidden="true">\u00a0›</span></div>`;
       if (e === utRad) {
         under += vedUt.map((o) => `<div class="tr-under">${huskRad(o, "div")}</div>`).join("");
         if (flytt && romOk) under += romSjekkHtml(false);
       }
-      return `<div class="tr${aktiv ? " aktiv" : ""}${ferdig ? " ferdig" : ""}${a ? " egen" : ""}" data-idet="${id}" role="button" tabindex="0">${klHtml(e.t, sluttTid(e))}<span class="pr">${ikon(radIkon(e), "")}</span><div class="inn">
+      return `<div class="tr${aktiv ? " aktiv" : ""}${ferdig ? " ferdig" : ""}${a ? " egen" : ""}${merInfo ? " harkort" : ""}" data-idet="${id}" role="button" tabindex="0">${klHtml(e.t, sluttTid(e))}<span class="pr">${ikon(radIkon(e), "")}</span><div class="inn">
         ${aktiv ? `<div class="netikett">${nesteNaar(e).startsWith("pågår") ? "Nå" : "Neste"} · ${esc(nesteNaar(e))}</div>` : ""}<div class="tt">${mote ? "<b>Møtested:</b> " : ""}${a ? esc(a.tekst) : md(e.tittel)}${bord}</div>${under}</div></div>`;
     };
     const naaStrek = `<div class="naastrek" aria-label="Nå"><span>${esc(hhmm(Date.now()))}</span><i></i></div>`;
@@ -1014,7 +1017,71 @@
     o.hidden = false; o.scrollTop = 0;
   }
   // Detaljark nedenfra: trykk på en rad, flybilletten, hotellet i natt eller været
+  // ---------- kortet fra stedssiden i detaljarket (v57) ----------
+  // Hendelser har kort: {s: sted, t: seksjonstittel | hotell: 1 | ide: idénavn}. Arket viser SELVE kortet, ikke en kopi.
+  let ARK = []; // tidligere ark når et kort er åpnet inne i arket («‹ Tilbake»): {html, y}
+  let utgangArk = null; // arket som var åpent da man gikk fra dagen til en annen side (åpnes igjen ved retur)
+  function kortFinn(k) {
+    const s = k && stedEtterId(k.s); if (!s) return null;
+    if (k.hotell) return s.hotell ? { s, hotell: 1 } : null;
+    if (k.ide) { const i = (D.ideer[s.id] || []).find((x) => x.navn === k.ide); return i ? { s, ide: i } : null; }
+    const l = s.seksjoner || [], sek = l.find((x) => x.tittel === k.t) || l.find((x) => x.tittel.startsWith(k.t || "\u0000"));
+    return sek ? { s, sek } : null;
+  }
+  // Intern lenke (#/sted/x + overskrift) → samme kort som søket finner (overskriften inneholder teksten)
+  function kortFraLenke(href, finn) {
+    const m = String(href || "").match(/^#\/sted\/([\w-]+)$/); if (!m || !finn) return null;
+    const s = stedEtterId(m[1]); if (!s) return null;
+    const nt = sokNorm(finn), sek = (s.seksjoner || []).find((x) => sokNorm(x.tittel).includes(nt));
+    return sek ? { s, sek } : null;
+  }
+  // ut.fly: flyet raden allerede viser (vises ikke to ganger)
+  function kortArkHtml(kf, ut = {}, d) {
+    const s = kf.s;
+    if (kf.hotell) return `<div class="hotell">${hotellInnhold(s, false)}${notatHtml(s)}</div>`;
+    if (kf.ide) return `<div class="arkide">${ideerHtml([kf.ide])}</div>`;
+    // ut.kontakt: radens egen kontakt står først i kortet (med dagens rolle), så kommer de andre i kortet (med dagens rolle), så kommer de andre
+    const fly = (kf.sek.fly || []).filter((id) => id !== ut.fly), kt0 = kf.sek.kontakter || [], kt = kt0.includes(ut.kontakt) ? [ut.kontakt, ...kt0.filter((id) => id !== ut.kontakt)] : kt0;
+    let h = seksjon({ ...kf.sek, fly: fly.length ? fly : null, kontakter: null });
+    if (kt.length) h = h.replace(/<\/section>$/, `<div class="kontaktblokk">${kt.map((id) => kontaktHtml(kontaktPaDag(kontaktEtterId(id), d))).join("")}</div></section>`);
+    return h;
+  }
+  const kortGaaHtml = (kf) => `<a class="arkgaa" href="#/sted/${esc(kf.s.id)}${kf.ide ? "/ideerher" : ""}"${kf.sek ? ` data-finn="${esc(kf.sek.tittel)}"` : ""}>Vis på ${esc(kf.s.navn)}-siden${ikon("chev", "")}</a>`;
+  function arkApne(inn) {
+    const o = $("#overlay");
+    o.className = "overlay ark";
+    o.innerHTML = `<div class="ark-flate" role="dialog" aria-modal="true"><div class="ark-topp">${ARK.length ? `<button class="arktilbake" data-arktilbake>${ikon("venstre", "")}Tilbake</button>` : ""}<span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div>${inn}</div>`;
+    o.hidden = false; o.scrollTop = 0;
+  }
+  const arkFlate = () => $("#overlay .ark-flate");
+  const arkAapent = () => { const o = $("#overlay"); return !o.hidden && o.classList.contains("ark") && !!arkFlate(); };
+  // Kortet i arket – oppå arket som er åpent (med «‹ Tilbake»), eller som nytt ark
+  function visKortArk(kf, oppaa) {
+    if (oppaa && arkAapent()) ARK.push({ html: $("#overlay").innerHTML, y: arkFlate().scrollTop }); else ARK = [];
+    const s = kf.s;
+    arkApne(`<div class="ark-etikett">${esc(s.navn)}${s.dato ? " · " + esc(s.dato) : ""}</div>${kortArkHtml(kf, {}, rute().side === "idag" ? valgtDag : null)}${kortGaaHtml(kf)}`);
+  }
+  function arkTilbake() {
+    const x = ARK.pop(); if (!x) return lukkOverlay();
+    const o = $("#overlay"); o.className = "overlay ark"; o.innerHTML = x.html; o.hidden = false;
+    const f = arkFlate(); if (f) { f.style.animation = "none"; f.scrollTop = x.y; }
+  }
+  // Husk arket når man forlater dagen fra det, så det er åpent igjen når man kommer tilbake
+  const arkHusk = () => { utgangArk = rute().side === "idag" && arkAapent() ? { html: $("#overlay").innerHTML, y: arkFlate().scrollTop, stabel: ARK.slice() } : null; };
+  function arkGjenopprett(a) {
+    const o = $("#overlay"); o.className = "overlay ark"; o.innerHTML = a.html; o.hidden = false; ARK = a.stabel || [];
+    const f = arkFlate(); if (f) { f.style.animation = "none"; f.scrollTop = a.y; }
+  }
+  document.addEventListener("click", (e) => {
+    if (!D || !e.target.closest) return;
+    if (e.target.closest("[data-arktilbake]")) { e.preventDefault(); arkTilbake(); return; }
+    const g = e.target.closest("a.arkgaa"); if (!g) return;
+    e.preventDefault(); arkHusk(); lukkOverlay();
+    sokGaa({ maal: { hash: g.getAttribute("href"), sel: g.dataset.finn ? "section.kort > h2" : "", tekst: g.dataset.finn || "" } });
+  });
+
   function visDagArk(id) {
+    ARK = [];
     const x = ["vaer", "luft", "sjo"].includes(id) ? null : IDET[id];
     let inn = "";
     if (id === "vaer") inn = vaerHtml(valgtDag);
@@ -1028,14 +1095,13 @@
         ${a.rest ? `<p><span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span></p>` : ""}${a.ide ? `<p>${bestPille(a)}</p>` : ""}${iv ? `<p>${esc(iv.tekst)}</p>${iv.praktisk ? `<p class="krolle">${md(iv.praktisk)}</p>` : ""}${infoRader(iv.info)}` : ""}${a.notat ? `<p>${esc(a.notat)}</p>` : ""}${a.adr ? `<p class="krolle">${esc(a.adr.replace(/\s*\n\s*/g, ", "))}</p>` : ""}
         <p class="krolle">${a.type === "mote" ? "Hvis vi blir borte fra hverandre · " : ""}Lagt til${hvem ? " av " + esc(hvem) : ""}</p><div class="knapper">${avtKnapper(a, true)}</div>`;
     } else {
-      const f = flyForHend(x), k = x.kontakt ? kontaktEtterId(x.kontakt) : null, s = x.sted;
-      inn = `<div class="ark-etikett">${x.t ? esc(tidKl(x.t)) + (sluttTid(x) ? "–" + esc(sluttTid(x)) : "") + " · " : ""}${esc(pen(x.d))}</div><h2>${md(x.tittel)}</h2>${x.merk ? `<p>${md(x.merk)}</p>` : ""}${infoRader(x.info)}
-        ${f ? flyKort(f) : ""}${x.avledet && s ? `<div class="hotell">${hotellInnhold(s, false)}</div>` : ""}${k ? `<div class="kort arkkontakt">${kontaktHtml(kontaktPaDag(k, x.d))}</div>` : ""}`;
+      const f = flyForHend(x), k = x.kontakt ? kontaktEtterId(x.kontakt) : null, s = x.sted, kf = kortFinn(x.kort);
+      // Med kort: kortet fra stedssiden erstatter info-radene (de er hentet fra det samme kortet)
+      const kh = kf ? `<div class="arkkort"${kf.sek ? ` data-kort="${esc(kf.sek.tittel)}"` : ""}><div class="arkkort-fra">${ikon("kart", "")}Fra ${esc(kf.s.navn)}-siden</div>${kortArkHtml(kf, { fly: f && f.id, kontakt: x.kontakt }, x.d)}</div>` : "";
+      inn = `<div class="ark-etikett">${x.t ? esc(tidKl(x.t)) + (sluttTid(x) ? "–" + esc(sluttTid(x)) : "") + " · " : ""}${esc(pen(x.d))}</div><h2>${md(x.tittel)}</h2>${x.merk ? `<p>${md(x.merk)}</p>` : ""}${kf ? "" : infoRader(x.info)}
+        ${f ? flyKort(f) : ""}${x.avledet && s ? `<div class="hotell">${hotellInnhold(s, false)}</div>` : ""}${kh}${k && !(kf && kf.sek && (kf.sek.kontakter || []).includes(x.kontakt)) ? `<div class="kort arkkontakt">${kontaktHtml(kontaktPaDag(k, x.d))}</div>` : ""}${kf ? kortGaaHtml(kf) : ""}`;
     }
-    const o = $("#overlay");
-    o.className = "overlay ark";
-    o.innerHTML = `<div class="ark-flate" role="dialog" aria-modal="true"><div class="ark-topp"><span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div>${inn}</div>`;
-    o.hidden = false; o.scrollTop = 0;
+    arkApne(inn);
   }
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest) return;
@@ -2590,8 +2656,22 @@
   const tilHjemme = () => { dagModus = false; valgtDag = null; if (rute().side !== "idag") location.hash = "#/idag"; else vis(); window.scrollTo(0, 0); };
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest) return;
-    const fane = e.target.closest(".faner a[data-fane='idag']");
-    if (fane) { dagModus = false; valgtDag = null; if (rute().side === "idag") { e.preventDefault(); vis(); window.scrollTo(0, 0); } return; }
+    // Fanene (v57): en annen fane åpnes der du sist var i den; fanen du står i går til starten (som i iOS)
+    const fane = e.target.closest(".faner a[data-fane]");
+    if (fane) {
+      const f = fane.dataset.fane, naa = faneAv(rute().side), m = FANE_MINNE[f];
+      if (!$("#overlay").hidden) lukkOverlay();
+      viaFane = true;
+      if (f === naa) {
+        delete FANE_MINNE[f];
+        if (f === "idag") { dagModus = false; valgtDag = null; if (rute().side === "idag") { e.preventDefault(); viaFane = false; vis(); window.scrollTo(0, 0); } return; }
+        if (location.hash === fane.getAttribute("href")) { e.preventDefault(); viaFane = false; window.scrollTo({ top: 0, behavior: "smooth" }); }
+        return;
+      }
+      if (m) { e.preventDefault(); gjenopprett = m; location.hash = m.hash; return; }
+      if (f === "idag") { dagModus = false; valgtDag = null; }
+      return;
+    }
     if (e.target.closest("[data-ferien]")) { e.preventDefault(); tilDag1(); return; }
     if (e.target.closest("[data-hjemme]")) { e.preventDefault(); tilHjemme(); return; }
     const t = e.target.closest("[data-fvvis],[data-fvfilter],[data-fvmnd],[data-fvgjort]");
@@ -3188,7 +3268,15 @@
 
   // ---------- ruting ----------
   const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", bingo: "Reisebingo", tema: "Temaer", skatt: "Skattejakt" };
-  const rute = () => { const [, side = "idag", arg, del] = (location.hash.startsWith("#/") ? location.hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
+  const ruteAv = (hash) => { const [, side = "idag", arg, del] = (String(hash || "").startsWith("#/") ? hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
+  const rute = () => ruteAv(location.hash);
+  // Fanen en side hører til (markeres nederst)
+  const faneAv = (side) => side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
+  // ---------- navigasjon (v57): fanene husker hvor du var, og «‹ <dag>» tar deg tilbake til dagen ----------
+  const FANE_MINNE = {}; // fane → {hash, y, dag, dm, ark}: siste side i fanen
+  let gjenopprett = null, viaFane = false, fraDag = null;
+  const visesDag = () => !(idagISO() < start() && !dagModus); // false = forsiden før avreise
+  const dagEtikett = (d) => (!d || d === idagISO() ? "I dag" : kort(d).replace(/^./, (c) => c.toUpperCase()));
   function vis() {
     if (!D) return;
     const { side, arg, del } = rute();
@@ -3196,11 +3284,13 @@
       : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : side === "skatt" ? sideSkatt() : sideIdag();
     $("#innhold").innerHTML = html;
     sistVistDato = idagISO();
-    const fane = side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
+    const fane = faneAv(side);
     $$(".faner a").forEach((a) => { const on = a.dataset.fane === fane; a.classList.toggle("aktiv", on); if (on) a.setAttribute("aria-current", "page"); else a.removeAttribute("aria-current"); });
     $("#toppTittel").textContent = side === "sted" ? (stedEtterId(arg) || {}).navn || "" : TITLER[side] || "";
     const tb = $("#tilbake");
-    if (side === "sted") { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
+    delete tb.dataset.tilbakedag;
+    if (fraDag && side !== "idag" && side !== "sok") { tb.hidden = false; tb.href = "#/idag"; tb.dataset.tilbakedag = "1"; tb.querySelector("span").textContent = dagEtikett(fraDag.dag); }
+    else if (side === "sted") { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
     else if (["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
     else if (["for", "bingo", "tema"].includes(side) || (side === "skatt" && erBarn())) { tb.hidden = false; tb.href = "#/idag"; tb.querySelector("span").textContent = "I dag"; }
     else if (side === "skatt") { tb.hidden = false; tb.href = "#/penger"; tb.querySelector("span").textContent = "Penger"; }
@@ -3217,7 +3307,28 @@
     skyggeTopp();
     if (SJ()) sjPlasser();
   }
-  window.addEventListener("hashchange", () => { vis(); window.scrollTo(0, 0); if (SJ()) sjDetektor(); });
+  window.addEventListener("hashchange", (e) => {
+    // Husk siden vi forlot (per fane), og om vi kom fra en dag via en lenke
+    let gml = ""; try { gml = new URL(e.oldURL).hash; } catch {}
+    const gs = ruteAv(gml), ny = rute();
+    const snap = { hash: gs.side === "idag" ? "#/idag" : gml, y: window.scrollY };
+    if (gs.side === "idag") { snap.dag = valgtDag; snap.dm = dagModus; snap.ark = utgangArk; }
+    utgangArk = null;
+    if (D) FANE_MINNE[faneAv(gs.side)] = snap;
+    if (viaFane || ny.side === "idag") fraDag = null;
+    else if (gs.side === "idag" && D && visesDag()) fraDag = snap;
+    viaFane = false;
+    const g = gjenopprett && gjenopprett.hash === (ny.side === "idag" ? "#/idag" : location.hash) ? gjenopprett : null; gjenopprett = null;
+    if (g && ny.side === "idag" && "dag" in g) { valgtDag = g.dag; dagModus = g.dm; }
+    vis(); window.scrollTo(0, g ? g.y : 0);
+    if (g && g.ark) arkGjenopprett(g.ark);
+    if (SJ()) sjDetektor();
+  });
+  // «‹ <dag>» øverst: tilbake til dagen, samme sted på siden og samme ark som var åpent
+  document.addEventListener("click", (e) => {
+    const tb = e.target.closest && e.target.closest("#tilbake[data-tilbakedag]"); if (!tb || !fraDag) return;
+    e.preventDefault(); gjenopprett = fraDag; location.hash = "#/idag";
+  });
   // Appen kan ligge åpen i bakgrunnen over natta: ved ny dag, hopp til dagens dato igjen.
   let sistVistDato = null;
   document.addEventListener("visibilitychange", () => {
@@ -3413,11 +3524,20 @@
     if (location.hash === m.hash) { vis(); window.scrollTo(0, 0); } else location.hash = m.hash;
     setTimeout(() => sokVisFunn(m), 60);
   }
-  // Lenker inne i appen (a.intern): går dit uten å åpne raden de står i, og ruller til riktig kort
+  // Lenker inne i appen (a.intern): går dit uten å åpne raden de står i, og ruller til riktig kort.
+  // v57: en lenke til et kort på en stedsside åpnes i arket når man står i dagen eller allerede er i et ark –
+  // da forlater man aldri dagen («‹ Tilbake» i arket går til forrige ark).
   document.addEventListener("click", (e) => {
     const a = e.target.closest && e.target.closest("a.intern"); if (!a) return;
     e.preventDefault(); e.stopPropagation();
-    if (!$("#overlay").hidden) lukkOverlay();
+    const iArk = arkAapent(), kf = (iArk || rute().side === "idag") && kortFraLenke(a.getAttribute("href"), a.dataset.finn);
+    if (kf) {
+      // Kortet vises allerede lenger ned i dette arket → rull dit i stedet for å åpne det på nytt
+      const her = iArk && $$("#overlay .arkkort[data-kort]").find((x) => x.dataset.kort === kf.sek.tittel);
+      if (her) { her.scrollIntoView({ block: "start", behavior: "smooth" }); return; }
+      visKortArk(kf, iArk); return;
+    }
+    if (!$("#overlay").hidden) { arkHusk(); lukkOverlay(); }
     sokGaa({ maal: { hash: a.getAttribute("href"), sel: a.dataset.finn ? "section.kort > h2" : "", tekst: a.dataset.finn || "" } });
   }, true);
   document.addEventListener("click", (e) => {
@@ -3509,6 +3629,7 @@
     54: "Lenker i teksten tar deg rett til riktig sted i appen",
     55: "Lettere å lese: lange notater deles opp, og ideene har praktisk info (åpent, pris, veien dit)",
     56: "Dagsplanen viser når ting er ferdig, og «morgen», «formiddag», «ettermiddag» eller «kveld» der det ikke er klokkeslett",
+    57: "Trykk på en aktivitet i I dag: alt om den vises der – og appen husker hvor du var",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -4214,7 +4335,7 @@
     const b = e.target.closest && e.target.closest("[data-hvem]"); if (!b || !D) return;
     lagre.set(LS.meg, b.dataset.hvem); lukkOverlay(); vis(); toast(`Hei, ${personNavn(b.dataset.hvem)}!`); sjIntroSjekk();
   });
-  const lukkOverlay = () => { uttaleStopp(); $("#overlay").hidden = true; $("#overlay").innerHTML = ""; };
+  const lukkOverlay = () => { uttaleStopp(); ARK = []; $("#overlay").hidden = true; $("#overlay").innerHTML = ""; };
 
   // ---------- klikk ----------
   document.addEventListener("click", async (e) => {
