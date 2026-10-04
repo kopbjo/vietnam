@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 57, tid: "2026-10-04 kl. 15:45" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 58, tid: "2026-10-04 kl. 16:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3630,6 +3630,7 @@
     55: "Lettere å lese: lange notater deles opp, og ideene har praktisk info (åpent, pris, veien dit)",
     56: "Dagsplanen viser når ting er ferdig, og «morgen», «formiddag», «ettermiddag» eller «kveld» der det ikke er klokkeslett",
     57: "Trykk på en aktivitet i I dag: alt om den vises der – og appen husker hvor du var",
+    58: "Omregnede beløp er lette å lese i mørk modus",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
