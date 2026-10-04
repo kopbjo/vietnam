@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 55, tid: "2026-10-04 kl. 15:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 56, tid: "2026-10-04 kl. 17:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -200,7 +200,12 @@
   const ukedag = (iso) => tilDato(iso).getUTCDay();
   const pen = (iso, lang = true) => { const d = tilDato(iso); return `${lang ? DAGER[d.getUTCDay()] + " " : ""}${d.getUTCDate()}. ${MND[d.getUTCMonth()]}`; };
   const kort = (iso) => { const d = tilDato(iso); return `${DAGER[d.getUTCDay()].slice(0, 3)} ${d.getUTCDate()}.${d.getUTCMonth() + 1}`; };
-  const minutter = (t) => { if (!t) return -1; if (t === "kveld") return 20 * 60; const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
+  // Tid på dagen i stedet for klokkeslett: [sorteres som kl., ferdig kl.] (v56)
+  const DAGSDEL = { morgen: [7, 10], formiddag: [10, 12], ettermiddag: [14, 17], kveld: [20, 24] };
+  const erKl = (t) => /^\d{1,2}:\d{2}$/.test(t || "");
+  const minutter = (t) => { if (!t) return -1; if (DAGSDEL[t]) return DAGSDEL[t][0] * 60; const [a, b] = t.split(":").map(Number); return a * 60 + (b || 0); };
+  const tidKl = (t) => (!t ? "" : erKl(t) ? "kl. " + t : t); // «kl. 07:20» / «kveld»
+  const tidVis = (t) => t || "n/a"; // tidskolonnen: aldri bare en strek
 
   // ---------- ikoner ----------
   const P = {
@@ -525,7 +530,7 @@
     const k = (D.ideer[sId] || []).indexOf(i), planer = ideIPlan(sId, i.navn);
     const denne = dag ? planer.find((a) => a.d === dag) : null, andre = planer.filter((a) => a !== denne);
     const linje = andre.length ? `<div class="ideplan-i">${ikon("bestilt", "")}I planen ${andre.map((a) => esc(pen(a.d))).join(", ")}</div>` : "";
-    const kn = denne ? `<span class="bord ${denne.best ? "ja" : "nei"}">I planen${denne.tid ? " kl. " + esc(denne.tid) : ""}</span><button class="kb" data-avt="${esc(denne.id)}">Endre</button>`
+    const kn = denne ? `<span class="bord ${denne.best ? "ja" : "nei"}">I planen${denne.tid ? " " + esc(tidKl(denne.tid)) : ""}</span><button class="kb" data-avt="${esc(denne.id)}">Endre</button>`
       : `<button class="kb ideplankn" data-ideplan="${esc(sId)}|${k}"${dag ? ` data-ided="${esc(dag)}"` : ""}>${ikon("pluss", "")}Legg i planen</button>`;
     return `<div class="ideplan">${linje}<div class="knapper">${kn}</div></div>`;
   }
@@ -596,7 +601,7 @@
     for (const p of Object.values(synkLes().p)) if (p.k === "x" && p.r === "husk" && p.v) o[p.n] = p;
     return o;
   }
-  const huskTid = (e) => (e.t && e.t !== "kveld" ? "kl. " + e.t : e.t === "kveld" ? "kveld" : "");
+  const huskTid = (e) => tidKl(e.t);
   function huskRad(e, tag = "div", medDato = false) {
     const n = oppgNokkel(e), g = huskLes()[n];
     const hvem = g ? (D.personer.find((p) => p.id === g.hvem) || {}).navn : "";
@@ -606,14 +611,14 @@
       ${e.merk ? `<span class="merk">${md(e.merk)}</span>` : ""}${g ? `<span class="huskav">Gjort${hvem ? " av " + esc(hvem) : ""} · ${esc(naar)}</span>` : ""}</span></label>`;
     const f = e.fly ? flyEtterId(e.fly) : null;
     const kn = f && f.innsjekk && !g ? `<div class="knapper husk-kn">${knapp("web", f.innsjekk.url, "Sjekk inn nå")}<button class="ref" data-kopier="${esc(f.ref)}">Ref. ${esc(f.ref)}</button></div>` : "";
-    return tag === "li" ? `<li class="oppg${g ? " gjort" : ""}"><span class="kl">${esc(e.t || "–")}</span><div>${inn}${kn}</div></li>` : `<div class="husk-l${g ? " gjort" : ""}">${tid ? `<span class="husk-tid">${esc(tid)}</span>` : ""}${inn}${kn}</div>`;
+    return tag === "li" ? `<li class="oppg${g ? " gjort" : ""}"><span class="kl">${esc(tidVis(e.t))}</span><div>${inn}${kn}</div></li>` : `<div class="husk-l${g ? " gjort" : ""}">${tid ? `<span class="husk-tid">${esc(tid)}</span>` : ""}${inn}${kn}</div>`;
   }
 
   // ---------- egne avtaler og notater (deles med familien via synk, post {k:"a", …}) ----------
   const avtLes = () => Object.values(synkLes().p).filter((p) => p.k === "a" && !p.slettet);
   const avtDag = (d) => avtLes().filter((a) => a.type !== "opph" && a.d === d);
   const avtOpph = (id) => avtLes().filter((a) => a.type === "opph" && a.opph === id).sort((a, b) => (a.c || 0) - (b.c || 0));
-  const avtSomHend = (a) => ({ d: a.d, t: a.tid || "", tittel: a.tekst, merk: [a.rest ? (a.bord ? "Bord reservert" : "Bord ikke reservert") : a.ide ? (a.best ? "Bestilt" : "Ikke bestilt") : "", a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "), egen: a });
+  const avtSomHend = (a) => ({ d: a.d, t: a.tid || "", slutt: a.til || "", tittel: a.tekst, merk: [a.rest ? (a.bord ? "Bord reservert" : "Bord ikke reservert") : a.ide ? (a.best ? "Bestilt" : "Ikke bestilt") : "", a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "), egen: a });
   // Restauranter fra restaurantlista for en dag: stedet dere er på, og stedet dere reiser fra på flyttedager
   const restSteder = (d) => D.steder.filter((s) => s.fra <= d && d <= s.til && D.restauranter.liste.some((r) => r.sted === s.id)).sort((a, b) => (a.fra < b.fra ? 1 : -1));
   const restForDag = (d) => { const ids = restSteder(d).map((s) => s.id); return D.restauranter.liste.filter((r) => ids.includes(r.sted)).sort((a, b) => ids.indexOf(a.sted) - ids.indexOf(b.sted) || a.prio - b.prio); };
@@ -640,7 +645,7 @@
   function avtRad(a, iNeste) {
     const mote = a.type === "mote", hvem = personNavn(a.hvem);
     const bord = a.rest ? `<span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span>` : "";
-    return `<li class="egen${mote ? " mote" : ""}${a.rest ? " rest" : ""}"><span class="kl">${esc(a.tid || "–")}</span><div>${mote ? "<b>Møtested:</b> " : ""}${esc(a.tekst)}${bord}
+    return `<li class="egen${mote ? " mote" : ""}${a.rest ? " rest" : ""}">${klHtml(a.tid, a.til)}<div>${mote ? "<b>Møtested:</b> " : ""}${esc(a.tekst)}${bord}
       ${a.notat ? `<div class="merk">${esc(a.notat)}</div>` : ""}${a.adr ? `<div class="merk">${esc(a.adr.replace(/\s*\n\s*/g, ", "))}</div>` : ""}
       <div class="egenav">${mote ? "Hvis vi blir borte fra hverandre · " : a.rest ? "Restaurant · " : ""}Lagt til${hvem ? " av " + esc(hvem) : ""}${iNeste ? " · se Neste over" : ""}</div>
       <div class="knapper">${iNeste ? (a.rest && !a.bord ? `<button class="kb bordkn" data-avtbord="${esc(a.id)}">${ikon("bestilt", "")}Marker som reservert</button>` : "") + `<button class="kb" data-avt="${esc(a.id)}">Endre</button>` : avtKnapper(a)}</div></div></li>`;
@@ -659,8 +664,9 @@
   }
   let AV = null; // skjemaet som er åpent
   function visAvtSkjema(init) {
-    AV = { tid: "", tekst: "", adr: "", tlf: "", notat: "", ...init };
+    AV = { tid: "", til: "", tekst: "", adr: "", tlf: "", notat: "", ...init };
     const a = AV, ny = !a.id, o = $("#overlay");
+    if (DAGSDEL[a.tid]) { a.del = a.tid; a.tid = ""; } // «kveld» o.l. vises i velgeren, ikke i klokkefeltet
     // Restaurantavtaler lagres som type «dag» med rest:1 (så eldre appversjoner viser dem som vanlige avtaler)
     if (a.type === "dag" && a.rest) a.type = "rest";
     // Ideer i planen lagres også som type «dag» (med ide:1)
@@ -675,8 +681,11 @@
     const typer = [["dag", "Denne dagen"], ["rest", "Restaurant"], ...(iSteder.length ? [["ide", "Idé"]] : []), ...(stay ? [["opph", "Hele oppholdet"]] : []), ["mote", "Møtested"]];
     const hvor = a.type === "ide" && a.dagvalg ? "Velg idé og dag" : a.type === "ide" ? pen(a.d) + " · fra ideene – ikke bestilt" : a.type === "opph" ? `Vises alle dager på ${stay.hotell.navn} (${stay.dato})` : a.type === "mote" ? `${pen(a.d)} · hvis vi blir borte fra hverandre` : pen(a.d);
     const felt = (lbl, inp) => `<label class="af"><span>${lbl}</span>${inp}</label>`;
+    // Starter + ferdig, eller bare tid på dagen (v56)
+    const tidFelt = () => `<div class="af"><span>Når (valgfritt)</span><div class="tidvalg"><input type="time" id="avtTid" value="${esc(a.tid)}" aria-label="Starter kl."><span>til</span><input type="time" id="avtTil" value="${esc(a.til)}" aria-label="Ferdig kl."></div>
+      <select id="avtDel" class="tiddel" aria-label="Eller tid på dagen"><option value="">Uten klokkeslett: velg tid på dagen …</option>${Object.keys(DAGSDEL).map((k) => `<option value="${k}"${a.del === k ? " selected" : ""}>${k[0].toUpperCase() + k.slice(1)}</option>`).join("")}</select></div>`;
     let f;
-    if (a.type === "dag") f = felt("Klokkeslett (valgfritt)", `<input type="time" id="avtTid" value="${esc(a.tid)}">`) +
+    if (a.type === "dag") f = tidFelt() +
       felt("Hva", `<input id="avtTekst" value="${esc(a.tekst)}" placeholder="F.eks. Skredder – prøving" autocomplete="off" enterkeyhint="done">`) +
       felt("Adresse (valgfritt – gir «Vis til sjåføren»)", `<textarea id="avtAdr" rows="2" placeholder="Lim inn fra Google Maps" autocomplete="off" autocapitalize="off" spellcheck="false">${esc(a.adr)}</textarea>`) +
       felt("Telefon (valgfritt – gir Ring og WhatsApp)", `<input type="tel" id="avtTlf" value="${esc(a.tlf)}" placeholder="0905 123 456 eller +84 …" autocomplete="off">`);
@@ -692,7 +701,7 @@
       const fri = a.fri ? felt("Navn på restauranten", `<input id="avtTekst" value="${esc(a.tekst)}" placeholder="Navnet på stedet" autocomplete="off" enterkeyhint="done">`) +
         felt("Adresse (valgfritt – gir «Vis til sjåføren»)", `<textarea id="avtAdr" rows="2" placeholder="Lim inn fra Google Maps" autocomplete="off" autocapitalize="off" spellcheck="false">${esc(a.adr)}</textarea>`) +
         felt("Telefon (valgfritt – gir Ring og WhatsApp)", `<input type="tel" id="avtTlf" value="${esc(a.tlf)}" placeholder="0905 123 456 eller +84 …" autocomplete="off">`) : "";
-      f = valg + info + fri + felt("Klokkeslett (valgfritt)", `<input type="time" id="avtTid" value="${esc(a.tid)}">`) +
+      f = valg + info + fri + tidFelt() +
         `<div class="af"><span>Bord</span><div class="bordvalg"><button type="button" data-avtbordvalg="0" class="${a.bord ? "" : "valgt"}">Ikke reservert</button><button type="button" data-avtbordvalg="1" class="${a.bord ? "valgt" : ""}">${ikon("bestilt", "")}Bord reservert</button></div></div>` +
         felt("Notat (valgfritt)", `<input id="avtNotat" value="${esc(a.notat)}" placeholder="F.eks. Bestilt på etternavnet, 4 pers., bord ute" autocomplete="off" enterkeyhint="done">`);
     }
@@ -706,7 +715,7 @@
       const info = i ? `<div class="restinfo">${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}${infoFold(i)}</div>` : "";
       const ds = a.dagvalg ? stedEtterId(a.dagvalg) : null;
       const dag = ds ? felt("Dag", `<select id="avtDag">${dagerI(ds).map((x) => `<option value="${x}"${x === a.d ? " selected" : ""}>${esc(pen(x))}${D.hendelser.some((e) => e.d === x && !e.oppgave) || avtDag(x).some((y) => y.type !== "mote" && y.id !== a.id) ? "" : " – ingenting i planen"}</option>`).join("")}</select>`) : "";
-      f = valg + info + dag + felt("Klokkeslett (valgfritt)", `<input type="time" id="avtTid" value="${esc(a.tid)}">`) +
+      f = valg + info + dag + tidFelt() +
         `<div class="af"><span>Status</span><div class="bordvalg"><button type="button" data-avtbestvalg="0" class="${a.best ? "" : "valgt"}">Ikke bestilt</button><button type="button" data-avtbestvalg="1" class="${a.best ? "valgt" : ""}">${ikon("bestilt", "")}Bestilt</button></div></div>` +
         felt("Notat (valgfritt)", `<input id="avtNotat" value="${esc(a.notat)}" placeholder="F.eks. Billetter i resepsjonen, ta med badetøy" autocomplete="off" enterkeyhint="done">`);
     }
@@ -723,7 +732,7 @@
       <p class="sno">Vises på alle telefonene. Lagres her først og deles når dere har nett.</p></div>`;
     o.hidden = false; o.scrollTop = 0;
   }
-  function avtFelt() { for (const [k, id] of [["d", "avtDag"], ["tid", "avtTid"], ["tekst", "avtTekst"], ["adr", "avtAdr"], ["tlf", "avtTlf"], ["notat", "avtNotat"]]) { const el = document.getElementById(id); if (el) AV[k] = el.value; } }
+  function avtFelt() { for (const [k, id] of [["d", "avtDag"], ["tid", "avtTid"], ["til", "avtTil"], ["del", "avtDel"], ["tekst", "avtTekst"], ["adr", "avtAdr"], ["tlf", "avtTlf"], ["notat", "avtNotat"]]) { const el = document.getElementById(id); if (el) AV[k] = el.value; } }
   function avtEtterTegning(fn) { const y = window.scrollY; vis(); window.scrollTo(0, y); if (fn) fn(); }
   function avtLagre() {
     avtFelt(); const a = AV, rv = a.type === "rest" && !a.fri ? restEtter(a) : null;
@@ -734,7 +743,10 @@
     if (!tekst) { toast(a.type === "mote" ? "Skriv hvor dere møtes" : a.type === "opph" ? "Skriv notatet" : a.type === "rest" ? "Skriv navnet på restauranten" : "Skriv hva det gjelder", 2200, "info"); return; }
     const p = { k: "a", id: a.id || tilfeldigHex(6), type: a.type === "rest" || a.type === "ide" ? "dag" : a.type, tekst, hvem: a.id ? a.hvem || "" : meg() || "", c: a.c || Date.now() };
     if (a.type === "opph") p.opph = a.opph;
-    else { p.d = a.d; p.tid = /^\d{1,2}:\d{2}$/.test(a.tid || "") ? a.tid.padStart(5, "0") : ""; }
+    else {
+      p.d = a.d; p.tid = erKl(a.tid) ? a.tid.padStart(5, "0") : a.type !== "mote" && DAGSDEL[a.del] ? a.del : "";
+      if (a.type !== "mote" && erKl(a.til)) p.til = a.til.padStart(5, "0");
+    }
     if (a.type === "dag") { p.adr = String(a.adr || "").trim(); p.tlf = tlfNorm(a.tlf); }
     if (a.type === "rest") {
       Object.assign(p, { rest: 1, bord: a.bord ? 1 : 0, notat: String(a.notat || "").trim() });
@@ -793,6 +805,10 @@
   const KL_RE = /^\d{1,2}:\d{2}$/;
   const flyForHend = (e) => (e && !e.egen && !e.oppgave ? D.fly.find((f) => f.d === e.d && String(e.tittel || "").startsWith(f.id + " ")) : null);
   const sortMin = (e) => (e.sortMin != null ? e.sortMin : minutter(e.t));
+  // Når et punkt er ferdig: egen sluttid, flyets landing (fra flykortet) eller sluttid på egne avtaler (v56)
+  const sluttTid = (e) => { if (!e) return ""; if (e.slutt) return e.slutt; const f = flyForHend(e); return f && f.arr ? f.arr + (f.arrPluss ? " +1" : "") : ""; };
+  const sluttMin = (e) => { const s = sluttTid(e); if (!s) return null; const [kl, pl] = s.split(" "); let m = minutter(kl); if (pl) m += 1440; else if (erKl(e.t) && m < minutter(e.t)) m += 1440; return m; };
+  const klHtml = (t, s) => `<span class="kl${DAGSDEL[t] || !t ? " kl-ord" : ""}">${esc(tidVis(t)).replace("middag", "\u00ADmiddag")}${s ? `<small class="kl-til">–${esc(s.replace(" +1", ""))}${/\+1$/.test(s) ? "<sup>+1</sup>" : ""}</small>` : ""}</span>`;
   function radIkon(e) {
     if (e.egen) return e.egen.rest ? "mat" : e.egen.ide ? "ideer" : e.egen.type === "mote" ? "kart" : "kalender";
     if (e.forslag) return "ideer";
@@ -829,7 +845,7 @@
     const legg = (tekst, belop) => { const k = tall(belop || tekst); if (k && sett.has(k)) return; if (k) sett.add(k); linjer.push(tekst); };
     for (const e of hend) {
       if (e.oppgave && /^betal\b/i.test(e.tittel)) legg(`${e.tittel.replace(/^betal\s+/i, "")}${e.merk ? ": " + e.merk : ""}`, e.merk || e.tittel);
-      else if (!e.oppgave && e.merk) { const m = e.merk.match(/betal[^.–—]*?(?=\s[–—]|\.|$)/i); if (m) legg(`${e.t && e.t !== "kveld" ? "kl. " + e.t + " · " : ""}${e.tittel.split(/\s[–→]\s/)[0]}: ${m[0].replace(/^betal\s*/i, "")}`, m[0]); }
+      else if (!e.oppgave && e.merk) { const m = e.merk.match(/betal[^.–—]*?(?=\s[–—]|\.|$)/i); if (m) legg(`${erKl(e.t) ? "kl. " + e.t + " · " : ""}${e.tittel.split(/\s[–→]\s/)[0]}: ${m[0].replace(/^betal\s*/i, "")}`, m[0]); }
     }
     const hb = (s, naar) => { const m = String(s.hotell.betaling || "").match(new RegExp(`^Betales ved ${naar}:\\s*(.+?)(?:\\s*\\(|\\.|$)`)); if (m) legg(`${s.hotell.navn}, ved ${naar}: ${m[1]}`, m[1]); };
     if (utH) hb(utH, "utsjekk");
@@ -870,7 +886,7 @@
     const utH = D.steder.find((s) => s.hotell && s.til === d && s.fra !== d);
     let utRad = hend.find((e) => !e.oppgave && /^utsjekk|sjekk ut/i.test(e.tittel)) || null;
     if (utH && !utRad) {
-      const forste = hend.filter((e) => !e.oppgave && KL_RE.test(e.t || "") && minutter(e.t) >= 300).sort((a, b) => minutter(a.t) - minutter(b.t))[0];
+      const forste = hend.filter((e) => !e.oppgave && KL_RE.test(e.t || "") && minutter(e.t) >= 300 && !/reserve|siste sjanse|ikke bestilt/i.test(e.tittel)).sort((a, b) => minutter(a.t) - minutter(b.t))[0];
       const ut = (String(utH.hotell.ut || "").match(/^(\d{1,2}:\d{2})/) || [])[1];
       const grense = forste && (!ut || minutter(forste.t) < minutter(ut)) ? forste.t : ut;
       utRad = { d, t: grense ? "før " + grense : "", sortMin: grense ? minutter(grense) - 1 : -1, tittel: "Sjekk ut av " + utH.hotell.navn, avledet: "ut", sted: utH };
@@ -885,11 +901,11 @@
     const nm = naaMin();
     if (erIdag) {
       const kand = (dag) => [...D.hendelser.filter((e) => e.d === dag), ...avtDag(dag).map(avtSomHend)]
-        .filter((e) => e.t && e.t !== "kveld" && !e.oppgave && !(e.egen && e.egen.type === "mote")).sort((a, b) => minutter(a.t) - minutter(b.t));
+        .filter((e) => erKl(e.t) && !e.oppgave && !(e.egen && e.egen.type === "mote")).sort((a, b) => minutter(a.t) - minutter(b.t));
       // Bare i dag og i morgen – ellers blir det samme punktet stående i flere dager
-      neste = kand(d).find((e) => minutter(e.t) >= nm - 15) || kand(pluss(d, 1))[0] || null;
+      neste = kand(d).find((e) => minutter(e.t) >= nm - 15 || (sluttMin(e) != null && sluttMin(e) > nm)) || kand(pluss(d, 1))[0] || null;
     }
-    const nesteNaar = (e) => { if (e.d !== d) return "i morgen"; const diff = minutter(e.t) - nm; return diff <= 0 ? "nå" : diff < 60 ? `om ${diff} min` : `om ${Math.floor(diff / 60)} t${diff % 60 ? ` ${diff % 60} min` : ""}`; };
+    const nesteNaar = (e) => { if (e.d !== d) return "i morgen"; const diff = minutter(e.t) - nm; if (diff <= 0 && sluttTid(e) && sluttMin(e) > nm) return "pågår til " + sluttTid(e); return diff <= 0 ? "nå" : diff < 60 ? `om ${diff} min` : `om ${Math.floor(diff / 60)} t${diff % 60 ? ` ${diff % 60} min` : ""}`; };
 
     const flytt = !!utH;
     const kveldFor = erIdag && nm >= 17 * 60 && D.steder.some((s) => s.hotell && s.til === pluss(d, 1));
@@ -916,14 +932,14 @@
       const id = "r" + n++; IDET[id] = e;
       if (e.oppgave) {
         const gjort = !!huskLes()[oppgNokkel(e)];
-        return `<div class="tr oppg${gjort ? " gjort" : ""}"><span class="kl">${esc(e.t || "–")}</span><span class="pr">${ikon("bestilt", "")}</span><div class="inn">${huskRad(e, "div")}</div></div>`;
+        return `<div class="tr oppg${gjort ? " gjort" : ""}">${klHtml(e.t)}<span class="pr">${ikon("bestilt", "")}</span><div class="inn">${huskRad(e, "div")}</div></div>`;
       }
       if (e.forslag) {
         const ferdig = erIdag && (e.sluttMin != null ? e.sluttMin <= nm : e.sortMin >= 0 && e.sortMin < nm - 60);
-        return `<div class="tr forslag${ferdig ? " ferdig" : ""}"><span class="kl">${esc(e.t || "–")}</span><span class="pr">${ikon("ideer", "")}</span><div class="inn"><div class="tt">${esc(e.tittel)}</div><div class="merk">På resortet</div></div></div>`;
+        return `<div class="tr forslag${ferdig ? " ferdig" : ""}">${klHtml(e.t)}<span class="pr">${ikon("ideer", "")}</span><div class="inn"><div class="tt">${esc(e.tittel)}</div><div class="merk">På resortet</div></div></div>`;
       }
       const f = flyForHend(e), k = e.kontakt ? kontaktEtterId(e.kontakt) : null, aktiv = erNeste(e);
-      const ferdig = erIdag && !aktiv && sortMin(e) >= 0 && e.t !== "kveld" && sortMin(e) < nm - 15;
+      const sm = sluttMin(e), ferdig = erIdag && !aktiv && (sm != null ? sm <= nm : DAGSDEL[e.t] ? DAGSDEL[e.t][1] * 60 <= nm : sortMin(e) >= 0 && sortMin(e) < nm - 15);
       const a = e.egen, mote = a && a.type === "mote";
       const bord = a && a.rest ? `<span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span>` : a && a.ide ? bestPille(a) : "";
       let under = "";
@@ -940,8 +956,8 @@
         under += vedUt.map((o) => `<div class="tr-under">${huskRad(o, "div")}</div>`).join("");
         if (flytt && romOk) under += romSjekkHtml(false);
       }
-      return `<div class="tr${aktiv ? " aktiv" : ""}${ferdig ? " ferdig" : ""}${a ? " egen" : ""}" data-idet="${id}" role="button" tabindex="0"><span class="kl">${esc(e.t || "–")}</span><span class="pr">${ikon(radIkon(e), "")}</span><div class="inn">
-        ${aktiv ? `<div class="netikett">Neste · ${esc(nesteNaar(e))}</div>` : ""}<div class="tt">${mote ? "<b>Møtested:</b> " : ""}${a ? esc(a.tekst) : md(e.tittel)}${bord}</div>${under}</div></div>`;
+      return `<div class="tr${aktiv ? " aktiv" : ""}${ferdig ? " ferdig" : ""}${a ? " egen" : ""}" data-idet="${id}" role="button" tabindex="0">${klHtml(e.t, sluttTid(e))}<span class="pr">${ikon(radIkon(e), "")}</span><div class="inn">
+        ${aktiv ? `<div class="netikett">${nesteNaar(e).startsWith("pågår") ? "Nå" : "Neste"} · ${esc(nesteNaar(e))}</div>` : ""}<div class="tt">${mote ? "<b>Møtested:</b> " : ""}${a ? esc(a.tekst) : md(e.tittel)}${bord}</div>${under}</div></div>`;
     };
     const naaStrek = `<div class="naastrek" aria-label="Nå"><span>${esc(hhmm(Date.now()))}</span><i></i></div>`;
     let liste = rader;
@@ -968,7 +984,7 @@
     if (neste && neste.d !== d) {
       const id = "r" + n++; IDET[id] = neste;
       const k = neste.kontakt ? kontaktEtterId(neste.kontakt) : null, kn = neste.egen ? avtKnapper(neste.egen, false) : ringeKnapper(k, 2);
-      imorgen = `<div class="imorgen"><div class="tr aktiv" data-idet="${id}" role="button" tabindex="0"><span class="kl">${esc(neste.t)}</span><span class="pr">${ikon(radIkon(neste), "")}</span><div class="inn">
+      imorgen = `<div class="imorgen"><div class="tr aktiv" data-idet="${id}" role="button" tabindex="0">${klHtml(neste.t, sluttTid(neste))}<span class="pr">${ikon(radIkon(neste), "")}</span><div class="inn">
         <div class="netikett">Neste · i morgen</div><div class="tt">${neste.egen ? esc(neste.tittel) : md(neste.tittel)}</div>${neste.merk ? `<div class="merk">${neste.egen ? esc(neste.merk) : md(neste.merk)}</div>` : ""}${kn ? `<div class="knapper">${kn}</div>` : ""}</div></div></div>`;
     }
     const tom = !liste.length && !fri ? `<p class="tom">Ingenting bestilt denne dagen.</p>` : "";
@@ -1008,12 +1024,12 @@
     else if (x.hotellSted) { const s = x.hotellSted; inn = `<div class="ark-etikett">Overnatting · ${esc(s.dato)}</div><div class="hotell">${hotellInnhold(s, false)}${notatHtml(s)}</div>`; }
     else if (x.egen) {
       const a = x.egen, hvem = personNavn(a.hvem), iv = a.ide ? ideEtter(a) : null;
-      inn = `<div class="ark-etikett">${a.type === "mote" ? "Møtested" : a.rest ? "Restaurant" : a.ide ? "Idé i planen" : "Egen avtale"}${a.tid ? " · kl. " + esc(a.tid) : ""} · ${esc(pen(x.d))}</div><h2>${esc(a.tekst)}</h2>
+      inn = `<div class="ark-etikett">${a.type === "mote" ? "Møtested" : a.rest ? "Restaurant" : a.ide ? "Idé i planen" : "Egen avtale"}${a.tid ? " · " + esc(tidKl(a.tid)) + (a.til ? "–" + esc(a.til) : "") : ""} · ${esc(pen(x.d))}</div><h2>${esc(a.tekst)}</h2>
         ${a.rest ? `<p><span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span></p>` : ""}${a.ide ? `<p>${bestPille(a)}</p>` : ""}${iv ? `<p>${esc(iv.tekst)}</p>${iv.praktisk ? `<p class="krolle">${md(iv.praktisk)}</p>` : ""}${infoRader(iv.info)}` : ""}${a.notat ? `<p>${esc(a.notat)}</p>` : ""}${a.adr ? `<p class="krolle">${esc(a.adr.replace(/\s*\n\s*/g, ", "))}</p>` : ""}
         <p class="krolle">${a.type === "mote" ? "Hvis vi blir borte fra hverandre · " : ""}Lagt til${hvem ? " av " + esc(hvem) : ""}</p><div class="knapper">${avtKnapper(a, true)}</div>`;
     } else {
       const f = flyForHend(x), k = x.kontakt ? kontaktEtterId(x.kontakt) : null, s = x.sted;
-      inn = `<div class="ark-etikett">${x.t ? (KL_RE.test(x.t) ? "kl. " + esc(x.t) : esc(x.t)) + " · " : ""}${esc(pen(x.d))}</div><h2>${md(x.tittel)}</h2>${x.merk ? `<p>${md(x.merk)}</p>` : ""}${infoRader(x.info)}
+      inn = `<div class="ark-etikett">${x.t ? esc(tidKl(x.t)) + (sluttTid(x) ? "–" + esc(sluttTid(x)) : "") + " · " : ""}${esc(pen(x.d))}</div><h2>${md(x.tittel)}</h2>${x.merk ? `<p>${md(x.merk)}</p>` : ""}${infoRader(x.info)}
         ${f ? flyKort(f) : ""}${x.avledet && s ? `<div class="hotell">${hotellInnhold(s, false)}</div>` : ""}${k ? `<div class="kort arkkontakt">${kontaktHtml(kontaktPaDag(k, x.d))}</div>` : ""}`;
     }
     const o = $("#overlay");
@@ -2077,8 +2093,8 @@
   };
   const oTid = (v, navn = "tid", tom = true) => {
     if ((v === undefined || v === null || v === "") && tom) return "";
-    if (v === "kveld" && tom) return v;
-    if (typeof v !== "string" || !/^\d{1,2}:\d{2}$/.test(v.trim())) oFeil(`ugyldig ${navn} «${v}» (bruk TT:MM)`);
+    if (DAGSDEL[v] && tom) return v;
+    if (typeof v !== "string" || !/^\d{1,2}:\d{2}$/.test(v.trim())) oFeil(`ugyldig ${navn} «${v}» (bruk TT:MM${tom ? ", morgen, formiddag, ettermiddag eller kveld" : ""})`);
     return v.trim().padStart(5, "0");
   };
   const oSted = (d, v, alle = false) => { v = oTekst(v, "sted", 40, true); if (alle && v === "alle") return v; if (!d.steder.some((s) => s.id === v)) oFeil(`ukjent sted «${v}»`); return v; };
@@ -2109,10 +2125,12 @@
   // --- selve endringene. Returnerer en norsk linje som beskriver hva som skjer.
   function oppdOp(d, op) {
     if (!op || typeof op !== "object") oFeil("ugyldig endring");
-    const tidTekst = (e) => `${kort(e.d)}${e.t && e.t !== "kveld" ? " kl. " + e.t : e.t === "kveld" ? " kveld" : ""}`;
+    const tidTekst = (e) => `${kort(e.d)}${e.t ? " " + tidKl(e.t) : ""}${e.slutt ? "–" + e.slutt : ""}`;
+    const oSlutt = (v) => { if (v === undefined || v === null || v === "") return ""; return oTid(v, "slutt", false); };
     switch (op.type) {
       case "ny_hendelse": {
         const e = { d: oDato(op.dato), t: oTid(op.tid), sted: oSted(d, op.sted), tittel: oTekst(op.tittel, "tittel", 140, true), merk: oTekst(op.merk, "merk") || "", oppgave: !!op.oppgave, kontakt: oKontakt(d, op.kontakt) };
+        if (oSlutt(op.slutt)) e.slutt = oSlutt(op.slutt);
         const i = d.hendelser.findIndex((x) => x.d === e.d && x.tittel === e.tittel);
         if (i >= 0) d.hendelser[i] = { ...d.hendelser[i], ...e }; else d.hendelser.push(e);
         return `${e.oppgave ? "Ny oppgave" : "Ny hendelse"}: ${tidTekst(e)} – ${e.tittel}`;
@@ -2122,6 +2140,7 @@
         if (!ny || typeof ny !== "object") oFeil("«ny» mangler");
         if ("dato" in ny) { e.d = oDato(ny.dato); f.push("ny dato"); }
         if ("tid" in ny) { e.t = oTid(ny.tid); f.push(e.t ? "ny tid" : "uten tid"); }
+        if ("slutt" in ny) { e.slutt = oSlutt(ny.slutt); f.push(e.slutt ? "ny sluttid" : "uten sluttid"); }
         if ("sted" in ny) { e.sted = oSted(d, ny.sted); f.push("nytt sted"); }
         if ("tittel" in ny) { e.tittel = oTekst(ny.tittel, "tittel", 140, true); f.push("ny tittel"); }
         if ("merk" in ny) { e.merk = oTekst(ny.merk, "merk") || ""; f.push("ny merknad"); }
@@ -2274,7 +2293,7 @@
       "Bruk bare ID-er, datoer og titler som står under «Slik er det nå». Er noe uklart: spør meg i stedet for å gjette.", "",
       "FORMAT", '{"reiseapp":1,"tittel":"<kort beskrivelse>","endringer":[ … ]}', "",
       "ENDRINGSTYPER",
-      '1. {"type":"ny_hendelse","dato":"ÅÅÅÅ-MM-DD","tid":"TT:MM" eller "","sted":"<sted-id>","tittel":"…","merk":"…","oppgave":false,"kontakt":"<kontakt-id>"}  (oppgave:true = noe vi må huske å gjøre; kontakt er valgfri)',
+      '1. {"type":"ny_hendelse","dato":"ÅÅÅÅ-MM-DD","tid":"TT:MM" eller "morgen"/"formiddag"/"ettermiddag"/"kveld","slutt":"TT:MM" (når det er ferdig – valgfri),"sted":"<sted-id>","tittel":"…","merk":"…","oppgave":false,"kontakt":"<kontakt-id>"}  (oppgave:true = noe vi må huske å gjøre; kontakt er valgfri)',
       '2. {"type":"endre_hendelse","dato":"<dato>","tittel":"<nøyaktig eksisterende tittel>","ny":{bare feltene som endres: dato, tid, sted, tittel, merk, oppgave, kontakt}}',
       '3. {"type":"fjern_hendelse","dato":"<dato>","tittel":"<nøyaktig eksisterende tittel>"}',
       '4. {"type":"kontakt","id":"<ny eller eksisterende id: små bokstaver, tall og bindestrek>","navn":"…","rolle":"hvem de er for oss","sted":"<sted-id> eller alle","gruppe":"Transport|Overnatting|Aktiviteter|Mat|Annet","knapper":[["wa|tel|mail|web","<nummer med landskode, e-post eller https-lenke>","<knappetekst, f.eks. WhatsApp guiden>"]],"bruk":"når vi skal kontakte dem","merk":"annet, f.eks. bookingref"}  (eksisterende id = bare feltene som står, endres. Valgfritt: "dager":{"ÅÅÅÅ-MM-DD":{"rolle":"…","bruk":"…"}} = det som gjelder akkurat den dagen – vises i dagsvisningen)',
@@ -2301,7 +2320,7 @@
     L.push("", "Kontakter:"); D.kontakter.forEach((k) => L.push(`- ${k.id}: ${k.navn}${k.rolle ? " – " + k.rolle : ""} [${k.sted}]`));
     L.push("", "Hendelser (dato tid | tittel):");
     const kutt = (t, n = 160) => { t = rensMd(t).replace(/\s+/g, " ").trim(); return t.length > n ? t.slice(0, n - 1) + "…" : t; };
-    [...D.hendelser].sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : minutter(a.t) - minutter(b.t))).forEach((e) => L.push(`- ${e.d} ${e.t || "–"} | ${e.tittel}${e.oppgave ? " (oppgave)" : ""} [${e.sted}${e.kontakt ? ", kontakt " + e.kontakt : ""}]${e.merk ? " – " + kutt(e.merk, 120) : ""}`));
+    [...D.hendelser].sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : minutter(a.t) - minutter(b.t))).forEach((e) => L.push(`- ${e.d} ${e.t || "uten tid"}${e.slutt ? "–" + e.slutt : ""} | ${e.tittel}${e.oppgave ? " (oppgave)" : ""} [${e.sted}${e.kontakt ? ", kontakt " + e.kontakt : ""}]${e.merk ? " – " + kutt(e.merk, 120) : ""}`));
     L.push("", "Seksjoner på stedssidene (tittel · stil · innhold):");
     D.steder.forEach((s) => (s.seksjoner || []).forEach((x) => {
       const del = [...(x.rader || []).map(([k, v]) => `${k}: ${kutt(v)}`), ...(x.tekst || []).map((t) => kutt(t)), ...(x.steg ? [`(${x.steg.length} steg – kan ikke endres herfra)`] : []), ...(x.fly ? ["fly: " + x.fly.join(", ")] : []), ...(x.kontakter ? ["kontakter: " + x.kontakter.join(", ")] : [])];
@@ -2403,7 +2422,7 @@
   function fvOppg() {
     const s0 = start();
     const f4 = ((D.forReise || {}).oppg || []).map((o) => ({ ...o, key: o.id }));
-    const hend = D.hendelser.filter((e) => e.oppgave && e.d < s0).map((e) => ({ key: oppgNokkel(e), t: e.tittel, f: kort(e.d) + (e.t && e.t !== "kveld" ? " kl. " + e.t : ""), d: e.d, a: voksneIds(), s: "", m: e.merk || "", hend: e }));
+    const hend = D.hendelser.filter((e) => e.oppgave && e.d < s0).map((e) => ({ key: oppgNokkel(e), t: e.tittel, f: kort(e.d) + (e.t ? " " + tidKl(e.t) : ""), d: e.d, a: voksneIds(), s: "", m: e.merk || "", hend: e }));
     return [...f4, ...hend].sort((a, b) => (a.d || "9") < (b.d || "9") ? -1 : (a.d || "9") > (b.d || "9") ? 1 : 0);
   }
   const fvGjort = (o) => huskLes()[o.key];
@@ -3255,7 +3274,7 @@
 
     [...D.hendelser].sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : minutter(a.t) - minutter(b.t))).forEach((e) => {
       const k = e.kontakt ? kontaktEtterId(e.kontakt) : null;
-      const naar = `${pen(e.d)}${e.t ? (e.t === "kveld" ? " · kveld" : " kl. " + e.t) : ""}`;
+      const naar = `${pen(e.d)}${e.t ? (erKl(e.t) ? " kl. " + e.t : " · " + e.t) : ""}${e.slutt ? "–" + e.slutt : ""}`;
       legg("program", e.tittel, [naar, stedNavn(e.sted), e.oppgave ? "Husk" : ""].filter(Boolean).join(" · "), [e.merk, k && k.navn, k && kontaktPaDag(k, e.d).rolle],
         { hash: "#/idag", sel: ".tidslinje li", tekst: rensMd(e.tittel), for: () => { valgtDag = e.d; } }, k ? () => ringeKnapper(k) : null);
     });
@@ -3489,6 +3508,7 @@
     53: "I dag: detaljene viser bare det som gjelder den dagen",
     54: "Lenker i teksten tar deg rett til riktig sted i appen",
     55: "Lettere å lese: lange notater deles opp, og ideene har praktisk info (åpent, pris, veien dit)",
+    56: "Dagsplanen viser når ting er ferdig, og «morgen», «formiddag», «ettermiddag» eller «kveld» der det ikke er klokkeslett",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {

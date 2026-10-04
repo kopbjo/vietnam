@@ -1732,3 +1732,13 @@ dl.info-rader dd { line-height: 1.45; }
 .ark-flate dl.info-rader { margin: 12px 0 14px; }
 .lang-felt { margin: 0 0 6px; } .lang-felt .lang-avs { margin-bottom: 6px; }
 .tr[data-idet]:not(.aktiv) > .inn > .merk { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* v56: sluttid under starttiden i tidslinja + tid på dagen i skjemaet */
+.kl .kl-til { display: block; font-size: .72rem; font-weight: 600; color: var(--dempet); margin-top: 1px; white-space: nowrap; }
+.kl .kl-til sup { font-size: .6rem; margin-left: 1px; }
+.tr.ferdig > .kl .kl-til { color: var(--dempet); }
+.tidvalg { display: flex; align-items: center; gap: 8px; }
+.tidvalg > input[type="time"] { flex: 1 1 0; min-width: 0; max-width: 160px; }
+.tidvalg > span { color: #555; font-size: .9rem; }
+.af select.tiddel { margin-top: 8px; font-size: .95rem; min-height: 44px; }
+.tr > .kl.kl-ord, li > .kl.kl-ord { font-size: .78rem; hyphens: manual; -webkit-hyphens: manual; overflow-wrap: normal; padding-top: 6px; }
