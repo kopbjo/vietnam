@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 53, tid: "2026-10-04 kl. 15:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 54, tid: "2026-10-04 kl. 14:45" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -109,6 +109,9 @@
     h = h.replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
     h = h.replace(/\[([^\]]+)\]\(([^)\s]+)\)/g, (m, t, u) => {
       const url = u.replace(/&amp;/g, "&");
+      // Lenke inne i appen: [tekst](#/sted/x@Overskrift_med_understrek) – hopper dit og ruller til kortet med den overskriften
+      const intern = url.match(/^(#\/[\w\/-]+)(?:@(.+))?$/);
+      if (intern) return `<a href="${esc(intern[1])}" class="intern"${intern[2] ? ` data-finn="${esc(intern[2].replace(/_/g, " "))}"` : ""}>${t}</a>`;
       if (!/^(https:|tel:|mailto:)/i.test(url)) return t;
       const ext = url.startsWith("https:") ? ' target="_blank" rel="noopener noreferrer"' : "";
       return `<a href="${esc(url)}"${ext}>${t}</a>`;
@@ -3328,6 +3331,13 @@
     if (location.hash === m.hash) { vis(); window.scrollTo(0, 0); } else location.hash = m.hash;
     setTimeout(() => sokVisFunn(m), 60);
   }
+  // Lenker inne i appen (a.intern): går dit uten å åpne raden de står i, og ruller til riktig kort
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest && e.target.closest("a.intern"); if (!a) return;
+    e.preventDefault(); e.stopPropagation();
+    if (!$("#overlay").hidden) lukkOverlay();
+    sokGaa({ maal: { hash: a.getAttribute("href"), sel: a.dataset.finn ? "section.kort > h2" : "", tekst: a.dataset.finn || "" } });
+  }, true);
   document.addEventListener("click", (e) => {
     if (e.target.closest("#sokknapp")) { const h = location.hash; if (h && !h.startsWith("#/sok")) sokFra = h; return; }
     const t = e.target.closest("[data-sokgaa],[data-sokforslag],[data-sokflere]");
@@ -3414,6 +3424,7 @@
     51: "Skattejakt: mynt hver dag (ingen gåter), like vanskelig for begge",
     52: "Reisebingo: ny kategori «Før vi reiser» – prøv bingo hjemme før avreise",
     53: "I dag: detaljene viser bare det som gjelder den dagen",
+    54: "Lenker i teksten tar deg rett til riktig sted i appen",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
