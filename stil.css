@@ -778,6 +778,13 @@ details.vaerfold > .innhold .kort.vaer h2 { font-size: 1rem; }
 .sortknapp { display: inline-flex; align-items: center; gap: 6px; border: .5px solid var(--linje); background: var(--flate); color: var(--aksent); border-radius: 999px; padding: 6px 12px; font-size: .86rem; font-weight: 600; min-height: 36px; }
 .sortknapp svg { width: 16px; height: 16px; stroke: currentColor; fill: none; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .sortknapp[aria-pressed="true"] { background: var(--aksent-lys); border-color: var(--aksent); }
+.sortvalg { position: relative; padding-right: 30px; cursor: pointer; }
+.sortvalg .sortetikett { margin-right: -2px; }
+.sortvalg select { appearance: none; -webkit-appearance: none; border: 0; background: transparent; color: inherit; font: inherit; font-weight: 600; padding: 0; margin: 0; min-width: 0; max-width: 46vw; text-overflow: ellipsis; cursor: pointer; }
+.sortvalg select:focus { outline: none; }
+.sortvalg:focus-within { box-shadow: 0 0 0 2px var(--aksent-lys); }
+.sortvalg::after { content: ""; position: absolute; right: 12px; top: 50%; width: 7px; height: 7px; border-right: 2px solid currentColor; border-bottom: 2px solid currentColor; transform: translateY(-70%) rotate(45deg); pointer-events: none; }
+.sortvalg select option { color: initial; background: initial; }
 
 /* ---------- v21: I natt-kort (I dag i reiseperioden) ---------- */
 .stedkort2 { margin-bottom: 12px; border-radius: var(--r); overflow: hidden; background: var(--flate); border: .5px solid var(--linje); box-shadow: var(--skygge); }

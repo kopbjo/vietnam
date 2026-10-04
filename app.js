@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 58, tid: "2026-10-04 kl. 16:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 59, tid: "2026-10-04 kl. 23:45" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1388,6 +1388,11 @@
   // Pris følger prisbåndene (Billig/Rimelig grønn, Middels gul, Dyrt rød); kvalitet bruker samme skala som risikoen (s1)
   const prisKl = (v) => (v >= 7 ? "g" : v >= 5 ? "y" : "r");
   const scoreChips = (r) => `<span class="score ${scoreKl(r.s1)}" title="⟦r1⟧ ${esc(r.s1)} av 10">⟦r2⟧: ${risikoTekst(r.s1)}</span><span class="score ${prisKl(r.pris)}" title="Prispoeng ${esc(r.pris)} av 10">${prisTekst(r.pris)}</span><span class="score ${scoreKl(r.kvalitet)}" title="Kvalitet ${esc(r.kvalitet)} av 10">★ ${esc(r.kvalitet)}</span>`;
+  // Sortering på Mat: vår rekkefølge (prio) er standard; de andre har prio som tiebreaker
+  const MAT_SORT = [["prio", "vår rekkefølge"], ["s1", "⟦r3⟧"], ["avst", "nærmest hotellet"], ["pris", "billigst"], ["kval", "best kvalitet"]];
+  // Avstand i meter fra teksten i fil 9 («ca. 750 m–1 km / …», «ca. 1,2 km / …»): første tall med enhet; ukjent havner sist
+  const avstM = (r) => { const m = String(r.avstand || "").match(/(\d+(?:[.,]\d+)?)\s*(km|m)\b/); return m ? parseFloat(m[1].replace(",", ".")) * (m[2] === "km" ? 1000 : 1) : Infinity; };
+  const matSorter = (a, b) => (matSort === "s1" ? b.s1 - a.s1 : matSort === "avst" ? avstM(a) - avstM(b) : matSort === "pris" ? b.pris - a.pris : matSort === "kval" ? b.kvalitet - a.kvalitet : 0) || (a.prio - b.prio);
   const liste0Tekst = (sted) => { const n = D.restauranter.liste.filter((r) => r.sted === sted && (matMaal === "alle" || r[matMaal])).length; return `${n} ${n === 1 ? "sted" : "steder"}`; };
   function sideMat(stedId) {
     const steder = D.steder.filter((s) => D.restauranter.liste.some((r) => r.sted === s.id));
@@ -1401,10 +1406,11 @@
     h += `<button class="knapp knapp-rod knapp-full" data-hk style="margin-bottom:14px">Vis ⟦k1⟧</button>`;
     h += `<div class="velger" role="tablist">${steder.map((x) => `<button role="tab" data-matsted="${esc(x.id)}" class="${x.id === valgt ? "valgt" : ""}">${esc(x.navn)}</button>`).join("")}</div>`;
     h += `<div class="segment">${[["alle", "Alle"], ["F", "Frokost"], ["L", "Lunsj"], ["M", "Middag"]].map(([k, t]) => `<button data-maal="${k}" class="${matMaal === k ? "valgt" : ""}">${t}</button>`).join("")}</div>`;
-    h += `<div class="sortlinje"><span>${liste0Tekst(valgt)}</span><button class="sortknapp" data-sort="${matSort === "s1" ? "prio" : "s1"}" aria-pressed="${matSort === "s1"}">${ikon("sorter", "")}Sortert: ${matSort === "s1" ? "⟦r3⟧" : "vår rekkefølge"}</button></div>`;
+    h += `<div class="sortlinje"><span>${liste0Tekst(valgt)}</span><label class="sortknapp sortvalg" aria-pressed="${matSort !== "prio"}">${ikon("sorter", "")}<span class="sortetikett">Sortert:</span><select id="matSort" aria-label="Sorter restaurantene">${MAT_SORT.map(([k, t]) => `<option value="${k}"${matSort === k ? " selected" : ""}>${t}</option>`).join("")}</select></label></div>`;
     const liste = D.restauranter.liste.filter((r) => r.sted === valgt && (matMaal === "alle" || r[matMaal]))
-      .sort((a, b) => matSort === "s1" ? (b.s1 - a.s1) || (a.prio - b.prio) : (a.prio - b.prio));
-    const omrader = [...new Set(liste.map((r) => r.omrade))];
+      .sort(matSorter);
+    // Områdene (f.eks. Hoi An før Da Nang) står alltid i lista sin rekkefølge, uansett sortering
+    const omrader = [...new Set(D.restauranter.liste.filter((r) => r.sted === valgt).map((r) => r.omrade))].filter((o) => liste.some((r) => r.omrade === o));
     const renderRest = (r) => {
       const maal = [r.F && "Frokost", r.L && "Lunsj", r.M && "Middag"].filter(Boolean).join(" · ");
       return `<details class="rest"><summary>
@@ -3631,6 +3637,7 @@
     56: "Dagsplanen viser når ting er ferdig, og «morgen», «formiddag», «ettermiddag» eller «kveld» der det ikke er klokkeslett",
     57: "Trykk på en aktivitet i I dag: alt om den vises der – og appen husker hvor du var",
     58: "Omregnede beløp er lette å lese i mørk modus",
+    59: "Sorter restaurantene etter avstand, pris eller kvalitet",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -4413,6 +4420,7 @@
   document.addEventListener("change", (e) => {
     if (e.target.id === "avtIde" && AV) { avtFelt(); const [sId, k] = e.target.value.split("|"), i = (D.ideer[sId] || [])[Number(k)]; if (i) { AV.isted = sId; AV.inavn = i.navn; } return visAvtSkjema(AV); }
     if (e.target.id === "avtDag" && AV) { avtFelt(); return visAvtSkjema(AV); }
+    if (e.target.id === "matSort") { matSort = MAT_SORT.some(([k]) => k === e.target.value) ? e.target.value : "prio"; return vis(); }
     if (e.target.id === "avtRest" && AV) { avtFelt(); const r = D.restauranter.liste[Number(e.target.value)]; AV.fri = e.target.value === "fri"; if (r) { AV.rnavn = r.navn; AV.rsted = r.sted; } return visAvtSkjema(AV); }
     const f = e.target.closest("[data-pnavn],[data-pmerk],[data-pgtittel]");
     if (f) { pakkFeltEndret(f); return; }
