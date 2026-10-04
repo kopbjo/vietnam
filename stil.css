@@ -1707,3 +1707,28 @@ ul.fv-resort li:first-child { border-top: 0; }
 @keyframes sjfall { 0% { opacity: 1; transform: translateY(0) rotate(var(--r)); } 100% { opacity: 0; transform: translateY(100dvh) rotate(calc(var(--r) + 540deg)); } }
 @media (prefers-reduced-motion: reduce) { .sj-konf, .sj-straaler { display: none; } }
 .sj-funninn { z-index: 1; }
+
+/* v55: lange tekster (huskelista, notater) og praktisk info på ideer */
+.lang-avs { font-size: .94rem; line-height: 1.5; margin: 0 0 10px; }
+.lang-eti { display: block; font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--gronn); margin: 2px 0 2px; }
+.lang-dato { display: inline-block; font-size: .76rem; font-weight: 600; color: var(--dempet); background: var(--flate2, rgba(0,0,0,.05)); border-radius: 99px; padding: 2px 9px; margin: 0 0 8px; }
+.lang-pkt { margin: 0 0 10px; padding-left: 20px; } .lang-pkt li { margin: 0 0 4px; line-height: 1.45; }
+details.lang-hist { margin: 14px 0 4px; border-top: .5px solid var(--linje); padding-top: 12px; }
+details.lang-hist > summary, details.ide-info > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; -webkit-tap-highlight-color: transparent; }
+details.lang-hist > summary::-webkit-details-marker, details.ide-info > summary::-webkit-details-marker { display: none; }
+details.lang-hist > summary::after, details.ide-info > summary::after { content: ""; margin-left: auto; flex: none; width: 7px; height: 7px; border-right: 2px solid var(--dempet); border-bottom: 2px solid var(--dempet); transform: rotate(45deg); transition: transform .2s; }
+details.lang-hist[open] > summary::after, details.ide-info[open] > summary::after { transform: rotate(-135deg); }
+details.lang-hist > summary { color: var(--dempet); font-size: .92rem; }
+details.lang-hist > summary span { font-weight: 400; }
+.lang-post { margin-top: 12px; padding-top: 12px; border-top: .5px dashed var(--linje); }
+details.lang-hist > summary + .lang-post { border-top: 0; padding-top: 4px; }
+.lang-post .lang-avs { color: var(--dempet); font-size: .9rem; }
+details.ide-info { margin-top: 8px; border: .5px solid var(--linje); border-radius: 10px; padding: 8px 12px; background: var(--bg); }
+details.ide-info > summary { color: var(--aksent); font-size: .9rem; min-height: 28px; white-space: nowrap; }
+details.ide-info > summary span { color: var(--dempet); font-weight: 400; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+details.ide-info[open] > summary span { visibility: hidden; }
+dl.info-rader { margin-top: 8px; font-size: .9rem; grid-template-columns: minmax(74px, 26%) 1fr; }
+dl.info-rader dd { line-height: 1.45; }
+.ark-flate dl.info-rader { margin: 12px 0 14px; }
+.lang-felt { margin: 0 0 6px; } .lang-felt .lang-avs { margin-bottom: 6px; }
+.tr[data-idet]:not(.aktiv) > .inn > .merk { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }

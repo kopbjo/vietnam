@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 54, tid: "2026-10-04 kl. 14:45" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 55, tid: "2026-10-04 kl. 15:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -121,6 +121,71 @@
   const kartUrl = (q) => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
   const telUrl = (n) => "tel:" + String(n).replace(/[^0-9+]/g, "");
   const waUrl = (n) => "https://wa.me/" + String(n).replace(/\D/g, "");
+  // ---------- lange tekster (v55): avsnitt, etiketter, punkter, lenker og historikk ----------
+  // Huskelista og notater er ofte én lang streng. Her deles den opp så den er lett å lese på telefonen.
+  const LANG_URL = /(?<![\(\w\/])https:\/\/[^\s<>()\]]+[^\s<>()\].,;:!?»"']/g;
+  const langVert = (u) => { try { return new URL(u).hostname.replace(/^www\./, ""); } catch { return "lenke"; } };
+  const mdLang = (s) => md(String(s ?? "").replace(LANG_URL, (u) => `[${langVert(u)} ↗](${u})`));
+  // ETIKETT: (store bokstaver, ev. dato eller kort parentes etter) → ny linje med fet etikett i vanlig skrift
+  const LANG_ETI = /(^|[\s(])((?:[A-ZÆØÅ]{3,}(?:[ \-–][A-ZÆØÅ]{2,})*)(?: [\d.]{4,10})?(?: \([^)]{1,30}\))?):\s+/g;
+  // Lange avsnitt deles i biter på ca. to setninger (ikke etter «ca.», «kl.», «f.eks.» o.l.)
+  const LANG_FORK = /(?:\b(?:ca|kl|nr|inkl|ekskl|evt|ev|bl\.a|f\.eks|mill|mrd|pers|min|tlf|jf|dvs|osv|man|tir|ons|tor|fre|lør|søn|jan|feb|mar|apr|jun|jul|aug|sep|okt|nov|des)|\d)$/i;
+  function langSetninger(t) {
+    t = String(t || "").trim(); if (t.length <= 260) return [t];
+    const s = []; let rest = t, k;
+    const re = /[.!?»)]\s+(?=[A-ZÆØÅ«(\d])/g; let start = 0, m;
+    while ((m = re.exec(t))) { const forran = t.slice(start, m.index + 1).trim(); if (LANG_FORK.test(forran.slice(0, -1).split(/\s/).pop() || "")) continue; s.push(forran); start = m.index + m[0].length; }
+    s.push(t.slice(start).trim());
+    const ut = []; let cur = "";
+    for (const x of s.filter(Boolean)) { if (cur && (cur + " " + x).length > 240) { ut.push(cur); cur = x; } else cur = cur ? cur + " " + x : x; }
+    if (cur) ut.push(cur);
+    return ut;
+  }
+  // ORD MED STORE BOKSTAVER (utheving i huskelista) → fet med vanlig skrift. Koder med tall og kjente forkortelser står urørt.
+  const LANG_BEHOLD = /^(UNESCO|HCMC|DEET|WIFI|VISA|NOK|VND|USD|EUR|DKK|SGD|PDF|SMS|ATM|SQ|VN|VJ|UD|FHI|SOS|PIN|TRD|CPH|SGN|HAN|DAD|PQC)$/;
+  const LANG_KORT = /^(OG|I|PÅ|AV|TIL|FOR|OM|ER|EN|ET|NÅ|SIN|MED|TO|VI|DE|DU|JA|NEI|SOM|HAR|KAN|BÅDE|IKKE|ALLE|UTEN|NY|NYE|FØR|NÅR|MÅ|SEG|DET|DEN|HVIS)$/;
+  // «STORE BOKSTAVER» → «Store bokstaver». Står urørt hvis det er forkortelser/koder med (SQ, VND, TAN SON NHAT …).
+  const langNormal = (w) => { const ord = w.split(/[ ,\-–]+/).filter(Boolean); if (!ord.some((x) => x.length >= 4 && !LANG_BEHOLD.test(x)) || ord.some((x) => LANG_BEHOLD.test(x) || (x.length < 4 && !LANG_KORT.test(x)))) return null; const l = w.toLowerCase(); return l.charAt(0).toUpperCase() + l.slice(1); };
+  const langPen = (e) => e.replace(/[A-ZÆØÅ]{2,}(?:[ ,\-–]+[A-ZÆØÅ]{2,})*/g, (w) => langNormal(w) || w).replace(/^./, (c) => c.toUpperCase());
+  const langCaps = (a) => mdLang(a).replace(/(^|[\s(>])([A-ZÆØÅ]{2,}(?:[ ,\-–]+[A-ZÆØÅ]{2,})*)(?=[\s.,:;)!?<-]|$)/g, (m, f, w) => { const n = langNormal(w); return n ? `${f}<strong>${n}</strong>` : m; });
+  function langBlokker(s) {
+    const deler = String(s ?? "").replace(/\r/g, "").replace(/\s+\/\s*$/, "").split(/\n+|\s+\/\s+(?=[A-ZÆØÅ][A-Za-zÆØÅæøå]+(?: [A-Za-zÆØÅæøå0-9.]+){0,3}:)/).map((x) => x.trim()).filter(Boolean);
+    const ut = []; let liste = null;
+    for (const d0 of deler) {
+      if (/^[-•·]\s+/.test(d0)) { (liste || (liste = [])).push(`<li>${mdLang(d0.replace(/^[-•·]\s+/, ""))}</li>`); continue; }
+      if (liste) { ut.push(`<ul class="lang-pkt">${liste.join("")}</ul>`); liste = null; }
+      const biter = d0.replace(LANG_ETI, (m, f, e) => `${f}\u0001${e}\u0002`).split("\u0001");
+      biter.forEach((b, k) => {
+        const t = b.trim(); if (!t) return;
+        const m = t.match(/^([^\u0002]+)\u0002\s*([\s\S]*)$/);
+        const avs = langSetninger(m ? m[2] : t.replace(/\u0002/g, ""));
+        avs.forEach((a, j) => ut.push(`<p class="lang-avs">${m && !j ? `<b class="lang-eti">${esc(langPen(m[1]))}</b> ` : ""}${langCaps(a)}</p>`));
+      });
+    }
+    if (liste) ut.push(`<ul class="lang-pkt">${liste.join("")}</ul>`);
+    return ut.join("");
+  }
+  // Datomerkede innlegg («03.10.2026: …», «OPPDATERT 01.10.2026: …», «TIDLIGERE (30.09): …») – nyeste står først.
+  const LANG_DATO = /(?:^|(?<=[.!?)»]\s|\s\/\s))(Tidligere|TIDLIGERE|(?:(?:OPPDATERT|ENDRET|TIDLIGERE|NYTT|STATUS|SIST SJEKKET)\s)?\(?\d{1,2}\.\d{1,2}(?:\.\d{4})?\)?(?:\s(?:kveld|morgen|formiddag|ettermiddag|kl\.\s?\d{1,2}[:.]\d{2}))?):\s+/g;
+  function langMedHistorikk(s, tittel = "Tidligere notater") {
+    const tekst = String(s ?? "").trim(); if (!tekst) return "";
+    const pos = []; let m; LANG_DATO.lastIndex = 0;
+    while ((m = LANG_DATO.exec(tekst))) pos.push({ i: m.index, slutt: m.index + m[0].length, dato: m[1] });
+    if (pos.length < 2 && !(pos.length === 1 && pos[0].i > 0)) {
+      if (pos.length === 1) return `<div class="lang-dato">${esc(langPen(pos[0].dato))}</div>${langBlokker(tekst.slice(pos[0].slutt))}`;
+      return langBlokker(tekst);
+    }
+    const poster = [];
+    if (pos[0].i > 0) poster.push({ dato: "", tekst: tekst.slice(0, pos[0].i) });
+    pos.forEach((p, k) => poster.push({ dato: langPen(p.dato.replace(/[()]/g, "")), tekst: tekst.slice(p.slutt, k + 1 < pos.length ? pos[k + 1].i : undefined) }));
+    const [forst, ...resten] = poster;
+    return `${forst.dato ? `<div class="lang-dato">${esc(forst.dato)}</div>` : ""}${langBlokker(forst.tekst)}${resten.length ? `<details class="lang-hist"><summary>${esc(tittel)} <span>(${resten.length})</span></summary>${resten.map((p) => `<div class="lang-post">${p.dato ? `<div class="lang-dato">${esc(p.dato)}</div>` : ""}${langBlokker(p.tekst)}</div>`).join("")}</details>` : ""}`;
+  }
+  // Praktisk info på ideer og aktiviteter: [etikett, tekst]-rader
+  const infoRader = (rader) => rader && rader.length ? `<dl class="rader info-rader">${rader.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${mdLang(v)}</dd>`).join("")}</dl>` : "";
+  const infoFold = (i) => i.info && i.info.length ? `<details class="ide-info"><summary>Praktisk info <span>${esc(i.info.slice(0, 4).map((r) => r[0].toLowerCase()).join(" · "))}</span></summary>${infoRader(i.info)}</details>` : "";
+  // Felt med etikett over (restauranter o.l.): kort tekst som avsnitt på ca. to setninger
+  const langFelt = (eti, t) => t ? `<div class="lang-felt"><b class="lang-eti">${esc(eti)}</b>${langSetninger(t).map((x) => `<p class="lang-avs">${esc(x)}</p>`).join("")}</div>` : "";
   const refDel = (ref) => (String(ref).match(/[A-Z0-9][A-Z0-9.]{4,}/) || [ref])[0];
 
   // ---------- datoer ----------
@@ -455,7 +520,7 @@
     </div>`).join("");
   }
   // sId gir «Legg i planen» på hver idé; dag = fast dag (fra I dag), ellers velges dag i skjemaet
-  const ideerHtml = (liste, sId, dag) => (liste || []).map((i) => `<div class="ide"><b>${i.kart ? `<span class="knr kn-ide ide-nr" title="På kartet">${esc(i.kart)}</span>` : ""}${esc(i.navn)}</b>${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}${sId ? idePlanHtml(sId, i, dag) : ""}</div>`).join("");
+  const ideerHtml = (liste, sId, dag) => (liste || []).map((i) => `<div class="ide"><b>${i.kart ? `<span class="knr kn-ide ide-nr" title="På kartet">${esc(i.kart)}</span>` : ""}${esc(i.navn)}</b>${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}${infoFold(i)}${sId ? idePlanHtml(sId, i, dag) : ""}</div>`).join("");
   function idePlanHtml(sId, i, dag) {
     const k = (D.ideer[sId] || []).indexOf(i), planer = ideIPlan(sId, i.navn);
     const denne = dag ? planer.find((a) => a.d === dag) : null, andre = planer.filter((a) => a !== denne);
@@ -638,7 +703,7 @@
       const valg = iSteder.length ? felt(`Idé (fra lista for ${esc(iSteder.map((x) => x.navn).join(" og "))})`, `<select id="avtIde">
           ${!i ? `<option value="" selected disabled>Velg idé …</option>` : ""}
           ${iSteder.length > 1 ? iSteder.map((st) => `<optgroup label="${esc(st.navn)}">${alle(st)}</optgroup>`).join("") : alle(iSteder[0])}</select>`) : "";
-      const info = i ? `<div class="restinfo">${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}</div>` : "";
+      const info = i ? `<div class="restinfo">${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}${infoFold(i)}</div>` : "";
       const ds = a.dagvalg ? stedEtterId(a.dagvalg) : null;
       const dag = ds ? felt("Dag", `<select id="avtDag">${dagerI(ds).map((x) => `<option value="${x}"${x === a.d ? " selected" : ""}>${esc(pen(x))}${D.hendelser.some((e) => e.d === x && !e.oppgave) || avtDag(x).some((y) => y.type !== "mote" && y.id !== a.id) ? "" : " – ingenting i planen"}</option>`).join("")}</select>`) : "";
       f = valg + info + dag + felt("Klokkeslett (valgfritt)", `<input type="time" id="avtTid" value="${esc(a.tid)}">`) +
@@ -944,11 +1009,11 @@
     else if (x.egen) {
       const a = x.egen, hvem = personNavn(a.hvem), iv = a.ide ? ideEtter(a) : null;
       inn = `<div class="ark-etikett">${a.type === "mote" ? "Møtested" : a.rest ? "Restaurant" : a.ide ? "Idé i planen" : "Egen avtale"}${a.tid ? " · kl. " + esc(a.tid) : ""} · ${esc(pen(x.d))}</div><h2>${esc(a.tekst)}</h2>
-        ${a.rest ? `<p><span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span></p>` : ""}${a.ide ? `<p>${bestPille(a)}</p>` : ""}${iv ? `<p>${esc(iv.tekst)}</p>${iv.praktisk ? `<p class="krolle">${md(iv.praktisk)}</p>` : ""}` : ""}${a.notat ? `<p>${esc(a.notat)}</p>` : ""}${a.adr ? `<p class="krolle">${esc(a.adr.replace(/\s*\n\s*/g, ", "))}</p>` : ""}
+        ${a.rest ? `<p><span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span></p>` : ""}${a.ide ? `<p>${bestPille(a)}</p>` : ""}${iv ? `<p>${esc(iv.tekst)}</p>${iv.praktisk ? `<p class="krolle">${md(iv.praktisk)}</p>` : ""}${infoRader(iv.info)}` : ""}${a.notat ? `<p>${esc(a.notat)}</p>` : ""}${a.adr ? `<p class="krolle">${esc(a.adr.replace(/\s*\n\s*/g, ", "))}</p>` : ""}
         <p class="krolle">${a.type === "mote" ? "Hvis vi blir borte fra hverandre · " : ""}Lagt til${hvem ? " av " + esc(hvem) : ""}</p><div class="knapper">${avtKnapper(a, true)}</div>`;
     } else {
       const f = flyForHend(x), k = x.kontakt ? kontaktEtterId(x.kontakt) : null, s = x.sted;
-      inn = `<div class="ark-etikett">${x.t ? (KL_RE.test(x.t) ? "kl. " + esc(x.t) : esc(x.t)) + " · " : ""}${esc(pen(x.d))}</div><h2>${md(x.tittel)}</h2>${x.merk ? `<p>${md(x.merk)}</p>` : ""}
+      inn = `<div class="ark-etikett">${x.t ? (KL_RE.test(x.t) ? "kl. " + esc(x.t) : esc(x.t)) + " · " : ""}${esc(pen(x.d))}</div><h2>${md(x.tittel)}</h2>${x.merk ? `<p>${md(x.merk)}</p>` : ""}${infoRader(x.info)}
         ${f ? flyKort(f) : ""}${x.avledet && s ? `<div class="hotell">${hotellInnhold(s, false)}</div>` : ""}${k ? `<div class="kort arkkontakt">${kontaktHtml(kontaktPaDag(k, x.d))}</div>` : ""}`;
     }
     const o = $("#overlay");
@@ -1266,9 +1331,7 @@
         <div class="rkj">${esc(r.avstand)}</div></summary>
         <div class="rinnhold">
           ${r.fraClaude ? `<p class="fraclaude">Lagt inn fra Claude – ikke sjekket som resten av lista. Vis alltid ⟦k1⟧.</p>` : ""}
-          <p><strong>⟦k4⟧:</strong> ${esc(r.begrunnelse)}</p>
-          <p><strong>⟦k5⟧:</strong> ${esc(r.s2)}</p>
-          ${r.tips ? `<p><strong>Tips:</strong> ${esc(r.tips)}</p>` : ""}
+          ${langFelt("⟦k4⟧", r.begrunnelse)}${langFelt("⟦k5⟧", r.s2)}${langFelt("Tips", r.tips)}
           <dl class="rader"><dt>Adresse</dt><dd>${esc(r.adresse)}</dd><dt>Åpent</dt><dd>${esc(r.apent)}</dd><dt>Pris</dt><dd>${esc(r.prisPP)}</dd><dt>Omtaler</dt><dd>${esc(r.rating)}</dd></dl>
           <div class="knapper">${r.adresse && sjoforHer(r.sted) ? `<button class="kb" data-sjofor="r:${D.restauranter.liste.indexOf(r)}">${ikon("kart", "")}Vis til sjåføren</button>` : ""}${knapp("kart", r.navn + " " + r.adresse, "Kart")}${r.tlf ? knapp("tel", r.tlf, "Ring") : ""}${r.web ? knapp("web", r.web, "Nettside") : ""}</div>
         </div></details>`;
@@ -2483,7 +2546,7 @@
     const g = fvGjort(o), hvem = g ? personNavn(g.hvem) : "";
     const naar = g ? new Date(g.t).toLocaleString("nb-NO", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
     const f = o.hend && o.hend.fly ? flyEtterId(o.hend.fly) : null;
-    const avsnitt = String(o.m || "").split(/\s+\/\s+/).filter(Boolean).map((x) => `<p>${md(x)}</p>`).join("");
+    const avsnitt = langMedHistorikk(o.m);
     const inn = `<div class="ark-etikett">Før vi drar${o.d ? " · frist " + esc(pen(o.d)) : ""}</div><h2>${md(o.t)}</h2>
       <div class="fv-meta">${fvFrist(o, true)}${fvHvem(o) ? `<span>${esc(fvHvem(o))}</span>` : ""}${o.s && /pågår|avgjøres/i.test(o.s) ? `<span>${esc(o.s)}</span>` : ""}</div>
       <div class="fv-merk">${avsnitt}</div>${f && f.innsjekk ? `<div class="knapper">${knapp("web", f.innsjekk.url, "Sjekk inn nå")}<button class="ref" data-kopier="${esc(f.ref)}">Ref. ${esc(f.ref)}</button></div>` : ""}
@@ -2497,7 +2560,7 @@
   }
   function visFvGjortArk(i) {
     const g = ((D.forReise && D.forReise.gjortListe) || [])[i]; if (!g) return;
-    const avsnitt = String(g.m || "").split(/\s+\/\s+/).filter(Boolean).map((x) => `<p>${md(x)}</p>`).join("");
+    const avsnitt = langMedHistorikk(g.m, "Tidligere notater");
     const ov = $("#overlay"); ov.className = "overlay ark";
     ov.innerHTML = `<div class="ark-flate" role="dialog" aria-modal="true"><div class="ark-topp"><span class="hank" aria-hidden="true"></span><button class="lukk">Lukk</button></div>
       <div class="ark-etikett">${esc(/^gjort\b/i.test(g.f || "") ? g.f : "Gjort" + (g.f ? " · " + g.f : ""))}</div><h2>${md(g.t)}</h2>${fvHvem(g) ? `<div class="fv-meta"><span>${esc(fvHvem(g))}</span></div>` : ""}<div class="fv-merk">${avsnitt}</div>
@@ -3231,7 +3294,7 @@
       { hash: "#/nod", sel: ".sykehus .snavn", tekst: x.navn, for: () => { nodSted = s.id; } }, () => x.tel.slice(0, 2).map(([n, e]) => knapp("tel", n, `${e}: ${n}`)).join(""))));
     legg("nod", D.nod.hnT || "⟦k4⟧", "Nød og helse", D.nod.hn, { hash: "#/nod", sel: "section.kort > h2", tekst: D.nod.hnT || "⟦k4⟧" });
     legg("nod", "Helseråd", "Nød og helse", D.nod.helse, { hash: "#/nod", sel: "details.fold > summary", tekst: "Helseråd" });
-    for (const [id, l] of Object.entries(D.ideer || {})) l.forEach((i) => legg("ide", i.navn, `${stedNavn(id)} · ikke bestilt`, [i.tekst, i.praktisk], { hash: "#/sted/" + id, sel: "#ideerher .ide b", tekst: i.navn }));
+    for (const [id, l] of Object.entries(D.ideer || {})) l.forEach((i) => legg("ide", i.navn, `${stedNavn(id)} · ikke bestilt`, [i.tekst, i.praktisk, ...(i.info || []).map((r) => r.join(" "))], { hash: "#/sted/" + id, sel: "#ideerher .ide b", tekst: i.navn }));
     (D.penger.seksjoner || []).forEach((x) => legg("penger", x.tittel, "Penger", seksjonTekst(x), { hash: "#/penger", sel: "section.kort > h2", tekst: x.tittel }));
     if (D.parlor) {
       D.parlor.fraser.forEach((x, i) => legg("parlor", x.no, x.vi, [x.merk], { fn: () => visFrase(i) }));
@@ -3425,6 +3488,7 @@
     52: "Reisebingo: ny kategori «Før vi reiser» – prøv bingo hjemme før avreise",
     53: "I dag: detaljene viser bare det som gjelder den dagen",
     54: "Lenker i teksten tar deg rett til riktig sted i appen",
+    55: "Lettere å lese: lange notater deles opp, og ideene har praktisk info (åpent, pris, veien dit)",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
