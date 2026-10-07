@@ -1815,3 +1815,31 @@ a.intern[href^="#/bekr/"]::before { content: ""; width: 15px; height: 15px; flex
 .ak-linjer li.mb .ak-ikon { width: 52px; height: 52px; }
 .ak-linjer li.bred .ak-ikon { width: 100%; max-width: 380px; height: auto; margin: 10px auto 2px; background: #fff; border-radius: 10px; }
 @media (prefers-reduced-motion: reduce) { .ak-lesknapp.spiller, .ak-lessakte.spiller, .ak-lesknapp.spiller .hb { animation: none; } }
+
+/* v62: ta-igjen-mynter (dager en jente er borte) – to mynter samme dag */
+.sj-to { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; }
+.sj-to > span { width: 34px; height: 34px; border-radius: 50%; display: grid; place-items: center; flex: none; border: 2px dashed rgba(241,194,101,.45); color: #e7c77a; font-weight: 800; font-size: .95rem; background: rgba(241,194,101,.06); }
+.sj-to > span.na { border: 2px solid #f1c265; box-shadow: 0 0 0 4px rgba(241,194,101,.16); color: #fff4d6; }
+.sj-to > span.f { border: 0; background: none; }
+.sj-to > span .sj-img { width: 34px; height: 34px; }
+.sj-to em { font-style: normal; font-weight: 700; font-size: .92rem; color: #f6dc9f; margin-left: 4px; }
+.sj-igjen { margin: 12px 0 0; padding: 11px 12px 12px; border-radius: 14px; background: rgba(241,194,101,.12); border: 1px solid rgba(241,194,101,.38); }
+.sj-igjen > b { display: block; color: #fff4d6; font-size: .95rem; }
+.sj-igjen > span { display: block; font-size: .87rem; color: #dcc390; margin-top: 3px; line-height: 1.4; }
+.sj-igjen > span b { color: #fff4d6; }
+.sj-igjendager { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 9px; }
+.sj-igjendager > span { display: flex; align-items: center; gap: 7px; padding: 5px 9px 5px 10px; border-radius: 999px; background: rgba(0,0,0,.25); font-size: .85rem; font-weight: 650; color: #fff4d6; }
+.sj-igjendager em { font-style: normal; }
+.sj-igjendager i { display: flex; }
+.sj-igjendager i .sj-img { width: 18px; height: 18px; }
+.sj-igjendager i .sj-img + .sj-img { margin-left: -6px; }
+.sj-uke i { position: relative; }
+.sj-uke .igjen i { display: grid; place-items: center; font-style: normal; font-size: .9rem; font-weight: 800; color: #f1c265; border: 1.5px dashed rgba(241,194,101,.75); }
+.sj-x2 { position: absolute; right: -6px; top: -6px; min-width: 16px; height: 16px; padding: 0 3px; border-radius: 8px; background: #f1c265; color: #3a2606; font-size: .66rem; font-weight: 800; line-height: 16px; text-align: center; font-style: normal; z-index: 2; }
+.sj-kal .igjen { background: transparent; border: 1.5px dashed #c8952e; color: #c8952e; }
+.sj-kal .to { overflow: visible; }
+.sj-kal .to .sj-x2 { right: -3px; top: -3px; }
+.sj-forkl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 0; font-size: .78rem; color: var(--dempet); }
+.sj-forkl .sj-kal { display: inline-grid; grid-template-columns: 22px; margin: 0; }
+.sj-forkl .sj-kal > span { width: 22px; font-size: .7rem; }
+.sj-irad div > span + span { display: block; }

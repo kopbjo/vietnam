@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 62, tid: "2026-10-07 kl. 23:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 63, tid: "2026-10-07 kl. 22:15" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3019,11 +3019,25 @@
   const sjFunnPost = (d, pid) => { const p = sjPost(d + "|" + pid); return p && p.hvem === pid ? p : null; };
   const sjHintPost = (d, pid) => sjPost(d + "|" + pid + "|h");
   const sjAlle = () => Object.values(synkLes().p).filter((p) => p.k === "m");
+  // ---- ta igjen (v62): dager en jente er borte, tas igjen senere som mynt nr. 2 samme dag ----
+  // D.skattIgjen[person] = { grunn, mynter: [{ tapt: dagen som ble borte, d: dagen den tas igjen, plass: id i plasser }] }
+  // Funnet lagres som funn for den tapte dagen («<tapt>|<person>»), så kalenderen viser mynten der.
+  const sjIgjen = (pid) => { const g = D && D.skattIgjen && D.skattIgjen[pid]; return g && Array.isArray(g.mynter) ? g : null; };
+  const sjIgjenTapt = (d, pid) => { const g = sjIgjen(pid); return (g && g.mynter.find((x) => x.tapt === d)) || null; };
+  // Ta-igjen-mynter som gjelder dagen d – ikke de som ble funnet på den opprinnelige dagen likevel
+  const sjIgjenPa = (d, pid) => { const g = sjIgjen(pid); return g ? g.mynter.filter((x) => { if (x.d !== d) return false; const p = sjFunnPost(x.tapt, pid); return !p || !p.c || sjOslo(p.c).d >= x.d; }) : []; };
+  const sjIgjenKommer = (fra, pid) => { const g = sjIgjen(pid); return g ? g.mynter.filter((x) => x.d >= fra && !sjFunnPost(x.tapt, pid)) : []; };
+  const sjAntIdag = (d, pid) => 1 + sjIgjenPa(d, pid).length;
+  const sjFunnetIdag = (d, pid) => (sjFunnPost(d, pid) ? 1 : 0) + sjIgjenPa(d, pid).filter((x) => sjFunnPost(x.tapt, pid)).length;
+  // Hint gjelder mynten som letes etter nå (et hint på den opprinnelige dagen teller ikke for ta-igjen-mynten)
+  const sjHintPaa = (x) => { const h = x && sjHintPost(x.d, x.m); return !!h && (!x.igjen || !h.c || sjOslo(h.c).d >= x.igjen.d); };
   // Gyldig: registrert hos databasen mellom kl. 05:45 samme dag og kl. 12 dagen etter (norsk tid). Uten servertid ennå: venter.
   function sjStatus(p) {
     if (!p.st) return "venter";
     const o = sjOslo(p.st);
     if ((o.d === p.d && o.min >= SJ().kl * 60 - 15) || (o.d === pluss(p.d, 1) && o.min < 12 * 60)) return "ok";
+    const ig = sjIgjenTapt(p.d, p.hvem);
+    if (ig && ((o.d === ig.d && o.min >= SJ().kl * 60 - 15) || (o.d === pluss(ig.d, 1) && o.min < 12 * 60))) return "ok";
     return "ugyldig";
   }
   // Hver telefon kan finne én mynt per dag – å bytte til søsterens profil gir ikke en mynt til
@@ -3066,8 +3080,10 @@
   function sjMin() {
     if (!SJ() || !erBarn()) return null;
     const n = sjNaa(), m = meg(); if (n.fase !== "aktiv") return null;
-    if (sjFunnPost(n.d, m) || sjLaast(n.d, m)) return null;
-    const x = sjPlassFor(n.d, m); return x ? { d: n.d, m, ...x } : null;
+    if (sjLaast(n.d, m)) return null;
+    if (!sjFunnPost(n.d, m)) { const x = sjPlassFor(n.d, m); return x ? { d: n.d, m, ...x } : null; }
+    const ig = sjIgjenPa(n.d, m).find((g) => !sjFunnPost(g.tapt, m)), P = ig && SJ().plasser.find((p) => p.id === ig.plass);
+    return P ? { d: ig.tapt, m, plass: P, gate: "", igjen: ig } : null;
   }
   const sjFane = (side) => (["for", "bingo", "tema", "skatt"].includes(side) ? "idag" : side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : side);
   const sjRiktigSide = (P) => { const r = rute(); return P.dag ? r.side === "idag" && dagModus && valgtDag === P.dag : r.side === P.s && (!P.a || r.arg === P.a); };
@@ -3116,7 +3132,7 @@
   const SJ_DET_SVG = '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 13v8"/><circle cx="12" cy="10" r="2.2"/><path d="M7.5 5.5a6.4 6.4 0 0 0 0 9M16.5 5.5a6.4 6.4 0 0 1 0 9M4.6 2.8a10.4 10.4 0 0 0 0 14.4M19.4 2.8a10.4 10.4 0 0 1 0 14.4"/></svg>';
   function sjDetektor() {
     let el = $("#sjDet");
-    const x = sjMin(), paa = x && sjHintPost(x.d, x.m);
+    const x = sjMin(), paa = x && sjHintPaa(x);
     if (!paa) { if (el) el.hidden = true; return; }
     if (!el) { document.body.insertAdjacentHTML("beforeend", '<div id="sjDet" class="sj-det" role="status" aria-live="polite" hidden></div>'); el = $("#sjDet"); }
     const v = sjVarme(x);
@@ -3142,9 +3158,10 @@
   function sjUke(pid, d0) {
     const S = SJ(), idag = sjOslo(Date.now()).d, man = pluss(d0, -((ukedag(d0) + 6) % 7));
     return `<div class="sj-uke">${[0, 1, 2, 3, 4, 5, 6].map((i) => {
-      const d = pluss(man, i), f = sjFunnPost(d, pid), ute = d < S.start || d > S.slutt;
-      const kl = ute ? "ute" : f ? (sjStatus(f) === "ugyldig" ? "bom" : f.hint ? "halv" : "full") : d < idag ? "bom" : d === idag ? "idag" : "";
-      return `<span class="${kl}"><i>${f && kl !== "bom" ? sjBilde() : ""}</i>${["man", "tir", "ons", "tor", "fre", "lør", "søn"][i]}</span>`; }).join("")}</div>`;
+      const d = pluss(man, i), f = sjFunnPost(d, pid), ute = d < S.start || d > S.slutt, to = sjIgjenPa(d, pid).length;
+      let kl = ute ? "ute" : f ? (sjStatus(f) === "ugyldig" ? "bom" : f.hint ? "halv" : "full") : sjIgjenTapt(d, pid) ? "igjen" : d < idag ? "bom" : d === idag ? "idag" : "";
+      if (to && d === idag && kl !== "idag") kl += " idag";
+      return `<span class="${kl}${to ? " to" : ""}"><i>${f && kl !== "bom" ? sjBilde() : kl === "igjen" ? "↻" : ""}${to ? `<b class="sj-x2">${to + 1}</b>` : ""}</i>${["man", "tir", "ons", "tor", "fre", "lør", "søn"][i]}</span>`; }).join("")}</div>`;
   }
   // ---- jentenes kort på forsiden ----
   function sjKort() {
@@ -3159,7 +3176,22 @@
     } else {
       eyebrow = `Skattejakt · ${pen(n.d)}`;
       const f = sjFunnPost(n.d, m), x = sjPlassFor(n.d, m), hint = sjHintPost(n.d, m), siste = n.d === S.slutt;
-      if (n.fase === "natt") { tittelT = n.d === S.start ? `Skattejakten starter i dag kl. ${String(S.kl).padStart(2, "0")}` : `Dagens mynt gjemmes kl. ${String(S.kl).padStart(2, "0")}`; under = n.d === S.start ? `Første mynt gjemmes kl. ${String(S.kl).padStart(2, "0")}. Hver mynt er verdt ${sjKr(S.verdi)}.` : `Sov godt – mynten er på plass kl. ${String(S.kl).padStart(2, "0")}.`; ikonH = sjBilde("sj-kortmynt sj-sover"); }
+      const ant = sjAntIdag(n.d, m), funnet = sjFunnetIdag(n.d, m), igI = sjIgjenPa(n.d, m), na = sjMin();
+      const toRad = ant > 1 ? `<div class="sj-to" aria-label="${funnet} av ${ant} mynter funnet i dag">${Array.from({ length: ant }, (_, i) => `<span class="${i < funnet ? "f" : na && i === funnet ? "na" : ""}">${i < funnet ? sjBilde() : i + 1}</span>`).join("")}<em>${funnet === ant ? "Begge funnet!" : `Mynt ${Math.min(funnet + 1, ant)} av ${ant}`}</em></div>` : "";
+      const tapteTekst = igI.map((g) => pen(g.tapt)).join(" og ");
+      if (ant > 1 && n.fase === "natt") { tittelT = `To mynter i dag!`; under = `Dagens mynt og ta-igjen-mynten for ${tapteTekst} gjemmes kl. ${String(S.kl).padStart(2, "0")}. Finn dagens mynt først – så gjemmes ta-igjen-mynten.`; ikonH = sjBilde("sj-kortmynt sj-sover"); ekstra = toRad; }
+      else if (ant > 1 && !sjLaast(n.d, m)) {
+        ekstra = toRad;
+        if (funnet === ant) { tittelT = "Du fant begge myntene i dag!"; under = `${siste ? "" : `Neste mynt gjemmes i morgen kl. ${String(S.kl).padStart(2, "0")}.`}`; }
+        else {
+          ikonH = `<span class="sj-ukjent" aria-hidden="true">?</span>`;
+          if (!f) { tittelT = "To mynter i dag!"; under = `Først dagens mynt. Når du har funnet den, gjemmes ta-igjen-mynten for ${tapteTekst} et nytt sted i appen. Hver mynt er verdt ${sjKr(S.verdi)}.`; }
+          else { tittelT = `Mynt 2: ta-igjen-mynten for ${pen(na ? na.igjen.tapt : igI[0].tapt)}`; under = `Den er gjemt et nytt sted i appen nå. Finn den før midnatt og trykk på den, så får du ${sjKr(S.verdi)} til.`; }
+          etter = sjHintPaa(na) ? `<p class="sj-hintpaa">${SJ_DET_SVG}<span>Metalldetektoren er på · mynten er verdt <b>${sjKr(S.hintVerdi)}</b></span></p>`
+            : `<button class="sj-hintknapp" data-sjhint>${SJ_DET_SVG}<span>Bruk hint</span><small>mynten blir verdt ${sjKr(S.hintVerdi)}</small></button>`;
+        }
+      }
+      else if (n.fase === "natt") { tittelT = n.d === S.start ? `Skattejakten starter i dag kl. ${String(S.kl).padStart(2, "0")}` : `Dagens mynt gjemmes kl. ${String(S.kl).padStart(2, "0")}`; under = n.d === S.start ? `Første mynt gjemmes kl. ${String(S.kl).padStart(2, "0")}. Hver mynt er verdt ${sjKr(S.verdi)}.` : `Sov godt – mynten er på plass kl. ${String(S.kl).padStart(2, "0")}.`; ikonH = sjBilde("sj-kortmynt sj-sover"); }
       else if (f) { tittelT = "Du fant dagens mynt!"; under = `+${sjKr(Number(f.verdi) || 0)} i kista. ${siste ? `Det var den siste mynten – pengene kommer på Vipps ${pen(S.utbetaling || pluss(S.slutt, 1))}.` : `Neste mynt gjemmes i morgen kl. ${String(S.kl).padStart(2, "0")}.`}`; }
       else if (sjLaast(n.d, m)) { tittelT = "Denne telefonen har funnet en mynt i dag"; under = "Hver telefon kan bare finne én mynt per dag. Let på din egen telefon."; }
       else {
@@ -3171,8 +3203,12 @@
       }
     }
     const uke = n.fase === "aktiv" || n.fase === "natt" ? sjUke(m, n.d) : "";
+    const G = sjIgjen(m), kommer = G ? sjIgjenKommer(n.d ? pluss(n.d, 1) : S.start, m) : [];
+    const dagerTo = [...new Set(kommer.map((g) => g.d))].sort();
+    const igjenBoks = dagerTo.length ? `<div class="sj-igjen"><b>${esc(G.grunn || "Når du er borte")}</b><span>Myntene du går glipp av, tar du igjen etterpå. Disse dagene leter du etter <b>to mynter</b>:</span>
+      <div class="sj-igjendager">${dagerTo.map((d) => `<span><em>${esc(stor1(pen(d)))}</em><i>${sjBilde()}${sjBilde()}</i></span>`).join("")}</div></div>` : "";
     return `<section class="sj-kort" aria-label="Skattejakt"><div class="sj-hode"><div><div class="sj-eyebrow">${esc(eyebrow)}</div><h2>${esc(tittelT)}</h2></div>${ikonH}</div>
-      ${ekstra}<p class="sj-under">${esc(under)}</p>${etter}${uke}
+      ${ekstra}<p class="sj-under">${esc(under)}</p>${etter}${igjenBoks}${uke}
       <div class="sj-bunnrad">${lenkeRegler}<a class="sj-kistelenke" href="#/skatt" data-ingen-valuta>Kista di <b>${esc(sjKr(K.tjent))}</b> ›</a></div></section>`;
   }
   // ---- kompakt rad for de voksne (forsiden og Penger) og for jentene på Penger ----
@@ -3183,7 +3219,7 @@
     const barn = barnIds();
     const sum = barn.map((id) => `${esc(personNavn(id))} ${esc(sjKr(sjKiste(id).tjent))}`).join(" · ");
     let i = "";
-    if (n.fase === "aktiv") i = barn.map((id) => `${esc(personNavn(id))} ${sjFunnPost(n.d, id) ? "✓" : "leter"}`).join(" · ");
+    if (n.fase === "aktiv") i = barn.map((id) => { const a = sjAntIdag(n.d, id), f = sjFunnetIdag(n.d, id); return `${esc(personNavn(id))} ${a > 1 ? `${f}/${a}` : f ? "✓" : "leter"}`; }).join(" · ");
     else if (n.fase === "for") i = `Starter ${pen(S.start)} kl. ${String(S.kl).padStart(2, "0")}`;
     else if (n.fase === "over") { const igjen = barn.reduce((s, id) => s + sjKiste(id).igjen, 0); i = igjen > 0 ? `Utbetaling ${pen(S.utbetaling || pluss(S.slutt, 1))}: ${sjKr(igjen)}` : "Ferdig – alt er betalt"; }
     else i = `Ny mynt kl. ${String(S.kl).padStart(2, "0")}`;
@@ -3199,21 +3235,22 @@
       for (let i = 0; i < tom; i++) celler.push(`<span class="t"></span>`);
       let ant = 0, mulige = 0;
       for (let d = forste; d.slice(0, 7) === k; d = pluss(d, 1)) {
-        const nr = Number(d.slice(8)), f = sjFunnPost(d, pid), med = d >= S.start && d <= S.slutt;
+        const nr = Number(d.slice(8)), f = sjFunnPost(d, pid), med = d >= S.start && d <= S.slutt, to = sjIgjenPa(d, pid).length;
         if (med && d <= idag) mulige++;
-        let kl = !med ? "ute" : f && sjStatus(f) !== "ugyldig" ? (f.hint ? "halv" : "full") : d < idag ? "bom" : d === idag ? "idag" : "";
+        let kl = !med ? "ute" : f && sjStatus(f) !== "ugyldig" ? (f.hint ? "halv" : "full") : sjIgjenTapt(d, pid) ? "igjen" : d < idag ? "bom" : d === idag ? "idag" : "";
         if (kl === "full" || kl === "halv") ant++;
-        celler.push(`<span class="${kl}" title="${esc(pen(d))}">${kl === "full" || kl === "halv" ? sjBilde() : ""}<em>${nr}</em></span>`);
+        if (to && d === idag && kl !== "idag") kl += " idag";
+        celler.push(`<span class="${kl}${to ? " to" : ""}" title="${esc(pen(d))}">${/^(full|halv)/.test(kl) ? sjBilde() : ""}<em>${nr}</em>${to ? `<b class="sj-x2">${to + 1}</b>` : ""}</span>`);
       }
       return `<section class="kort sj-mnd"><div class="sj-mndhode"><h2>${esc(stor1(MND_LANG[Number(k.slice(5, 7)) - 1]))}</h2><span>${mulige ? `${ant} av ${mulige} ${mulige === 1 ? "dag" : "dager"}` : "kommer"}</span></div>
-        <div class="sj-kalhode">${["M", "T", "O", "T", "F", "L", "S"].map((x) => `<span>${x}</span>`).join("")}</div><div class="sj-kal">${celler.join("")}</div></section>`;
+        <div class="sj-kalhode">${["M", "T", "O", "T", "F", "L", "S"].map((x) => `<span>${x}</span>`).join("")}</div><div class="sj-kal">${celler.join("")}</div>${sjIgjen(pid) && sjIgjen(pid).mynter.some((g) => g.tapt.slice(0, 7) === k || g.d.slice(0, 7) === k) ? `<p class="sj-forkl"><span class="sj-kal"><span class="igjen"><em>↻</em></span></span> tas igjen senere · <span class="sj-kal"><span class="to"><em></em><b class="sj-x2">2</b></span></span> to mynter den dagen</p>` : ""}</section>`;
     }).join("");
   }
   function sjFunnListe(pid, voksen) {
     const K = sjKiste(pid); if (!K.F.length) return "";
     const plass = (id) => (SJ().plasser.find((x) => x.id === id) || {}).navn || "";
     return `<div class="seksjonstittel">Funn</div><section class="kort sj-funn">${[...K.F].reverse().slice(0, voksen ? 80 : 30).map((p) => { const st = sjStatus(p);
-      return `<div class="sj-frad${st === "ugyldig" ? " ugyldig" : ""}">${sjBilde("sj-fmynt")}<div><b>${esc(sjDagTekst(p.d))}</b><span>${p.c ? "kl. " + esc(new Date(p.c).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })) + " · " : ""}${esc(plass(p.sted))}${p.hint ? " · med hint" : ""}${st === "venter" ? " · registreres når telefonen er på nett" : st === "ugyldig" ? " · teller ikke (klokka på telefonen stemte ikke)" : ""}</span></div><em>${esc(sjKr(Number(p.verdi) || 0))}</em></div>`; }).join("")}</section>`;
+      return `<div class="sj-frad${st === "ugyldig" ? " ugyldig" : ""}">${sjBilde("sj-fmynt")}<div><b>${esc(sjDagTekst(p.d))}</b><span>${p.c ? "kl. " + esc(new Date(p.c).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })) + " · " : ""}${esc(plass(p.sted))}${sjIgjenTapt(p.d, pid) && p.c && sjOslo(p.c).d !== p.d ? " · tatt igjen " + esc(pen(sjOslo(p.c).d)) : ""}${p.hint ? " · med hint" : ""}${st === "venter" ? " · registreres når telefonen er på nett" : st === "ugyldig" ? " · teller ikke (klokka på telefonen stemte ikke)" : ""}</span></div><em>${esc(sjKr(Number(p.verdi) || 0))}</em></div>`; }).join("")}</section>`;
   }
   function sideSkatt() {
     const S = SJ(); if (!S) return tittel("Skattejakt") + `<p class="tom">Ingen skattejakt her.</p>` + bunn();
@@ -3240,9 +3277,13 @@
       h += `<div class="seksjonstittel">I dag · ${esc(pen(n.d))}</div><section class="kort sj-idag">${barn.map((id) => {
         const f = sjFunnPost(n.d, id), hint = sjHintPost(n.d, id);
         const status = n.fase === "natt" ? "Gjemmes kl. " + String(S.kl).padStart(2, "0") : f ? `Fant den kl. ${new Date(f.c).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" })}${f.hint ? " med hint" : ""} · +${sjKr(Number(f.verdi) || 0)}` : hint ? "Leter – med metalldetektor" : "Leter";
-        return `<div class="sj-irad${f ? " funnet" : ""}"><i></i><div><b>${esc(personNavn(id))}</b><span>${esc(status)}</span></div></div>`; }).join("")}
+        const ig = sjIgjenPa(n.d, id).map((g) => { const p = sjFunnPost(g.tapt, id); return `Ta-igjen-mynten for ${pen(g.tapt)}: ${p ? `funnet${p.hint ? " med hint" : ""} · +${sjKr(Number(p.verdi) || 0)}` : n.fase === "natt" || !f ? "gjemmes når dagens mynt er funnet" : "leter"}`; });
+        const alle = f && ig.every((t) => t.includes("funnet"));
+        return `<div class="sj-irad${alle ? " funnet" : ""}"><i></i><div><b>${esc(personNavn(id))}${ig.length ? ` · ${ig.length + 1} mynter i dag` : ""}</b><span>${esc(status)}</span>${ig.map((t) => `<span>${esc(t)}</span>`).join("")}</div></div>`; }).join("")}
         <p class="krolle">Hvor myntene ligger, vises ikke i appen – ellers kunne jentene finne det ved å bytte bruker under Mer.</p></section>`;
     }
+    const igjenV = barn.map((id) => { const G = sjIgjen(id), k = G ? G.mynter.filter((g) => g.d >= sjOslo(Date.now()).d || !sjFunnPost(g.tapt, id)) : []; return k.length ? `<div class="sj-urad"><div><b>${esc(personNavn(id))} · ${esc(G.grunn || "")}</b><span>${k.map((g) => `${esc(pen(g.tapt))} tas igjen ${esc(pen(g.d))}${sjFunnPost(g.tapt, id) ? " ✓" : ""}`).join("<br>")}</span></div></div>` : ""; }).join("");
+    if (igjenV) h += `<div class="seksjonstittel">Tas igjen</div><section class="kort sj-utbetaling">${igjenV}<p class="krolle">Disse dagene er det to mynter: først dagens, så ta-igjen-mynten. Hvor den ligger, står i fasiten.</p></section>`;
     // Utbetaling
     const utd = S.utbetaling || pluss(S.slutt, 1);
     h += `<div class="seksjonstittel">Utbetaling · ${esc(pen(utd))}</div><section class="kort sj-utbetaling">${barn.map((id) => { const K = sjKiste(id);
@@ -3294,17 +3335,17 @@
   // ---- funnet! ----
   function sjFinn() {
     const S = SJ(), x = sjMin(); if (!x) return;
-    const hint = !!sjHintPost(x.d, x.m), verdi = hint ? S.hintVerdi : S.verdi;
+    const hint = sjHintPaa(x), verdi = hint ? S.hintVerdi : S.verdi;
     synkSett({ k: "m", id: x.d + "|" + x.m, d: x.d, hvem: x.m, sted: x.plass.id, hint: hint ? 1 : 0, verdi, enh: enhet(), c: Date.now() });
     sjPlasser();
-    const K = sjKiste(x.m), siste = x.d === S.slutt, kurs = kursInfo().kurs;
+    const K = sjKiste(x.m), siste = x.d === S.slutt, kurs = kursInfo().kurs, neste = sjMin();
     const konf = Array.from({ length: 26 }, (_, i) => `<i style="--x:${(i * 37) % 100}%;--d:${(i * 53) % 900}ms;--r:${(i * 71) % 360}deg;--f:${i % 5}"></i>`).join("");
     const ov = $("#overlay"); ov.className = "overlay sj-funnet";
     ov.innerHTML = `<div class="sj-konf" aria-hidden="true">${konf}</div><div class="sj-funninn" role="dialog" aria-modal="true" aria-labelledby="sjFunnT">
       <div class="sj-straaler" aria-hidden="true"></div><div class="sj-snurr stor">${sjBilde()}</div>
-      <h1 id="sjFunnT">Du fant pappas gullmynt!</h1><div class="sj-pluss">+${esc(sjKr(verdi))}</div>
+      <h1 id="sjFunnT">${x.igjen ? "Du fant ta-igjen-mynten!" : "Du fant pappas gullmynt!"}</h1><div class="sj-pluss">+${esc(sjKr(verdi))}</div>
       <p class="sj-kis">Kista di: ${esc(sjKr(K.tjent))} · ca. ${esc((Math.round(K.tjent * kurs / 1000) * 1000).toLocaleString("nb-NO"))} ₫</p>
-      <p class="sj-smaa">${siste ? `Det var den siste mynten! Pengene kommer på Vipps ${esc(pen(S.utbetaling || pluss(S.slutt, 1)))}.` : `Neste mynt gjemmes i morgen kl. ${String(S.kl).padStart(2, "0")}.`}${navigator.onLine ? "" : "<br>Funnet registreres når telefonen er på nett igjen."}</p>
+      <p class="sj-smaa">${neste && neste.igjen ? `<b>Mynt 2 venter!</b> Nå er ta-igjen-mynten for ${esc(pen(neste.igjen.tapt))} gjemt et nytt sted i appen.` : x.igjen ? `Begge dagens mynter er funnet. Neste mynt gjemmes i morgen kl. ${String(S.kl).padStart(2, "0")}.` : siste ? `Det var den siste mynten! Pengene kommer på Vipps ${esc(pen(S.utbetaling || pluss(S.slutt, 1)))}.` : `Neste mynt gjemmes i morgen kl. ${String(S.kl).padStart(2, "0")}.`}${navigator.onLine ? "" : "<br>Funnet registreres når telefonen er på nett igjen."}</p>
       <div class="sj-funnkn"><a class="knapp knapp-stor" href="#/skatt" data-sjkiste>Se kista</a><button class="knapp knapp-lys" data-sjlukk>Lukk</button></div></div>`;
     ov.hidden = false; ov.scrollTop = 0;
   }
@@ -3319,7 +3360,7 @@
     if (t.hasAttribute("data-sjhint")) { e.preventDefault(); sjHintArk(); }
     else if (t.hasAttribute("data-sjhintja")) {
       e.preventDefault(); const x = sjMin(); lukkOverlay();
-      if (x && !sjHintPost(x.d, x.m)) synkSett({ k: "m", id: x.d + "|" + x.m + "|h", d: x.d, hvem: x.m, enh: enhet(), c: Date.now() });
+      if (x && !sjHintPaa(x)) synkSett({ k: "m", id: x.d + "|" + x.m + "|h", d: x.d, hvem: x.m, enh: enhet(), c: Date.now() });
       const y = window.scrollY; vis(); window.scrollTo(0, y); toast("Metalldetektoren er på – den blir varmere jo nærmere du kommer", 4200);
     }
     else if (t.hasAttribute("data-sjhintnei") || t.hasAttribute("data-sjlukk")) { e.preventDefault(); lukkOverlay(); const y = window.scrollY; vis(); window.scrollTo(0, y); }
@@ -3692,6 +3733,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    63: "Skattejakten: dager du er borte, kan tas igjen senere – da er det to mynter den dagen",
     62: "⟦k2⟧ kan leses høyt på vietnamesisk og har fått bilder",
     61: "Nødkortet viser første og andre klokkeslett",
     21: "Ny I dag-visning på reisedagene",
