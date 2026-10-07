@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 61, tid: "2026-10-07 kl. 22:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 62, tid: "2026-10-07 kl. 23:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1946,12 +1946,12 @@
   window.addEventListener("hashchange", () => { if (D) brukSkjerm(); });
   // Handlinger som telles (første treff vinner)
   const BRUK_KLIKK = [["a[href^='tel:']", "ring"], ["a[href*='wa.me']", "whatsapp"], ["a[href*='google.com/maps']", "kart"], ["#sos", "sos"], ["#sokknapp", "sok"],
-    ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-frase]", "frase"],
+    ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-akles]", "akles"], ["[data-frase]", "frase"],
     ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary,[data-ivaer]", "vaer"], ["[data-iluft]", "luft"], ["[data-isjo]", "sjo"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
     ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-bekr]", "bekr"], ["[data-dag]", "dag"], ["[data-setekart]", "setekart"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["[data-sjmynt]", "skatt"], ["[data-sjhintja]", "skatthint"], ["a[target='_blank']", "lenke"]];
   const HANDLINGER = { ring: "Ringte", whatsapp: "Åpnet WhatsApp", kart: "Åpnet kart", sos: "Trykket SOS", sok: "Åpnet søk", hk: "Åpnet ⟦k1⟧", hknod: "Nødskjermen på ⟦k1⟧",
     tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været", luft: "Åpnet luftkvaliteten", sjo: "Åpnet bølger og vind",
-    hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", bekr: "Viste bekreftelse", dag: "Byttet dag",
+    hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", akles: "Leste opp kortet", bekr: "Viste bekreftelse", dag: "Byttet dag",
     lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", setekart: "Åpnet setekart", detalj: "Åpnet detaljer i I dag", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen", skatt: "Fant gullmynt", skatthint: "Brukte hint i skattejakten" };
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest) return;
@@ -2151,6 +2151,7 @@
     if (!UTTALE) return;
     try { speechSynthesis.cancel(); } catch {}
     $$(".spiller").forEach((b) => b.classList.remove("spiller"));
+    $$(".leses").forEach((x) => x.classList.remove("leses"));
     uttaleKnapp = null;
   }
   function uttale(b) {
@@ -2173,6 +2174,40 @@
     speechSynthesis.speak(u);
   }
   window.addEventListener("hashchange", uttaleStopp);
+  // v62: hele kortet leses høyt, én setning om gangen, og setningen som leses markeres på skjermen.
+  // Teksten er den som står på kortet: [data-les] (verdien, ellers synlig tekst), i rekkefølge.
+  const lesTekst = (t) => {
+    let s = String(t || "").replace(/\s*\(([^)]*)\)/g, ", $1,").replace(/\s*[\/–—]\s*/g, ", ").replace(/…/g, "").replace(/,\s*([,.!?:])/g, "$1").replace(/\s+/g, " ").trim();
+    return s === s.toLocaleUpperCase("vi") ? s.toLocaleLowerCase("vi") : s;
+  };
+  const akLesKnapp = () => UTTALE ? `<div class="ak-les"><button class="ak-lesknapp" data-akles>${HOYTTALER}<span class="av">Les opp kortet</span><span class="pa">Stopp</span></button><button class="ak-lessakte" data-akles data-sakte="1">Sakte</button></div><p class="ak-leshjelp">Leses på vietnamesisk – skru volumet helt opp.</p>` : "";
+  function akLes(b) {
+    const igjen = uttaleKnapp === b && b.classList.contains("spiller");
+    uttaleStopp();
+    if (igjen) return;
+    if (!finnStemme() && speechSynthesis.getVoices().length && !uttaleVarslet) {
+      uttaleVarslet = true;
+      toast("Telefonen mangler vietnamesisk stemme. Last den ned: Innstillinger → Tilgjengelighet → Opplest innhold → Stemmer → Vietnamesisk.", 9000, "info");
+      return;
+    }
+    const deler = $$("#overlay [data-les]").map((el) => [el, lesTekst(el.dataset.les || el.innerText)]).filter((x) => x[1]);
+    if (!deler.length) return;
+    uttaleKnapp = b; b.classList.add("spiller");
+    deler.forEach(([el, t], i) => {
+      const u = new SpeechSynthesisUtterance(t);
+      u.lang = (uttaleStemme && uttaleStemme.lang) || "vi-VN";
+      if (uttaleStemme) u.voice = uttaleStemme;
+      u.rate = b.dataset.sakte ? 0.6 : 0.88;
+      u.onstart = () => {
+        if (uttaleKnapp !== b) return;
+        $$(".leses").forEach((x) => x.classList.remove("leses"));
+        el.classList.add("leses");
+        try { el.scrollIntoView({ block: "nearest", behavior: "smooth" }); } catch {}
+      };
+      if (i === deler.length - 1) u.onend = u.onerror = () => { if (uttaleKnapp === b) uttaleStopp(); };
+      speechSynthesis.speak(u);
+    });
+  }
 
   // ---------- oppdateringer fra Claude: en tekstkode limes inn under Mer og deles via synk ----------
   // Post {k:"u", id, tittel, ops, linjer, hash, pa (på/av), hvem, c}. Grunnlaget D0 er reiseinfoen fra data.enc;
@@ -3657,6 +3692,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    62: "⟦k2⟧ kan leses høyt på vietnamesisk og har fått bilder",
     61: "Nødkortet viser første og andre klokkeslett",
     21: "Ny I dag-visning på reisedagene",
     22: "«Hent nyeste versjon» svarer straks",
@@ -3838,31 +3874,40 @@
     if (opts.skjerm) AK.skjerm = opts.skjerm;
     const v = AK.variant in a.varianter ? AK.variant : "v1", nv = n[v], vv = a.varianter[v];
     const rull = opts.beholdRull ? o.scrollTop : 0;
+    uttaleStopp();
     if (opts.aapne && D.synk) synkSnart(0);
+    const akBilde = (k, alt = "") => (k && D.bilder && D.bilder[k] ? `<img class="ak-ikon" src="${D.bilder[k]}" alt="${esc(alt)}">` : "");
+    const akLinje = (x, k) => {
+      const b = akBilde(k);
+      if (!b) return `<li data-les>${esc(x)}</li>`;
+      return (a.brede || []).includes(k) ? `<li class="bred" data-les><span>${esc(x)}</span>${b}</li>` : `<li class="mb" data-les>${b}<span>${esc(x)}</span></li>`;
+    };
     const bilde = D.bilder && D.bilder[a.bilde] ? `<img class="ak-bilde" src="${D.bilder[a.bilde]}" alt="${esc(a.bildeAlt || "")}">` : "";
     let h = `<button class="lukk">Lukk</button><div class="hk-stor">
       <div class="kortskjerm"><button data-kortskjerm="restaurant" class="${AK.skjerm === "restaurant" ? "valgt" : ""}">Restaurant</button><button data-kortskjerm="nod" class="nod ${AK.skjerm === "nod" ? "valgt" : ""}">Nødsituasjon</button></div>`;
     if (AK.skjerm === "restaurant") {
       const s = AK.svar && r.svar.find((x) => x.id === AK.svar);
       h += `<div class="ak">
+        ${akLesKnapp()}
         <p class="ak-til">${esc(r.til)}</p>
-        <div class="ak-topp">${bilde}<div><p class="ak-overskrift">${esc(r.overskrift)}</p><p class="ak-stoff">${esc(r.stoff)}</p></div></div>
-        <p class="ak-eks">${esc(r.eksempler)}</p>${r.ok ? `<p class="ak-ok">✓ ${esc(r.ok)}</p>` : ""}
-        <p class="ak-intro">${esc(r.intro[v])}</p>
-        <ul class="ak-forbud">${r.forbud.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
-        <div class="ak-sp"><p>${esc(r.sporsmal)}</p>
+        <div class="ak-topp" data-les="${esc(r.overskrift + ". " + r.stoff + ".")}">${bilde}<div><p class="ak-overskrift">${esc(r.overskrift)}</p><p class="ak-stoff">${esc(r.stoff)}</p></div></div>
+        ${r.fliser ? `<div class="ak-fliser">${r.fliser.map((f) => `<figure>${akBilde(f.bilde, f.vi)}<figcaption>${esc(f.vi)}</figcaption></figure>`).join("")}</div>` : `<p class="ak-eks">${esc(r.eksempler)}</p>`}${r.ok ? `<p class="ak-ok">✓ ${esc(r.ok)}</p>` : ""}
+        <p class="ak-intro" data-les>${esc(r.intro[v])}</p>
+        <ul class="ak-forbud">${r.forbud.map((t, i) => { const b = akBilde((r.fb || [])[i]); return `<li${b ? ' class="mb"' : ""} data-les>${b}<span>${esc(t)}</span></li>`; }).join("")}</ul>
+        <div class="ak-sp">${akBilde(r.sb) ? `<div class="ak-sprad">${akBilde(r.sb)}<p data-les>${esc(r.sporsmal)}</p></div>` : `<p data-les>${esc(r.sporsmal)}</p>`}
           <div class="ak-svar">${r.svar.map((x) => `<button data-kortsvar="${x.id}" class="${x.type} ${AK.svar === x.id ? "valgt" : ""}">${esc(x.vi)}<small>${esc(x.en)}</small></button>`).join("")}</div>
           ${s ? `<div class="ak-resultat ${s.type}"><b>${esc(s.svarVi)}</b><span>${esc(s.no)}</span></div>` : ""}</div>
-        <p class="ak-usikker">${esc(r.usikker)}</p>
-        <p class="ak-takk">${esc(r.takk)}</p></div>
+        <p class="ak-usikker" data-les>${esc(r.usikker)}</p>
+        <p class="ak-takk" data-les>${esc(r.takk)}</p></div>
         <details class="ak-en"><summary>English</summary><p>${esc(r.en[v])}</p></details>`;
     } else {
       const t = tpLes();
       h += `<div class="ak ak-nod">
-        <p class="ak-nodtittel">${esc(n.tittel)}</p>
-        <p class="ak-hoved">${esc(nv.hoved)}</p>
-        <a class="ak-115" href="tel:115">${esc(nv.ring)}<small>Ring 115</small></a>
-        <ul class="ak-linjer">${nv.linjer.map((x, i) => `<li>${esc(x)}</li>` + (t && i === (nv.tidEtter ?? (v === "v1" ? 0 : 1)) ? `<li class="tidli"><p class="ak-tid">${akTid(n)}</p></li>` : "")).join("")}</ul>
+        ${akLesKnapp()}
+        <p class="ak-nodtittel" data-les>${esc(n.tittel)}</p>
+        <p class="ak-hoved" data-les>${esc(nv.hoved)}</p>
+        <a class="ak-115" href="tel:115" data-les="${esc(nv.ring)}">${esc(nv.ring)}<small>Ring 115</small></a>
+        <ul class="ak-linjer">${nv.linjer.map((x, i) => akLinje(x, (nv.lb || [])[i]) + (t && i === (nv.tidEtter ?? (v === "v1" ? 0 : 1)) ? `<li class="tidli"><p class="ak-tid" data-les>${akTid(n)}</p></li>` : "")).join("")}</ul>
         ${[nv.kontakt, nv.kontakt2].filter(Boolean).map((k) => `<p class="ak-kontakt">${esc(k[0])} <a href="tel:${esc(k[1].replace(/\s/g, ""))}">${esc(k[1])}</a></p>`).join("")}</div>
         <div class="ak-fam">
           <button class="knapp knapp-full ${t ? "" : "knapp-rod"}" data-tpnaa>${t ? "Registrer ny ⟦t3⟧ nå" : "⟦t4⟧ satt nå – registrer klokkeslett"}</button>
@@ -4443,6 +4488,8 @@
     if (av) { e.preventDefault(); avtKlikk(av); return; }
     const ut = e.target.closest("[data-uttale]");
     if (ut) { e.preventDefault(); uttale(ut); return; }
+    const al = e.target.closest("[data-akles]");
+    if (al) { e.preventDefault(); akLes(al); return; }
     const fr = e.target.closest("[data-frase]");
     if (fr) { e.preventDefault(); uttaleStopp(); visFrase(Number(fr.dataset.frase)); return; }
     const t = e.target.closest("[data-pakkrunde],[data-pakkliste],[data-pakknull],[data-nodsted],[data-kortvariant],[data-dag],[data-laas],[data-hk],[data-stort],[data-kopier],[data-matsted],[data-maal],[data-sort],[data-meg],[data-oppdater],[data-rull],[data-sjofor],[data-sjoforlim],[data-sjoforvis],.lukk");

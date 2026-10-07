@@ -1783,3 +1783,35 @@ a.intern[href^="#/bekr/"]::before { content: ""; width: 15px; height: 15px; flex
 .bekrside.stor img { width: 240%; max-width: none; }
 .bekrvent { padding: 32px 16px; text-align: center; color: var(--dempet); font-size: .92rem; background: var(--flate2); }
 .bekrhjelp { margin-top: 10px; font-size: .85rem; }
+
+/* v62: opplesing av kortet + piktogrammer */
+.ak-les { display: grid; grid-template-columns: 1fr auto; gap: 8px; margin: 0 0 4px; }
+.ak-lesknapp, .ak-lessakte { min-height: 54px; border-radius: 14px; border: 0; font: inherit; font-weight: 800; font-size: 1.05rem; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 10px; -webkit-tap-highlight-color: transparent; transition: background .2s, transform .1s; }
+.ak-lesknapp { background: #1565c0; color: #fff; padding: 0 14px; }
+.ak-lesknapp .hikon { width: 26px; height: 26px; }
+.ak-lessakte { background: #e3edf9; color: #0d47a1; padding: 0 18px; }
+.ak-lesknapp:active, .ak-lessakte:active { transform: scale(.97); }
+.ak-lesknapp .pa, .ak-lesknapp.spiller .av { display: none; }
+.ak-lesknapp.spiller .pa { display: inline; }
+.ak-lesknapp.spiller, .ak-lessakte.spiller { background: #0d47a1; color: #fff; animation: akPuls 1.4s ease-out infinite; }
+.ak-lesknapp.spiller .hb1 { animation: akBolge 1s ease-in-out infinite; }
+.ak-lesknapp.spiller .hb2 { animation: akBolge 1s ease-in-out .25s infinite; }
+@keyframes akPuls { 0% { box-shadow: 0 0 0 0 rgba(21,101,192,.5); } 100% { box-shadow: 0 0 0 12px rgba(21,101,192,0); } }
+@keyframes akBolge { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
+.ak-leshjelp { margin: 0 2px 14px; font-size: .8rem; color: #666; }
+.ak .leses { background: #fff3c4; box-shadow: 0 0 0 6px #fff3c4; border-radius: 6px; }
+.ak [data-les] { transition: background .25s, box-shadow .25s; }
+.ak-fliser { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0 10px; }
+.ak-fliser figure { margin: 0; position: relative; background: #fbf7f0; border: 2px solid #efd2cd; border-radius: 12px; padding: 8px 4px 7px; text-align: center; }
+.ak-fliser figure::after { content: "✕"; position: absolute; top: 4px; right: 4px; width: 22px; height: 22px; border-radius: 50%; background: #b3261e; color: #fff; font-size: .72rem; font-weight: 900; display: grid; place-items: center; }
+.ak-fliser .ak-ikon { width: 74%; max-width: 86px; height: auto; aspect-ratio: 1; margin: 0 auto; }
+.ak-fliser figcaption { font-size: .95rem; font-weight: 800; line-height: 1.15; margin-top: 3px; color: #111; }
+.ak-ikon { display: block; width: 60px; height: 60px; }
+.ak-forbud li.mb { display: grid; grid-template-columns: 60px 1fr; gap: 12px; align-items: center; padding-left: 0; }
+.ak-forbud li.mb::before { display: none; }
+.ak-sprad { display: grid; grid-template-columns: 60px 1fr; gap: 12px; align-items: center; margin: 0 0 12px; }
+.ak-sprad p { margin: 0; font-size: 1.15rem; line-height: 1.35; font-weight: 750; }
+.ak-linjer li.mb { display: grid; grid-template-columns: 52px 1fr; gap: 12px; align-items: center; }
+.ak-linjer li.mb .ak-ikon { width: 52px; height: 52px; }
+.ak-linjer li.bred .ak-ikon { width: 100%; max-width: 380px; height: auto; margin: 10px auto 2px; background: #fff; border-radius: 10px; }
+@media (prefers-reduced-motion: reduce) { .ak-lesknapp.spiller, .ak-lessakte.spiller, .ak-lesknapp.spiller .hb { animation: none; } }
