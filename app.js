@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 60, tid: "2026-10-07 kl. 11:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 61, tid: "2026-10-07 kl. 22:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3657,6 +3657,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    61: "Nødkortet viser første og andre klokkeslett",
     21: "Ny I dag-visning på reisedagene",
     22: "«Hent nyeste versjon» svarer straks",
     23: "Lenke til hotellenes nettsider",
@@ -3769,6 +3770,12 @@
     lagre.del(LS.tp);
   }
   const hhmm = (t) => new Date(t).toLocaleTimeString("nb-NO", { hour: "2-digit", minute: "2-digit" });
+  // Kortet viser første og (hvis flere) siste registrering: «… 1 lúc 14:05 · … 2 lúc 14:11»
+  function akTid(n) {
+    const l = tpListe(); if (!l.length) return "";
+    const en = esc(n.tidLinje.replace("{tid}", hhmm(l[0].tp)));
+    return l.length > 1 && n.tidLinje2 ? `${en}<br>${esc(n.tidLinje2.replace("{tid}", hhmm(l[l.length - 1].tp)))}` : en;
+  }
   const avHvem = (p) => (p.hvem && personNavn(p.hvem) ? ` (${esc(personNavn(p.hvem))})` : "");
   function tpTekst() {
     const l = tpListe(); if (!l.length) return "";
@@ -3840,7 +3847,7 @@
       h += `<div class="ak">
         <p class="ak-til">${esc(r.til)}</p>
         <div class="ak-topp">${bilde}<div><p class="ak-overskrift">${esc(r.overskrift)}</p><p class="ak-stoff">${esc(r.stoff)}</p></div></div>
-        <p class="ak-eks">${esc(r.eksempler)}</p>
+        <p class="ak-eks">${esc(r.eksempler)}</p>${r.ok ? `<p class="ak-ok">✓ ${esc(r.ok)}</p>` : ""}
         <p class="ak-intro">${esc(r.intro[v])}</p>
         <ul class="ak-forbud">${r.forbud.map((t) => `<li>${esc(t)}</li>`).join("")}</ul>
         <div class="ak-sp"><p>${esc(r.sporsmal)}</p>
@@ -3855,8 +3862,8 @@
         <p class="ak-nodtittel">${esc(n.tittel)}</p>
         <p class="ak-hoved">${esc(nv.hoved)}</p>
         <a class="ak-115" href="tel:115">${esc(nv.ring)}<small>Ring 115</small></a>
-        <ul class="ak-linjer">${nv.linjer.map((x, i) => `<li>${esc(x)}</li>` + (t && i === (v === "v1" ? 0 : 1) ? `<li class="tidli"><p class="ak-tid">${esc(n.tidLinje.replace("{tid}", hhmm(t)))}</p></li>` : "")).join("")}</ul>
-        ${nv.kontakt ? `<p class="ak-kontakt">${esc(nv.kontakt[0])} <a href="tel:${esc(nv.kontakt[1].replace(/\s/g, ""))}">${esc(nv.kontakt[1])}</a></p>` : ""}</div>
+        <ul class="ak-linjer">${nv.linjer.map((x, i) => `<li>${esc(x)}</li>` + (t && i === (nv.tidEtter ?? (v === "v1" ? 0 : 1)) ? `<li class="tidli"><p class="ak-tid">${akTid(n)}</p></li>` : "")).join("")}</ul>
+        ${[nv.kontakt, nv.kontakt2].filter(Boolean).map((k) => `<p class="ak-kontakt">${esc(k[0])} <a href="tel:${esc(k[1].replace(/\s/g, ""))}">${esc(k[1])}</a></p>`).join("")}</div>
         <div class="ak-fam">
           <button class="knapp knapp-full ${t ? "" : "knapp-rod"}" data-tpnaa>${t ? "Registrer ny ⟦t3⟧ nå" : "⟦t4⟧ satt nå – registrer klokkeslett"}</button>
           ${t ? `<p id="tpTeller">${tpTekst()}</p><div class="ak-angre"><button class="lenkeknapp" data-tpangre>Angre siste registrering</button><button class="lenkeknapp" data-tpnull>Fjern klokkeslettet</button></div>` : `<p>Klokkeslettet vises på vietnamesisk på kortet, til ambulanse og sykehus.</p>`}
