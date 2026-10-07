@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 59, tid: "2026-10-04 kl. 23:45" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 60, tid: "2026-10-07 kl. 11:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -237,6 +237,7 @@
     stjerne: '<path d="M12 3.5l1.9 5.2 5.3 1.8-5.3 1.8L12 17.5l-1.9-5.2-5.3-1.8 5.3-1.8z"/><path d="M18.5 16v4M16.5 18h4"/>',
     bil: '<path d="M4 16v-5l2-5h12l2 5v5M4 16h16M4 16v2.5M20 16v2.5"/><circle cx="7.5" cy="13" r="1"/><circle cx="16.5" cy="13" r="1"/>',
     kveld: '<path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5z"/>',
+    dok: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12.5h5M10 16.5h5"/>',
     venstre: '<path d="M15 5l-7 7 7 7"/>', hoyre: '<path d="M9 5l7 7-7 7"/>', chev: '<path d="M9 6l6 6-6 6"/>',
   };
   const ikon = (t, cls = "ikon") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[t] || P.info}</svg>`;
@@ -306,7 +307,7 @@
       <div class="fmeta"><span>Ref. <button class="ref" data-kopier="${esc(f.ref)}">${esc(f.ref)}</button></span>
         ${mitt ? (skKan(f) ? skKnapp(f, m, `Ditt sete ${esc(mitt)} <small>· Setekart ›</small>`, "dittsete") : `<span class="dittsete">Ditt sete ${esc(mitt)}</span>`) : `<span><b>Seter</b> ${skKnapp(f, "", esc(f.seterTekst || (f.seter ? Object.values(f.seter).sort().join(", ") : "")) + (skKan(f) ? " ›" : ""))}</span>`}</div>
       ${f.info ? `<div class="finfo">${md(f.info)}</div>` : ""}
-      <div class="knapper flyknapper">${f.innsjekk && f.d >= idagISO() ? knapp("web", f.innsjekk.url, "Sjekk inn") : ""}${knapp("web", "https://www.flightradar24.com/data/flights/" + encodeURIComponent(f.id.toLowerCase()), "Flystatus")}</div>
+      <div class="knapper flyknapper">${f.innsjekk && f.d >= idagISO() ? knapp("web", f.innsjekk.url, "Sjekk inn") : ""}${knapp("web", "https://www.flightradar24.com/data/flights/" + encodeURIComponent(f.id.toLowerCase()), "Flystatus")}${bekrKnapp(f.bekr)}</div>
       ${f.innsjekk && f.d >= idagISO() ? `<div class="finnsj">Innsjekk på nett: ${md(f.innsjekk.tekst)}</div>` : ""}
       ${rader ? `<details class="flydet"><summary>Seter og billettnumre</summary><table>${rader}</table></details>` : ""}
     </div>`;
@@ -480,7 +481,7 @@
     const ut = medDato && !harDato(h.ut) ? `${kort(s.til)} · ${h.ut}` : h.ut;
     const ref = `<dt>Ref.</dt><dd><button class="ref" data-kopier="${esc(refDel(h.ref))}">${esc(h.ref)}</button></dd>`;
     const resten = `<dt>Rom</dt><dd>${md(h.rom)}</dd><dt>Betaling</dt><dd>${md(h.betaling)}</dd>`;
-    const knapper = `<div class="knapper">${h.sjofor !== false ? `<button class="kb" data-sjofor="${esc(s.id)}">${ikon("kart", "")}Vis til sjåføren</button>` : ""}${knapp("kart", h.kartq, "Vis i kart")}${ringeKnapper(k)}</div>`;
+    const knapper = `<div class="knapper">${h.sjofor !== false ? `<button class="kb" data-sjofor="${esc(s.id)}">${ikon("kart", "")}Vis til sjåføren</button>` : ""}${knapp("kart", h.kartq, "Vis i kart")}${ringeKnapper(k)}${bekrKnapp(h.bekr)}</div>`;
     const nett = h.nett ? `<a class="hnett" href="${esc(h.nett)}" target="_blank" rel="noopener noreferrer">${esc(h.nettTekst || "Hotellets nettside")} ↗</a>` : "";
     const topp = `<div class="hnavn">${esc(h.navn)}</div>${kompakt ? "" : `<div class="hadr">${esc(h.adr)}</div>`}
       <div class="tider"><span>Inn <b>${esc(inn)}</b></span><span>Ut <b>${esc(ut)}</b></span></div>`;
@@ -1017,6 +1018,61 @@
     o.hidden = false; o.scrollTop = 0;
   }
   // Detaljark nedenfra: trykk på en rad, flybilletten, hotellet i natt eller været
+  // ---------- bekreftelser (v60): bildet av den faktiske bekreftelsen – kryptert hver for seg i b/<hash>.enc ----------
+  // Lastes ned én gang til et eget lager («vn-bekr», overlever nye appversjoner) og virker deretter uten nett.
+  // Knappen vises der bestillingen står (hotell, fly, idékort); i tekst: [tittel](#/bekr/id).
+  const BK_LAGER = "vn-bekr";
+  const bekrUrl = (navn) => new URL("b/" + navn + ".enc", location.href).href;
+  const bekrKnapp = (ids) => (ids || []).filter((id) => D.bekr && D.bekr[id])
+    .map((id, i, a) => `<button class="kb bekrknapp" data-bekr="${esc(id)}">${ikon("dok", "")}${a.length > 1 ? esc(D.bekr[id].t) : "Vis bekreftelsen"}</button>`).join("");
+  async function bekrFil(navn) {
+    const url = bekrUrl(navn); let r = null;
+    try {
+      const c = await caches.open(BK_LAGER); r = await c.match(url);
+      if (!r) { const n = await fetch(url, { cache: "no-cache" }); if (n.ok) { await c.put(url, n.clone()); r = n; } }
+    } catch { r = await fetch(url).catch(() => null); } // uten Cache API (f.eks. privat modus): rett fra nett
+    if (!r || !r.ok) throw new Error("ikke lastet");
+    const u = new Uint8Array(await r.arrayBuffer());
+    const klar = await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, K, u.slice(12));
+    return URL.createObjectURL(new Blob([klar], { type: "image/jpeg" }));
+  }
+  async function visBekr(id) {
+    const b = D.bekr && D.bekr[id]; if (!b) return;
+    if (arkAapent()) ARK.push({ html: $("#overlay").innerHTML, y: arkFlate().scrollTop }); else ARK = [];
+    arkApne(`<div class="ark-etikett">Bekreftelse</div><h2>${esc(b.t)}</h2>${b.note ? `<p class="krolle">${md(b.note)}</p>` : ""}
+      ${b.wa ? `<div class="knapper">${knapp("wa", b.wa, "Åpne WhatsApp-samtalen")}</div>` : ""}
+      <div class="bekrsider">${b.sider.map((s, i) => `<figure class="bekrside" data-bside="${esc(s)}"><div class="bekrvent">Henter ${b.sider.length > 1 ? "side " + (i + 1) : "bildet"} …</div></figure>`).join("")}</div>
+      <p class="krolle bekrhjelp">Trykk på bildet for å forstørre – trykk igjen for å gå tilbake.</p>`);
+    for (const fig of $$("#overlay [data-bside]")) {
+      let src = null;
+      try { src = await bekrFil(fig.dataset.bside); } catch {}
+      if (!fig.isConnected) return;
+      fig.innerHTML = src ? `<img src="${src}" alt="Bekreftelsen${b.sider.length > 1 ? ", side " + (b.sider.indexOf(fig.dataset.bside) + 1) : ""}">`
+        : `<div class="bekrvent">Ikke lastet ned ennå. Åpne appen én gang med nett, så lagres alle bekreftelsene på telefonen.</div>`;
+    }
+  }
+  // Etter opplåsing: last ned bekreftelser som mangler (én om gangen, i bakgrunnen) og rydd bort gamle.
+  async function bekrForhand() {
+    if (!D || !D.bekr || !navigator.onLine || !window.caches) return;
+    try {
+      const c = await caches.open(BK_LAGER), onsket = new Set(Object.values(D.bekr).flatMap((b) => b.sider.map(bekrUrl)));
+      for (const r of await c.keys()) if (!onsket.has(r.url)) await c.delete(r);
+      for (const url of onsket) {
+        if (await c.match(url)) continue;
+        const n = await fetch(url, { cache: "no-cache" }).catch(() => null);
+        if (n && n.ok) await c.put(url, n); else break; // uten nett: prøv igjen neste gang
+      }
+    } catch {}
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest && e.target.closest("[data-bekr]"); if (!t || !D) return;
+    e.preventDefault(); e.stopPropagation(); visBekr(t.dataset.bekr);
+  }, true);
+  document.addEventListener("click", (e) => { // bildet: trykk = forstørr / tilbake
+    const f = e.target.closest && e.target.closest(".bekrside"); if (!f || !f.querySelector("img")) return;
+    f.classList.toggle("stor"); if (f.classList.contains("stor")) f.scrollLeft = 0;
+  });
+
   // ---------- kortet fra stedssiden i detaljarket (v57) ----------
   // Hendelser har kort: {s: sted, t: seksjonstittel | hotell: 1 | ide: idénavn}. Arket viser SELVE kortet, ikke en kopi.
   let ARK = []; // tidligere ark når et kort er åpnet inne i arket («‹ Tilbake»): {html, y}
@@ -1892,10 +1948,10 @@
   const BRUK_KLIKK = [["a[href^='tel:']", "ring"], ["a[href*='wa.me']", "whatsapp"], ["a[href*='google.com/maps']", "kart"], ["#sos", "sos"], ["#sokknapp", "sok"],
     ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-frase]", "frase"],
     ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary,[data-ivaer]", "vaer"], ["[data-iluft]", "luft"], ["[data-isjo]", "sjo"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
-    ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-dag]", "dag"], ["[data-setekart]", "setekart"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["[data-sjmynt]", "skatt"], ["[data-sjhintja]", "skatthint"], ["a[target='_blank']", "lenke"]];
+    ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-bekr]", "bekr"], ["[data-dag]", "dag"], ["[data-setekart]", "setekart"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["[data-sjmynt]", "skatt"], ["[data-sjhintja]", "skatthint"], ["a[target='_blank']", "lenke"]];
   const HANDLINGER = { ring: "Ringte", whatsapp: "Åpnet WhatsApp", kart: "Åpnet kart", sos: "Trykket SOS", sok: "Åpnet søk", hk: "Åpnet ⟦k1⟧", hknod: "Nødskjermen på ⟦k1⟧",
     tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været", luft: "Åpnet luftkvaliteten", sjo: "Åpnet bølger og vind",
-    hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", dag: "Byttet dag",
+    hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", bekr: "Viste bekreftelse", dag: "Byttet dag",
     lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", setekart: "Åpnet setekart", detalj: "Åpnet detaljer i I dag", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen", skatt: "Fant gullmynt", skatthint: "Brukte hint i skattejakten" };
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest) return;
@@ -3536,6 +3592,7 @@
   document.addEventListener("click", (e) => {
     const a = e.target.closest && e.target.closest("a.intern"); if (!a) return;
     e.preventDefault(); e.stopPropagation();
+    const bm = (a.getAttribute("href") || "").match(/^#\/bekr\/([\w-]+)$/); if (bm) { visBekr(bm[1]); return; } // v60
     const iArk = arkAapent(), kf = (iArk || rute().side === "idag") && kortFraLenke(a.getAttribute("href"), a.dataset.finn);
     if (kf) {
       // Kortet vises allerede lenger ned i dette arket → rull dit i stedet for å åpne det på nytt
@@ -3638,6 +3695,7 @@
     57: "Trykk på en aktivitet i I dag: alt om den vises der – og appen husker hvor du var",
     58: "Omregnede beløp er lette å lese i mørk modus",
     59: "Sorter restaurantene etter avstand, pris eller kvalitet",
+    60: "Se selve bekreftelsen på hotell, fly og bestilte aktiviteter (virker uten nett)",
   };
   const VS_PIL = `<svg class="vs-pil" viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6"/></svg>`;
   const VS_IKON = {
@@ -4583,11 +4641,12 @@
     if (!meg() && $("#overlay").hidden) visHvem(); else sjIntroSjekk();
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch {}
     synk();
+    setTimeout(bekrForhand, 4000);
     hentetMelding();
     hentKurs().then((ny) => { if (ny && rute().side === "penger") vis(); });
     if (nyVenter) nyReiseinfo();
   }
-  window.addEventListener("online", () => { if (D) synk(); });
+  window.addEventListener("online", () => { if (D) { synk(); bekrForhand(); } });
   window.addEventListener("offline", () => synkStatus("vent"));
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && D) synk(); });
   // Hvert 10. s mens nødkortet er åpent (tidspunktet), ellers hvert 30. s – et tomt søk i databasen er billig.
