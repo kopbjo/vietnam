@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 69, tid: "2026-10-10 kl. 10:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 70, tid: "2026-10-10 kl. 11:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1652,7 +1652,10 @@
     let h = tittel("Fly", esc(D.meta.bagasje));
     const idag = idagISO(), fløyet = (f) => f.d < idag, kommende = D.fly.filter((f) => !fløyet(f)), nesteF = kommende[0];
     const nesteTekst = (f) => { const n = mellom(idag, f.d); return n === 0 ? "i dag" : n === 1 ? "i morgen" : `om ${n} dager`; };
-    const kortet = (f) => f === nesteF ? `<div class="flyneste"><div class="flyneste-etikett">Neste fly · ${esc(nesteTekst(f))}</div>${flyKort(f)}</div>` : flyKort(f);
+    // v70: når reisen har begynt, er bare neste fly åpent – de andre er én linje hver som kan åpnes
+    const kompakt = idag >= start();
+    const linje = (f) => `<details class="fold flyfold"><summary><span class="ff-nr">${esc(f.id)}</span><span class="ff-tekst"><b>${esc(kort(f.d))} · ${esc(f.dep)}</b> ${esc(f.fra)} → ${esc(f.til)}</span></summary><div class="innhold">${flyKort(f)}</div></details>`;
+    const kortet = (f) => f === nesteF ? `<div class="flyneste"><div class="flyneste-etikett">Neste fly · ${esc(nesteTekst(f))}</div>${flyKort(f)}</div>` : kompakt ? linje(f) : flyKort(f);
     const grupper = [...new Set(kommende.map((f) => f.gruppe || ""))];
     grupper.forEach((g) => { h += `${g ? `<div class="seksjonstittel">${esc(g)}</div>` : ""}<div class="flyliste">${kommende.filter((f) => (f.gruppe || "") === g).map(kortet).join("")}</div>`; });
     const bak = D.fly.filter(fløyet);
@@ -3869,6 +3872,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    70: "Fly: på reisen er neste fly åpent – trykk på de andre for detaljer",
     69: "Fly og Hotell ligger nå under Reisen. Mer er ryddet i tre grupper",
     68: "I dag: kortere topp, og kveldens hotell med «Vis til sjåføren» øverst i dagen",
     67: "Større tekst der den var liten – lettere å lese i sola",

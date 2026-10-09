@@ -1940,3 +1940,11 @@ html.fg-aapen, html.fg-aapen body { overflow: hidden; }
 
 /* ---------- v69: Fly og Hotell øverst på Reisen ---------- */
 .reise-ovs { margin-top: 4px; }
+
+/* ---------- v70: Fly – kompakt liste på reisen ---------- */
+details.flyfold { margin: 0 0 8px; }
+details.flyfold > summary { display: flex; align-items: center; gap: 10px; min-height: 52px; }
+details.flyfold .ff-nr { flex: none; font-weight: 750; min-width: 58px; }
+details.flyfold .ff-tekst { flex: 1; color: var(--dempet); line-height: 1.35; }
+details.flyfold .ff-tekst b { color: var(--tekst); font-weight: 650; }
+details.flyfold > .innhold .fly { box-shadow: none; border: 0; padding: 0; margin: 0; }
