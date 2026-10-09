@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 64, tid: "2026-10-09 kl. 22:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 65, tid: "2026-10-10 kl. 00:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -541,7 +541,8 @@
       return `${f({ year: "numeric", month: "2-digit", day: "2-digit" })} kl. ${f({ hour: "2-digit", minute: "2-digit", hourCycle: "h23" })} (norsk tid)`; }
     catch { return D.meta.oppdatert; }
   };
-  const bunn = () => `<div class="bunn">Reiseinfo oppdatert ${esc(oppdatertTekst())} · appversjon ${APP.versjon}${D && D.oppdAntall ? ` · <a href="#/claude">${D.oppdAntall} ${D.oppdAntall === 1 ? "endring" : "endringer"} fra Claude</a>` : ""}</div>`;
+  const bunnTid = () => { try { const t = new Date(D.meta.bygget); return new Intl.DateTimeFormat("nb-NO", { timeZone: "Europe/Oslo", day: "numeric", month: "short" }).format(t) + " kl. " + new Intl.DateTimeFormat("nb-NO", { timeZone: "Europe/Oslo", hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(t); } catch { return oppdatertTekst(); } };
+  const bunn = () => `<div class="bunn">Oppdatert ${esc(bunnTid())} · versjon ${APP.versjon}${D && D.oppdAntall ? ` · <a href="#/claude">${D.oppdAntall} ${D.oppdAntall === 1 ? "endring" : "endringer"} fra Claude</a>` : ""}</div>`;
   const tittel = (t, under = "", ingress = "") => `<div class="stor-tittel"><h1>${esc(t)}</h1>${under ? `<div class="under">${under}</div>` : ""}${ingress ? `<p class="ingress">${md(ingress)}</p>` : ""}</div>`;
 
   // ---------- klokke ----------
@@ -562,6 +563,13 @@
   setInterval(() => { $$(".klokke").forEach((el) => { const k = klokkeData(el.dataset.sone); el.querySelector(".ktid").textContent = k.tid; el.querySelector(".kdag").textContent = k.dag; el.classList.toggle("natt", k.natt); }); $$(".km").forEach((el) => { const k = klokkeData(el.dataset.sone); el.querySelector(".ktid").textContent = k.tid; el.classList.toggle("natt", k.natt); }); }, 15000);
 
   // Én linje med begge klokkene (brukes i reiseperioden)
+  // Telefonen står fortsatt på norsk tid mens vi er i Asia → «Neste» og nå-streken blir feil (v65)
+  function tzVarsel(d) {
+    const s = stedForDato(d); if (!s || ["hjem", "kobenhavn"].includes(s.id)) return "";
+    const n = new Date(), lik = Math.abs(new Date(n.toLocaleString("en-US", { timeZone: "Europe/Oslo" })) - new Date(n.toLocaleString("en-US"))) < 6e4;
+    if (!lik) return "";
+    return `<div class="tzvarsel" role="alert"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg><div><b>Telefonen viser norsk tid</b>Da blir «Neste» og klokkeslettene i dag feil. Slå på automatisk tid: Innstillinger → Generelt → Dato og tid → Still automatisk.</div></div>`;
+  }
   function klokkeMini() {
     const v = klokkeData(TZ), n = klokkeData("Europe/Oslo");
     return `<div class="klokkemini" aria-label="Klokke"><span data-sone="${TZ}" class="km${v.natt ? " natt" : ""}"><b class="ktid">${esc(v.tid)}</b> Vietnam</span><span class="km-skille">·</span><span data-sone="Europe/Oslo" class="km${n.natt ? " natt" : ""}"><b class="ktid">${esc(n.tid)}</b> Norge${n.natt ? " (natt)" : ""}</span></div>`;
@@ -836,7 +844,7 @@
     const navn = medNavn && v.navn ? esc(String(v.navn).replace(/\s*\(.*\)\s*$/, "")) + " " : "";
     let t;
     if (x) t = `${vaerIkon(x.kode)}${navn}${rund(x.maks)}°/${rund(x.min)}°${x.pst != null ? ` · regn ${x.pst} %` : ""}`;
-    else if (n) t = `${vaerIkon(n.regnPst >= 50 ? 61 : 2)}${navn}${n.maks}°/${n.min}°<i>normalt</i>`;
+    else if (n) t = `${vaerIkon(n.regnPst >= 50 ? 61 : 2)}${navn}${n.maks}°/${n.min}°<i>vanligvis</i>`;
     else return "";
     return `<button class="dchip" data-ivaer="${esc(d)}" aria-label="Været – trykk for detaljer">${t}</button>`;
   }
@@ -878,6 +886,7 @@
         ${!erIdag && idag >= s0 && idag <= s1 ? `<br><button class="idagknapp" data-dag="0">Gå til i dag</button>` : ""}</div>
       <button class="pilknapp" data-dag="1" aria-label="Neste dag" ${d >= s1 ? "disabled" : ""}>${ikon("hoyre", "")}</button></div>`;
     if (reise) h += klokkeMini();
+    if (reise && erIdag) h += tzVarsel(d);
 
     const sted = stedForDato(d), natt = overnatting(d), sc = dagStedChip(d);
     const chips = sc.html + vaerChip(d, sc.flytt) + luftChip(d) + sjoChip(d);
@@ -3562,10 +3571,17 @@
     viaFane = false;
     const g = gjenopprett && gjenopprett.hash === (ny.side === "idag" ? "#/idag" : location.hash) ? gjenopprett : null; gjenopprett = null;
     if (g && ny.side === "idag" && "dag" in g) { valgtDag = g.dag; dagModus = g.dm; }
-    vis(); window.scrollTo(0, g ? g.y : 0);
+    vis(); window.scrollTo(0, g ? g.y : 0); fokusSide();
     if (g && g.ark) arkGjenopprett(g.ark);
     if (SJ()) sjDetektor();
   });
+  // Skjermleser: ny side → fokus på sidetittelen, så den leses opp (v65)
+  function fokusSide() {
+    if (!$("#overlay").hidden) return;
+    const a = document.activeElement; if (a && a.matches && a.matches("input, textarea, select")) return;
+    const el = $("#innhold h1") || $("#innhold .dagtittel b"); if (!el) return;
+    el.setAttribute("tabindex", "-1"); try { el.focus({ preventScroll: true }); } catch {}
+  }
   // «‹ <dag>» øverst: tilbake til dagen, samme sted på siden og samme ark som var åpent
   document.addEventListener("click", (e) => {
     const tb = e.target.closest && e.target.closest("#tilbake[data-tilbakedag]"); if (!tb || !fraDag) return;
@@ -3837,6 +3853,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    65: "Beløp med prikket strek under kan trykkes for å regne om – og større knapper øverst",
     64: "Bilder av stedene, hotellene og ideene – trykk på et bilde for å bla",
     63: "Skattejakten: dager du er borte, kan tas igjen senere – da er det to mynter den dagen",
     62: "⟦k2⟧ kan leses høyt på vietnamesisk og har fått bilder",
@@ -4221,7 +4238,7 @@
     const c = lkLes("luft", l), x = c && c.dager[d], n = l.normal && l.normal[d];
     let t;
     if (x) { const k = aqKl(x.maks); t = `${lkPrikk(k[3])}Luft: ${k[2]}`; }
-    else if (n) { const k = aqKl(n[0]); t = `${lkPrikk(k[3])}Luft: ${k[2]}<i>normalt</i>`; }
+    else if (n) { const k = aqKl(n[0]); t = `${lkPrikk(k[3])}Luft: ${k[2]}<i>vanligvis</i>`; }
     else return "";
     return `<button class="dchip" data-iluft="${esc(d)}" aria-label="Luftkvaliteten – trykk for detaljer">${t}</button>`;
   }
@@ -4270,7 +4287,7 @@
     const c = lkLes("sjo", s), x = c && c.dager[d], n = s.normal;
     let t;
     if (x) t = `${BOLGE}Sjøen ${mFmt(x.b)} m<i>${esc(sjoKl(x.b)[2])}</i>`;
-    else if (n) t = `${BOLGE}Sjøen ca. ${mFmt(n.bolgeMedian)} m<i>normalt</i>`;
+    else if (n) t = `${BOLGE}Sjøen ca. ${mFmt(n.bolgeMedian)} m<i>vanligvis</i>`;
     else return "";
     return `<button class="dchip" data-isjo="${esc(d)}" aria-label="Bølger og vind – trykk for detaljer">${t}</button>`;
   }
@@ -4761,6 +4778,16 @@
       pakkRediger = false; vis(); toastAngre("Lista er tilbake til originalen", () => pakkLagreGrupper(a.nokkel, for_)); return;
     }
   }
+
+  // ---------- fokus i ark (v65): skjermleseren havner i arket når det åpnes, og tilbake der den var når det lukkes ----------
+  let fokusFor = null;
+  new MutationObserver(() => {
+    const ov = $("#overlay");
+    if (!ov.hidden) {
+      if (!ov.contains(document.activeElement)) fokusFor = document.activeElement;
+      setTimeout(() => { if (ov.hidden || ov.contains(document.activeElement)) return; const m = ov.querySelector("h1, h2, h3") || ov; if (m !== ov) m.setAttribute("tabindex", "-1"); else ov.setAttribute("tabindex", "-1"); try { m.focus({ preventScroll: true }); } catch {} }, 60);
+    } else if (fokusFor) { const f = fokusFor; fokusFor = null; if (document.contains(f)) try { f.focus({ preventScroll: true }); } catch {} }
+  }).observe($("#overlay"), { attributes: true, attributeFilter: ["hidden"] });
 
   // ---------- nettstatus ----------
   const nett = () => { $("#nett").hidden = navigator.onLine; };
