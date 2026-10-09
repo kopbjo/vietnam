@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 65, tid: "2026-10-10 kl. 00:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 66, tid: "2026-10-10 kl. 01:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -527,7 +527,7 @@
     </div>`).join("");
   }
   // sId gir «Legg i planen» på hver idé; dag = fast dag (fra I dag), ellers velges dag i skjemaet
-  const ideerHtml = (liste, sId, dag) => (liste || []).map((i) => `<div class="ide${i.foto ? " medfoto" : ""}">${fotoTommel(i.foto, i.navn)}<b>${i.kart ? `<span class="knr kn-ide ide-nr" title="På kartet">${esc(i.kart)}</span>` : ""}${esc(i.navn)}</b>${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}${infoFold(i)}${sId ? idePlanHtml(sId, i, dag) : ""}</div>`).join("");
+  const ideerHtml = (liste, sId, dag) => (liste || []).map((i) => `<div class="ide${i.foto ? " medfoto" : ""}${ideStatus(i) ? " ikkebest" : ""}">${fotoTommel(i.foto, i.navn)}${ideStatus(i)}<b>${i.kart ? `<span class="knr kn-ide ide-nr" title="På kartet">${esc(i.kart)}</span>` : ""}${esc(i.navn)}</b>${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}${infoFold(i)}${sId ? idePlanHtml(sId, i, dag) : ""}</div>`).join("");
   function idePlanHtml(sId, i, dag) {
     const k = (D.ideer[sId] || []).indexOf(i), planer = ideIPlan(sId, i.navn);
     const denne = dag ? planer.find((a) => a.d === dag) : null, andre = planer.filter((a) => a !== denne);
@@ -638,7 +638,20 @@
   const ideEtter = (a) => (a && a.inavn ? (D.ideer[a.isted] || []).find((i) => i.navn === a.inavn) || null : null);
   const ideIPlan = (sId, navn) => avtLes().filter((a) => a.ide && a.isted === sId && a.inavn === navn && a.d).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
   const dagerI = (s) => { const l = []; for (let d = s.fra; d <= s.til; d = pluss(d, 1)) l.push(d); return l; };
-  const bestPille = (a) => `<span class="bord ${a.best ? "ja" : "nei"}">${a.best ? "Bestilt" : "Ikke bestilt"}</span>`;
+  const bestPille = (a) => `<span class="bord ${a.best ? "ja" : "nei"}">${a.best ? "✓ Bestilt" : "Ikke bestilt"}</span>`;
+  // ---------- bestilt eller ikke (v66): samme merke og samme gule stiplede kant overalt ----------
+  // "best" = bestilt (egen idé markert som bestilt), "ikke" = planlagt men ikke bestilt/kjøpt, "plan" = planlagt (trenger ikke bestilling), "" = fakta
+  const PLAN_PAREN = /\s*\((?:planlagt|billetter ikke kjøpt|ikke bestilt)[^)]*\)\s*$/i;
+  function hendStatus(e) {
+    if (!e || e.oppgave || e.forslag) return "";
+    if (e.egen) return e.egen.ide ? (e.egen.best ? "best" : "ikke") : "";
+    const t = String(e.tittel || ""), m = String(e.merk || "").trim();
+    if (/ikke (bestilt|kjøpt)/i.test(t) || /^ikke (bestilt|kjøpt)/i.test(m)) return "ikke";
+    return /\(planlagt\)\s*$/i.test(t) || (e.kort && e.kort.ide) ? "plan" : ""; // kort fra en idé = aldri bestilt
+  }
+  const hendTittel = (e) => String((e && e.tittel) || "").replace(PLAN_PAREN, "");
+  const statusPille = (st, e) => st === "best" ? `<span class="bord ja">✓ Bestilt</span>` : st === "ikke" ? `<span class="bord nei">${/kjøpt/i.test(String((e && e.tittel) || "") + " " + String((e && e.merk) || "").slice(0, 40)) ? "Ikke kjøpt" : "Ikke bestilt"}</span>` : st === "plan" ? `<span class="bord nei">Planlagt</span>` : "";
+  const ideStatus = (i) => /^\s*PLANLAGT/i.test(String(i.praktisk || "")) ? `<span class="bord nei idest">Planlagt – ikke bestilt</span>` : "";
   const restEtter = (a) => (a && a.rnavn ? D.restauranter.liste.find((r) => r.navn === a.rnavn && (!a.rsted || r.sted === a.rsted)) : null);
   // Vietnamesiske nummer lagres med landskode, så de kan ringes fra norsk SIM og brukes i WhatsApp
   const tlfNorm = (n) => { let x = String(n || "").replace(/[^\d+]/g, ""); if (!x) return ""; if (x.startsWith("00")) return "+" + x.slice(2); if (x.startsWith("0")) return "+84" + x.slice(1); return x.startsWith("+") ? x : "+" + x; };
@@ -938,7 +951,7 @@
       <button class="kb tel" data-avtny="dag">${ikon("pluss", "")}Legg til plan</button></div></section>`;
 
     // ---- tidslinja ----
-    let n = 0;
+    let n = 0, harIkkeBest = false;
     const radHtml = (e) => {
       const id = "r" + n++; IDET[id] = e;
       if (e.oppgave) {
@@ -952,7 +965,8 @@
       const f = flyForHend(e), k = e.kontakt ? kontaktEtterId(e.kontakt) : null, aktiv = erNeste(e);
       const sm = sluttMin(e), ferdig = erIdag && !aktiv && (sm != null ? sm <= nm : DAGSDEL[e.t] ? DAGSDEL[e.t][1] * 60 <= nm : sortMin(e) >= 0 && sortMin(e) < nm - 15);
       const a = e.egen, mote = a && a.type === "mote";
-      const bord = a && a.rest ? `<span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span>` : a && a.ide ? bestPille(a) : "";
+      const st = hendStatus(e), ikkeBest = st === "ikke" || st === "plan";
+      const bord = a && a.rest ? `<span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span>` : statusPille(st, e);
       let under = "";
       if (a) { const x = [a.notat, a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "); if (x) under += `<div class="merk">${esc(x)}</div>`; }
       else if (e.merk) under += `<div class="merk">${md(e.merk)}</div>`;
@@ -970,8 +984,9 @@
         under += vedUt.map((o) => `<div class="tr-under">${huskRad(o, "div")}</div>`).join("");
         if (flytt && romOk) under += romSjekkHtml(false);
       }
-      return `<div class="tr${aktiv ? " aktiv" : ""}${ferdig ? " ferdig" : ""}${a ? " egen" : ""}${merInfo ? " harkort" : ""}" data-idet="${id}" role="button" tabindex="0">${klHtml(e.t, sluttTid(e))}<span class="pr">${ikon(radIkon(e), "")}</span><div class="inn">
-        ${aktiv ? `<div class="netikett">${nesteNaar(e).startsWith("pågår") ? "Nå" : "Neste"} · ${esc(nesteNaar(e))}</div>` : ""}<div class="tt">${mote ? "<b>Møtested:</b> " : ""}${a ? esc(a.tekst) : md(e.tittel)}${bord}</div>${under}</div></div>`;
+      if (ikkeBest) harIkkeBest = true;
+      return `<div class="tr${aktiv ? " aktiv" : ""}${ferdig ? " ferdig" : ""}${a ? " egen" : ""}${merInfo ? " harkort" : ""}${ikkeBest ? " ikkebest" : ""}" data-idet="${id}" role="button" tabindex="0">${klHtml(e.t, sluttTid(e))}<span class="pr">${ikon(radIkon(e), "")}</span><div class="inn">
+        ${aktiv ? `<div class="netikett">${nesteNaar(e).startsWith("pågår") ? "Nå" : "Neste"} · ${esc(nesteNaar(e))}</div>` : ""}<div class="tt">${mote ? "<b>Møtested:</b> " : ""}${a ? esc(a.tekst) : md(hendTittel(e))}${bord}</div>${under}</div></div>`;
     };
     const naaStrek = `<div class="naastrek" aria-label="Nå"><span>${esc(hhmm(Date.now()))}</span><i></i></div>`;
     let liste = rader;
@@ -981,6 +996,7 @@
       tl += radHtml(e);
     }
     if (!strek && liste.length) tl += naaStrek;
+    if (harIkkeBest) tl += `<p class="tl-forklaring"><span class="bord nei">Ikke bestilt</span> = i planen, men ikke bestilt ennå</p>`;
 
     let nattHtml = "";
     if (natt) {
@@ -998,8 +1014,9 @@
     if (neste && neste.d !== d) {
       const id = "r" + n++; IDET[id] = neste;
       const k = neste.kontakt ? kontaktEtterId(neste.kontakt) : null, kn = neste.egen ? avtKnapper(neste.egen, false) : ringeKnapper(k, 2);
-      imorgen = `<div class="imorgen"><div class="tr aktiv" data-idet="${id}" role="button" tabindex="0">${klHtml(neste.t, sluttTid(neste))}<span class="pr">${ikon(radIkon(neste), "")}</span><div class="inn">
-        <div class="netikett">Neste · i morgen</div><div class="tt">${neste.egen ? esc(neste.tittel) : md(neste.tittel)}</div>${neste.merk ? `<div class="merk">${neste.egen ? esc(neste.merk) : md(neste.merk)}</div>` : ""}${kn ? `<div class="knapper">${kn}</div>` : ""}</div></div></div>`;
+      const stM = hendStatus(neste);
+      imorgen = `<div class="imorgen"><div class="tr aktiv${stM === "ikke" || stM === "plan" ? " ikkebest" : ""}" data-idet="${id}" role="button" tabindex="0">${klHtml(neste.t, sluttTid(neste))}<span class="pr">${ikon(radIkon(neste), "")}</span><div class="inn">
+        <div class="netikett">Neste · i morgen</div><div class="tt">${neste.egen ? esc(neste.tittel) : md(hendTittel(neste))}${statusPille(stM, neste)}</div>${neste.merk ? `<div class="merk">${neste.egen ? esc(neste.merk) : md(neste.merk)}</div>` : ""}${kn ? `<div class="knapper">${kn}</div>` : ""}</div></div></div>`;
     }
     const tom = !liste.length && !fri ? `<p class="tom">Ingenting bestilt denne dagen.</p>` : "";
     h += `<section class="kort dag">${tl ? `<div class="tl">${tl}</div>` : tom}${nattHtml}${imorgen}
@@ -1265,7 +1282,7 @@
       const f = flyForHend(x), k = x.kontakt ? kontaktEtterId(x.kontakt) : null, s = x.sted, kf = kortFinn(x.kort);
       // Med kort: kortet fra stedssiden erstatter info-radene (de er hentet fra det samme kortet)
       const kh = kf ? `<div class="arkkort"${kf.sek ? ` data-kort="${esc(kf.sek.tittel)}"` : ""}><div class="arkkort-fra">${ikon("kart", "")}Fra ${esc(kf.s.navn)}-siden</div>${kortArkHtml(kf, { fly: f && f.id, kontakt: x.kontakt }, x.d)}</div>` : "";
-      inn = `<div class="ark-etikett">${x.t ? esc(tidKl(x.t)) + (sluttTid(x) ? "–" + esc(sluttTid(x)) : "") + " · " : ""}${esc(pen(x.d))}</div><h2>${md(x.tittel)}</h2>${x.merk ? `<p>${md(x.merk)}</p>` : ""}${kf ? "" : infoRader(x.info)}
+      inn = `<div class="ark-etikett">${x.t ? esc(tidKl(x.t)) + (sluttTid(x) ? "–" + esc(sluttTid(x)) : "") + " · " : ""}${esc(pen(x.d))}</div><h2>${md(hendTittel(x))}${statusPille(hendStatus(x), x)}</h2>${x.merk ? `<p>${md(x.merk)}</p>` : ""}${kf ? "" : infoRader(x.info)}
         ${f ? flyKort(f) : ""}${x.avledet && s ? `<div class="hotell">${hotellInnhold(s, false)}</div>` : ""}${kh}${k && !(kf && kf.sek && (kf.sek.kontakter || []).includes(x.kontakt)) ? `<div class="kort arkkontakt">${kontaktHtml(kontaktPaDag(k, x.d))}</div>` : ""}${kf ? kortGaaHtml(kf) : ""}`;
     }
     arkApne(inn);
@@ -3853,6 +3870,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    66: "Det som ikke er bestilt ennå, har gul stiplet kant og merket «Ikke bestilt» – overalt",
     65: "Beløp med prikket strek under kan trykkes for å regne om – og større knapper øverst",
     64: "Bilder av stedene, hotellene og ideene – trykk på et bilde for å bla",
     63: "Skattejakten: dager du er borte, kan tas igjen senere – da er det to mynter den dagen",
