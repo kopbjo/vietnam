@@ -1,12 +1,12 @@
 // Offline-støtte og rask oppstart: lagret kopi vises med én gang, og ny versjon hentes i bakgrunnen.
 // Er en fil endret, får appen beskjed (melding «ny»). Nettleserens HTTP-mellomlager omgås («no-cache»/«reload»),
 // ellers kan en ny cache-versjon fylles med gamle filer.
-const CACHE = "vn-reise-v72";
-const BEKR = "vn-bekr", FOTO = "vn-foto"; // v60: bekreftelsene har eget lager som appen selv fyller – overlever nye versjoner
+const CACHE = "vn-reise-v73";
+const BEKR = "vn-bekr", FOTO = "vn-foto", DBILDE = "vn-dbilde"; // v60: bekreftelsene har eget lager som appen selv fyller – overlever nye versjoner
 const FILER = ["./", "index.html", "stil.css", "app.js", "data.enc", "manifest.webmanifest", "ikon.svg", "ikon-180.png", "ikon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILER.map((f) => new Request(f, { cache: "reload" })))).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE && k !== BEKR && k !== FOTO).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE && k !== BEKR && k !== FOTO && k !== DBILDE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 // Én oppføring per fil: ?v=… og lignende tas bort, så en gammel kopi aldri blir liggende ved siden av en ny.
 const nokkel = (url) => { const u = new URL(url); u.search = ""; u.hash = ""; return u.href; };

@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 72, tid: "2026-10-10 kl. 13:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 73, tid: "2026-10-10 kl. 00:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -239,6 +239,7 @@
     kveld: '<path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5z"/>',
     dok: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12.5h5M10 16.5h5"/>',
     bilde: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 8"/>',
+    kamera: '<path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.6"/>',
     venstre: '<path d="M15 5l-7 7 7 7"/>', hoyre: '<path d="M9 5l7 7-7 7"/>', chev: '<path d="M9 6l6 6-6 6"/>',
   };
   const ikon = (t, cls = "ikon") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[t] || P.info}</svg>`;
@@ -899,6 +900,8 @@
         ${!erIdag && idag >= s0 && idag <= s1 ? `<br><button class="idagknapp" data-dag="0">Gå til i dag</button>` : ""}</div>
       <button class="pilknapp" data-dag="1" aria-label="Neste dag" ${d >= s1 ? "disabled" : ""}>${ikon("hoyre", "")}</button></div>`;
     if (reise && erIdag) h += tzVarsel(d);
+    if (reise && erIdag && d > s0 && naaMin() < 15 * 60) h += igaarHtml(pluss(d, -1));
+    if (reise && erIdag && naaMin() >= 17 * 60 && meg() && !dbBilde(d, meg())) h += dbPamin(d);
 
     const sted = stedForDato(d), natt = overnatting(d), sc = dagStedChip(d);
     const chips = sc.html + vaerChip(d, sc.flytt) + luftChip(d) + sjoChip(d);
@@ -1120,13 +1123,13 @@
     const src = URL.createObjectURL(new Blob([klar], { type: "image/jpeg" })); FO_URL.set(navn, src); return src;
   }
   // <img data-fb="hash"> fylles når det nærmer seg skjermen (også inne i ark og lukkede folder når de åpnes)
-  const foIO = "IntersectionObserver" in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { foIO.unobserve(e.target); fotoFyll(e.target); } }), { rootMargin: "300px 300px" }) : null;
+  const foIO = "IntersectionObserver" in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { foIO.unobserve(e.target); (e.target.dataset.dbb ? dbFyll : fotoFyll)(e.target); } }), { rootMargin: "300px 300px" }) : null;
   async function fotoFyll(img) {
     const navn = img.dataset.fb; if (!navn || img.dataset.fok) return; img.dataset.fok = "1";
     try { img.src = await fotoFil(navn); img.onload = () => img.classList.add("klar"); }
     catch { img.closest(".fbilde") && img.closest(".fbilde").classList.add("feil"); }
   }
-  new MutationObserver(() => { for (const im of document.querySelectorAll("img[data-fb]:not([data-fs])")) { im.dataset.fs = "1"; if (foIO) foIO.observe(im); else fotoFyll(im); } })
+  new MutationObserver(() => { for (const im of document.querySelectorAll("img[data-fb]:not([data-fs]),[data-dbb]:not([data-fs])")) { im.dataset.fs = "1"; if (foIO) foIO.observe(im); else (im.dataset.dbb ? dbFyll : fotoFyll)(im); } })
     .observe(document.documentElement, { childList: true, subtree: true });
   const fImg = (b, alt = "") => `<img data-fb="${esc(b.f)}" alt="${esc(alt)}" decoding="async">`;
   // gal = «id,id|tittel|start»: hvilke bilder galleriet viser
@@ -1168,11 +1171,15 @@
     const [idS, t, st] = spes.split("|"), ids = idS.split(",");
     const l = ids.flatMap((id) => fotoListe([id]).map((b) => ({ ...b, n: ids.length > 1 ? fotoTittel(id) : t })));
     if (!l.length) return;
+    galleriApne(t, l.map((b) => ({ img: fImg(b, b.n), cap: `${ids.length > 1 ? `<b>${esc(b.n)}</b>` : ""}<span>${esc(b.k)}${b.s ? ` · <a href="${esc(b.s)}" target="_blank" rel="noopener noreferrer">kilde ↗</a>` : ""}</span>` })), Number(st || 0));
+  }
+  // Felles fullskjermgalleri (v73): sider = [{img, cap}] – brukes av stedsbildene og dagsbildene
+  function galleriApne(t, sider, st = 0) {
     let g = $("#fgalleri"); if (!g) { g = document.createElement("div"); g.id = "fgalleri"; document.body.appendChild(g); }
-    g.innerHTML = `<div class="fg-topp"><span class="fg-tittel">${esc(t)}</span><span class="fg-tell"><b>1</b> / ${l.length}</span><button class="fg-lukk" aria-label="Lukk">×</button></div>
-      <div class="fg-rad">${l.map((b) => `<figure class="fg-side"><div class="fg-bilde">${fImg(b, b.n)}</div><figcaption>${ids.length > 1 ? `<b>${esc(b.n)}</b>` : ""}<span>${esc(b.k)}${b.s ? ` · <a href="${esc(b.s)}" target="_blank" rel="noopener noreferrer">kilde ↗</a>` : ""}</span></figcaption></figure>`).join("")}</div>`;
+    g.innerHTML = `<div class="fg-topp"><span class="fg-tittel">${esc(t)}</span><span class="fg-tell"><b>${st + 1}</b> / ${sider.length}</span><button class="fg-lukk" aria-label="Lukk">×</button></div>
+      <div class="fg-rad">${sider.map((x) => `<figure class="fg-side"><div class="fg-bilde">${x.img}</div><figcaption>${x.cap}</figcaption></figure>`).join("")}</div>`;
     g.hidden = false; document.documentElement.classList.add("fg-aapen");
-    const rad = g.querySelector(".fg-rad"); rad.scrollLeft = Number(st || 0) * rad.clientWidth;
+    const rad = g.querySelector(".fg-rad"); rad.scrollLeft = st * rad.clientWidth;
     rad.onscroll = () => { g.querySelector(".fg-tell b").textContent = Math.round(rad.scrollLeft / rad.clientWidth) + 1; };
     history.pushState({ fg: 1 }, "");
   }
@@ -1417,8 +1424,11 @@
     const stopp = (x, prj, r, lab) => {
       const s = stedEtterId(x.sted); if (!s) return "";
       const [px, py] = prj(x.lat, x.lon), tl = tilstand(s.id), her = tl === "naa";
-      const inn = x.hjem ? K_HUS : `<text class="knum" y="4">${nr(s.id)}</text>`;
-      return `<a href="#/sted/${esc(s.id)}" aria-label="${esc(x.navn || s.navn)}${her ? " – her er vi nå" : ""}"><g class="kn ${x.hjem ? "kn-hotell" : "kn-bestilt"} kstopp${tl ? " " + tl : ""}" transform="translate(${kf(px)} ${kf(py)})"><circle class="ktreff" r="${r + 10}"/>${her ? puls(r) : ""}<circle class="kprikk" r="${r}"/>${inn}${lab}</g></a>`;
+      // v73: et sted vi har vært har siste dagsbilde som frimerke i markøren
+      const fb = x.hjem ? null : dbStedBilde(s.id), rf = r + 4;
+      const inn = fb ? `<clipPath id="kdb-${esc(s.id)}-${r}"><circle r="${rf - 1.5}"/></clipPath><image data-dbb="${esc(fb.b)}" x="${-rf}" y="${-rf}" width="${2 * rf}" height="${2 * rf}" preserveAspectRatio="xMidYMid slice" clip-path="url(#kdb-${esc(s.id)}-${r})"/>`
+        : x.hjem ? K_HUS : `<text class="knum" y="4">${nr(s.id)}</text>`;
+      return `<a href="#/sted/${esc(s.id)}" aria-label="${esc(x.navn || s.navn)}${her ? " – her er vi nå" : ""}"><g class="kn ${x.hjem ? "kn-hotell" : "kn-bestilt"} kstopp${tl ? " " + tl : ""}${fb ? " kfoto" : ""}" transform="translate(${kf(px)} ${kf(py)})"><circle class="ktreff" r="${(fb ? rf : r) + 10}"/>${her ? puls(fb ? rf : r) : ""}<circle class="kprikk" r="${fb ? rf : r}"/>${inn}${lab}</g></a>`;
     };
     const hoved = o.stopp.map((x) => {
       const s = stedEtterId(x.sted) || {}, dx = x.dx || 0;
@@ -1509,7 +1519,8 @@
       <span class="dato">${esc(s.dato)}${naa && naa.id === s.id ? ' · <span class="naa-merke">Her er vi nå</span>' : ""}</span></a>`).join("")}</div>`;
     h += `<div class="liste reise-ovs">
       <a href="#/fly"><span class="lik">${ikon("reise", "")}</span><span class="ltekst">Fly<small>${D.fly.length} flyvninger – tider, seter og referanser</small></span><span class="pil"></span></a>
-      <a href="#/hotell"><span class="lik">${ikon("hotell", "")}</span><span class="ltekst">Hotell<small>${D.steder.filter((s) => s.hotell).length} overnattinger – adresse, innsjekk og referanser</small></span><span class="pil"></span></a></div>`;
+      <a href="#/hotell"><span class="lik">${ikon("hotell", "")}</span><span class="ltekst">Hotell<small>${D.steder.filter((s) => s.hotell).length} overnattinger – adresse, innsjekk og referanser</small></span><span class="pil"></span></a>
+      <a href="#/dagbok"><span class="lik">${ikon("kamera", "")}</span><span class="ltekst">Reisedagboka<small>${dbAntall() ? `${dbAntall()} bilder fra reisen` : "Dagens beste – ett bilde og én linje fra hver av dere"}</small></span><span class="pil"></span></a></div>`;
     const kart = oversiktKart();
     if (kart) h += kart + `<details class="fold reiseliste" id="reiseliste"${lagre.get("vn.reiseListe") === "1" ? " open" : ""}><summary>${ikon("kalender")}Vis som liste</summary><div class="innhold">${liste}</div></details>`;
     else h += liste;
@@ -1849,7 +1860,7 @@
     return S.tilst;
   }
   const synkLagre = () => lagre.set(LS.synk, JSON.stringify(synkLes()));
-  const postNokkel = (p) => JSON.stringify(p.k === "x" ? ["x", p.r, p.l, p.n] : p.k === "n" ? ["n", p.r, p.l] : p.k === "e" ? ["e", p.id] : p.k === "a" ? ["a", p.id] : p.k === "u" ? ["u", p.id] : p.k === "b" ? ["b", p.id] : p.k === "d" ? ["d", p.id] : p.k === "f" ? ["f", p.id] : p.k === "g" ? ["g", p.id] : p.k === "m" ? ["m", p.id] : ["l", p.l]);
+  const postNokkel = (p) => JSON.stringify(p.k === "x" ? ["x", p.r, p.l, p.n] : p.k === "n" ? ["n", p.r, p.l] : p.k === "e" ? ["e", p.id] : p.k === "a" ? ["a", p.id] : p.k === "u" ? ["u", p.id] : p.k === "b" ? ["b", p.id] : p.k === "d" ? ["d", p.id] : p.k === "f" ? ["f", p.id] : p.k === "g" ? ["g", p.id] : p.k === "m" ? ["m", p.id] : p.k === "p" ? ["p", p.id] : ["l", p.l]);
   function synkSett(p) {
     const s = synkLes(), k = postNokkel(p);
     p.t = Math.max(Date.now(), ((s.p[k] || {}).t || 0) + 1);
@@ -1961,6 +1972,7 @@
         const endret = pakkRediger ? false : await synkHent();
         await synkSend();
         await brukSend();
+        dbSend();
         synkLes().ok = Date.now(); synkLagre(); synkStatus("ok");
         if (endret) synkOppdaterVisning();
         if (B.endret) { B.endret = false; brukLagre(true); if (rute().side === "stat" && trygtAaTegne()) { const y = window.scrollY; vis(); window.scrollTo(0, y); } }
@@ -3146,15 +3158,200 @@
     }
   });
 
+  // ---------- DAGENS BILDE (v73): ett bilde + én linje per person per reisedag = reisedagboka ----------
+  // Post i synk-lageret (liten): {k:"p", id:"<dato>|<person>", d, hvem, b: bilde-id | null, w, h}. Linja er «Dagens beste» (k:"d").
+  // Selve bildet: eget dokument reise/<familie>/bilder/<b> (felt c = iv + AES-GCM med synk-nøkkelen) – hentes først når det vises
+  // og ligger kryptert i lageret «vn-dbilde». Eget bilde lagres der straks og sendes når det er nett (kø i vn.dbKo).
+  // Posten sendes først når bildet er oppe, så de andre aldri får et bilde som ikke finnes. Nyeste bilde per dag og person vinner.
+  const DB_LAGER = "vn-dbilde", DB_URL = new Map(), DB_RAW = new Map(), DB_KO = "vn.dbKo";
+  const dbCacheUrl = (id) => new URL("dbilde/" + id, location.href).href;
+  const dbKo = () => { try { return JSON.parse(lagre.get(DB_KO) || "{}") || {}; } catch { return {}; } };
+  const dbKoSett = (o) => lagre.set(DB_KO, JSON.stringify(o));
+  function dbBilde(d, hvem) { // {b, w, h, venter?} eller null
+    const ko = Object.entries(dbKo()).filter(([, x]) => x.d === d && x.hvem === hvem).sort((a, b) => b[1].c - a[1].c)[0];
+    const p = synkLes().p[JSON.stringify(["p", d + "|" + hvem])];
+    if (ko && (!p || ko[1].c > p.t)) return ko[1].fjern ? null : { b: ko[0], w: ko[1].w, h: ko[1].h, venter: true };
+    return p && p.b ? p : null;
+  }
+  const dbDagHar = (d) => D.personer.some((p) => dbBilde(d, p.id) || dbLes(d).some((x) => x.hvem === p.id));
+  async function dbKryptert(id) {
+    if (DB_RAW.has(id)) return DB_RAW.get(id);
+    const url = dbCacheUrl(id); let c = null;
+    try { c = await caches.open(DB_LAGER); const r = await c.match(url); if (r) return new Uint8Array(await r.arrayBuffer()); } catch {}
+    if (!D.synk || !navigator.onLine) throw new Error("ikke lastet");
+    const r = await fetch(`https://firestore.googleapis.com/v1/${fsRot()}/reise/${D.synk.familie}/bilder/${id}`, { headers: { Authorization: "Bearer " + await synkToken() } });
+    if (r.status === 401 || r.status === 403) S.tok = null;
+    if (!r.ok) throw new Error("bilde " + r.status);
+    const u = fraB64((await r.json()).fields.c.stringValue);
+    try { if (c) await c.put(url, new Response(u)); } catch {}
+    return u;
+  }
+  async function dbFil(id) {
+    if (DB_URL.has(id)) return DB_URL.get(id);
+    await synkNokler(); const u = await dbKryptert(id);
+    const klar = await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, S.aes, u.slice(12));
+    const src = URL.createObjectURL(new Blob([klar], { type: "image/jpeg" })); DB_URL.set(id, src); return src;
+  }
+  async function dbFyll(el) { // <img data-dbb> eller <image data-dbb> i kartet
+    const id = el.dataset.dbb; if (!id || el.dataset.fok) return; el.dataset.fok = "1";
+    try {
+      const src = await dbFil(id);
+      if (el.tagName.toLowerCase() === "image") el.setAttribute("href", src); else { el.onload = () => el.classList.add("klar"); el.src = src; }
+    } catch { delete el.dataset.fok; delete el.dataset.fs; const f = el.closest(".fbilde"); if (f) f.classList.add("feil"); }
+  }
+  // Bildet fra telefonen: rett vei opp, maks 1600 px og ca. 350 kB (plass til mange dager i databasen og på telefonen)
+  async function dbKomprimer(fil) {
+    let bm; try { bm = await createImageBitmap(fil, { imageOrientation: "from-image" }); } catch { bm = await createImageBitmap(fil); }
+    let maks = 1600, q = 0.82, ut = null;
+    for (let i = 0; i < 7; i++) {
+      const s = Math.min(1, maks / Math.max(bm.width, bm.height)), w = Math.round(bm.width * s), h = Math.round(bm.height * s);
+      const c = document.createElement("canvas"); c.width = w; c.height = h; c.getContext("2d").drawImage(bm, 0, 0, w, h);
+      const blob = await new Promise((ok) => c.toBlob(ok, "image/jpeg", q)); ut = { blob, w, h };
+      if (blob.size <= 350e3) break;
+      if (q > 0.63) q -= 0.1; else maks = Math.round(maks * 0.8);
+    }
+    return ut;
+  }
+  async function dbLagre(d, blob, w, h) {
+    const m = meg(); if (!m || !D.synk) return false;
+    await synkNokler();
+    const id = tilfeldigHex(10), iv = crypto.getRandomValues(new Uint8Array(12));
+    const ct = new Uint8Array(await crypto.subtle.encrypt({ name: "AES-GCM", iv }, S.aes, await blob.arrayBuffer()));
+    const u = new Uint8Array(12 + ct.length); u.set(iv); u.set(ct, 12);
+    DB_RAW.set(id, u); DB_URL.set(id, URL.createObjectURL(blob));
+    try { await (await caches.open(DB_LAGER)).put(dbCacheUrl(id), new Response(u)); } catch {}
+    const ko = dbKo(); ko[id] = { d, hvem: m, w, h, c: Date.now() }; dbKoSett(ko);
+    dbSend(); return true;
+  }
+  function dbFjern(d) {
+    const m = meg(); if (!m) return;
+    const ko = dbKo(); for (const k in ko) if (ko[k].d === d && ko[k].hvem === m) delete ko[k]; dbKoSett(ko);
+    synkSett({ k: "p", id: d + "|" + m, d, hvem: m, b: null });
+  }
+  let dbSender = null;
+  async function dbSend() {
+    if (dbSender || !D || !D.synk || !navigator.onLine) return;
+    dbSender = (async () => {
+      const ko = dbKo(); let sendt = 0;
+      for (const [id, x] of Object.entries(ko).sort((a, b) => a[1].c - b[1].c)) {
+        if (Object.values(dbKo()).some((y) => y.d === x.d && y.hvem === x.hvem && y.c > x.c)) { const k2 = dbKo(); delete k2[id]; dbKoSett(k2); continue; } // et nyere bilde for samme dag venter
+        try {
+          let u = DB_RAW.get(id);
+          if (!u) { const r = await (await caches.open(DB_LAGER)).match(dbCacheUrl(id)); if (!r) { const k2 = dbKo(); delete k2[id]; dbKoSett(k2); continue; } u = new Uint8Array(await r.arrayBuffer()); }
+          await fsKall(":commit", { writes: [{ update: { name: `${fsRot()}/reise/${D.synk.familie}/bilder/${id}`, fields: { c: { stringValue: tilB64(u) } } }, updateTransforms: [{ fieldPath: "s", setToServerValue: "REQUEST_TIME" }] }] });
+          synkSett({ k: "p", id: x.d + "|" + x.hvem, d: x.d, hvem: x.hvem, b: id, w: x.w, h: x.h });
+          const k2 = dbKo(); delete k2[id]; dbKoSett(k2); sendt++;
+        } catch { break; } // uten nett eller feil: prøv igjen ved neste synk
+      }
+      if (sendt && ["idag", "dagbok"].includes(rute().side) && $("#overlay").hidden) { const y = window.scrollY; vis(); window.scrollTo(0, y); }
+    })();
+    try { await dbSender; } finally { dbSender = null; }
+  }
+  // ---- visning ----
+  const DB_PERSON = '<svg class="db-pers" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="8.5" r="4"/><path d="M4.5 20.5c1.2-4 4-6 7.5-6s6.3 2 7.5 6"/></svg>';
+  function dbFlis(d, p, m) {
+    const b = dbBilde(d, p.id), tekst = (dbLes(d).find((x) => x.hvem === p.id) || {}).tekst || "", egen = !!m && p.id === m, navn = personNavn(p.id);
+    const bilde = b ? `<button class="db-bilde fbilde" data-dbgal="${esc(d)}|${esc(p.id)}" aria-label="Se bildet til ${esc(navn)}"><img data-dbb="${esc(b.b)}" alt="">${b.venter ? `<span class="db-venter">${navigator.onLine ? "Sender …" : "Deles når dere har nett"}</span>` : ""}</button>`
+      : egen ? `<button class="db-bilde db-tom egen" data-dbvelg="${esc(d)}">${ikon("kamera", "")}<span>Velg ditt bilde</span></button>`
+      : `<div class="db-bilde db-tom">${DB_PERSON}<span>Ikke valgt ennå</span></div>`;
+    return `<figure class="db-flis${egen ? " meg" : ""}">${bilde}<figcaption><span class="db-navn">${esc(navn)}${egen && b ? `<button class="db-bytt" data-dbendre="${esc(d)}">Endre</button>` : ""}</span>${tekst ? `<span class="db-tekst">${esc(tekst)}</span>` : ""}</figcaption></figure>`;
+  }
+  // «I går» øverst i I dag om morgenen (til kl. 15)
+  function igaarHtml(d) {
+    const L = D.personer.map((p) => ({ p, b: dbBilde(d, p.id) })).filter((x) => x.b);
+    if (!L.length) return "";
+    const st = stedForDato(d);
+    return `<section class="db-igaar"><a class="db-igaar-topp" href="#/dagbok/${esc(d)}"><span><b>I går</b>${st ? " · " + esc(st.navn) : ""}</span><span class="db-se">Reisedagboka${ikon("chev", "")}</span></a>
+      <div class="db-stripe">${L.map((x) => `<button class="db-mini fbilde" data-dbgal="${esc(d)}|${esc(x.p.id)}"><img data-dbb="${esc(x.b.b)}" alt=""><span>${esc(personNavn(x.p.id))}</span></button>`).join("")}</div></section>`;
+  }
+  // Påminnelse om kvelden (fra kl. 17) når du ikke har valgt ennå
+  const dbPamin = (d) => `<button class="db-pamin" data-rull="dagensbeste">${ikon("kamera", "")}<span><b>Dagens bilde</b>Velg ditt beste bilde fra i dag</span>${ikon("chev", "")}</button>`;
+  // Galleriet for én dag: alle som har valgt, med navn og linje
+  function visDbGalleri(spes) {
+    const [d, fra] = spes.split("|"), L = D.personer.map((p) => ({ p, b: dbBilde(d, p.id) })).filter((x) => x.b);
+    if (!L.length) return;
+    const tekst = (pid) => (dbLes(d).find((x) => x.hvem === pid) || {}).tekst || "";
+    galleriApne(pen(d), L.map((x) => ({ img: `<img data-dbb="${esc(x.b.b)}" alt="">`, cap: `<b>${esc(personNavn(x.p.id))}</b>${tekst(x.p.id) ? `<span class="fg-linje">${esc(tekst(x.p.id))}</span>` : ""}` })), Math.max(0, L.findIndex((x) => x.p.id === fra)));
+  }
+  // Velg bilde: filvelgeren (bildebiblioteket eller kamera) → arket med forhåndsvisning, linja og «Del med familien»
+  let dbValg = null;
+  function dbVelg(d) {
+    let inp = $("#dbFil");
+    if (!inp) { inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.id = "dbFil"; inp.hidden = true; document.body.appendChild(inp); }
+    inp.value = ""; inp.dataset.d = d; inp.click();
+  }
+  document.addEventListener("change", async (e) => {
+    if (!e.target || e.target.id !== "dbFil" || !e.target.files || !e.target.files[0]) return;
+    const d = e.target.dataset.d, fil = e.target.files[0];
+    arkApne(`<div class="ark-etikett">Dagens bilde · ${esc(pen(d))}</div><h2>Ditt bilde</h2><div class="db-forh"><div class="bekrvent">Gjør klar bildet …</div></div>`);
+    try {
+      const k = await dbKomprimer(fil); dbValg = { d, ...k };
+      dbArk(d, URL.createObjectURL(k.blob), true);
+    } catch { arkApne(`<h2>Fikk ikke åpnet bildet</h2><p class="krolle">Prøv et annet bilde.</p>`); }
+  });
+  function dbArk(d, src, ny) {
+    const m = meg(), min = dbLes(d).find((x) => x.hvem === m), har = dbBilde(d, m);
+    arkApne(`<div class="ark-etikett">Dagens bilde · ${esc(pen(d))}</div><h2>Ditt bilde</h2>
+      <div class="db-forh"><img src="${src}" alt="Bildet du har valgt"></div>
+      <label class="db-etikett" for="dbArkTekst">Det beste i dag var …</label>
+      <input id="dbArkTekst" maxlength="200" placeholder="Skriv én linje (valgfritt)" value="${esc(min ? min.tekst : "")}">
+      <div class="knapper db-arkknapper"><button class="kb tel" data-dbdel="${esc(d)}">${ny ? "Del med familien" : "Lagre"}</button><button class="kb" data-dbvelg="${esc(d)}">${ikon("kamera", "")}Velg et annet bilde</button></div>
+      ${har && !ny ? `<button class="db-fjern" data-dbfjern="${esc(d)}">Fjern bildet mitt for denne dagen</button>` : ""}
+      <p class="krolle db-arkhjelp">Bildet gjøres mindre og krypteres før det deles. Du kan bytte det når du vil.</p>`);
+  }
+  document.addEventListener("click", async (e) => {
+    const t = D && e.target.closest && e.target.closest("[data-dbvelg],[data-dbdel],[data-dbfjern],[data-dbgal],[data-dbendre]"); if (!t) return;
+    e.preventDefault(); e.stopPropagation();
+    if (t.dataset.dbgal) { visDbGalleri(t.dataset.dbgal); return; }
+    if (t.dataset.dbvelg) { dbVelg(t.dataset.dbvelg); return; }
+    if (t.dataset.dbendre) { const d = t.dataset.dbendre, b = dbBilde(d, meg()); if (!b) return; dbValg = null; let src = ""; try { src = await dbFil(b.b); } catch {} dbArk(d, src, false); return; }
+    const m = meg(); if (!m) return;
+    if (t.dataset.dbfjern) { dbFjern(t.dataset.dbfjern); lukkOverlay(); const y = window.scrollY; vis(); window.scrollTo(0, y); toast("Bildet er fjernet"); return; }
+    if (t.dataset.dbdel) {
+      const d = t.dataset.dbdel, nytt = dbValg && dbValg.d === d ? dbValg : null, inp = $("#dbArkTekst"), tekst = inp ? inp.value.trim() : "";
+      t.disabled = true; t.textContent = "Lagrer …";
+      const ok = nytt ? await dbLagre(d, nytt.blob, nytt.w, nytt.h) : true; dbValg = null;
+      const min = dbLes(d).find((x) => x.hvem === m);
+      if (tekst !== (min ? min.tekst : "")) synkSett({ k: "d", id: d + "|" + m, d, hvem: m, tekst });
+      lukkOverlay(); const y = window.scrollY; vis(); window.scrollTo(0, y);
+      toast(!ok ? "Fikk ikke lagret bildet" : !nytt ? "Lagret" : navigator.onLine ? "Delt med familien" : "Lagret på telefonen – deles når dere har nett", 3200);
+    }
+  }, true);
+  // ---- Reisedagboka (#/dagbok): alle dagene med bilder og linjer ----
+  const dbAntall = () => new Set(Object.values(synkLes().p).filter((p) => p.k === "p" && p.b).map((p) => p.id)).size;
+  function sideDagbok(arg) {
+    const s0 = start(), s1 = slutt(), idag = idagISO(), m = meg();
+    let h = tittel("Reisedagboka", `Ett bilde og én linje fra hver av dere, hver dag`);
+    if (idag < s0) return h + `<section class="kort db-tomside">${ikon("kamera")}<p>Dagboka fylles fra <b>${esc(pen(s0, false))}</b>. Hver kveld velger hver av dere sitt beste bilde fra dagen og skriver én linje – under <b>Dagens beste</b> nederst i I dag.</p></section>` + bunn();
+    const til = idag < s1 ? idag : s1, dager = []; for (let d = s0; d <= til; d = pluss(d, 1)) dager.push(d);
+    if (idag <= s1) dager.reverse(); // under reisen: nyeste først
+    const antB = dager.reduce((n, d) => n + D.personer.filter((p) => dbBilde(d, p.id)).length, 0);
+    h += `<p class="krolle db-tall">${antB} ${antB === 1 ? "bilde" : "bilder"} · ${dager.length} ${dager.length === 1 ? "dag" : "dager"}</p>`;
+    h += dager.map((d) => {
+      const st = stedForDato(d), har = dbDagHar(d);
+      return `<section class="kort db-dag${har ? "" : " db-dag-tom"}" id="db-${esc(d)}"><h2>${esc(pen(d))}${st ? `<span class="db-sted">${esc(st.navn)}</span>` : ""}</h2>
+        ${har || d === idag ? `<div class="db-rutenett">${D.personer.map((p) => dbFlis(d, p, m)).join("")}</div>` : `<p class="krolle">Ingen bilder denne dagen.${m ? ` <button class="db-leggtil" data-dbvelg="${esc(d)}">Legg til ditt</button>` : ""}</p>`}</section>`;
+    }).join("");
+    return h + bunn();
+  }
+  // Kartet på Reisen: siste dagsbilde fra et sted vi har vært, som frimerke i markøren
+  function dbStedBilde(sid) {
+    const s = stedEtterId(sid); if (!s || !s.fra) return null;
+    const idag = idagISO(), til = s.til && s.til > s.fra ? pluss(s.til, -1) : s.fra;
+    for (let d = til < idag ? til : idag; d >= s.fra; d = pluss(d, -1)) for (const p of D.personer) { const b = dbBilde(d, p.id); if (b && !b.venter) return b; }
+    return null;
+  }
+
   // ---------- DAGENS BESTE (v44): én linje per person per reisedag – blir en felles reisedagbok ----------
   // Post {k:"d", id:"<dato>|<person>", d, hvem, tekst}
   const dbLes = (d) => Object.values(synkLes().p).filter((p) => p.k === "d" && p.d === d && p.tekst);
   function dagensBesteHtml(d) {
-    const m = meg(), L = dbLes(d), min = L.find((x) => x.hvem === m);
-    const andre = D.personer.map((p) => L.find((x) => x.hvem === p.id)).filter((x) => x && x.hvem !== m);
-    return `<section class="kort fv-db"><h2>${ikon("stjerne")}Dagens beste</h2>
-      ${andre.map((x) => `<p class="fv-dbl"><b>${esc(personNavn(x.hvem))}:</b> ${esc(x.tekst)}</p>`).join("")}
-      ${m ? `<div class="fv-dbny"><input id="dbTekst" maxlength="200" placeholder="Det beste i dag var …" value="${esc(min ? min.tekst : "")}" aria-label="Det beste i dag"><button class="kb tel" data-dblagre="${esc(d)}">Lagre</button></div>` : `<p class="krolle">Velg hvem du er under Mer for å skrive.</p>`}</section>`;
+    const m = meg(), min = dbLes(d).find((x) => x.hvem === m), kveld = d === idagISO() && naaMin() >= 17 * 60 && m && !dbBilde(d, m);
+    return `<section class="kort fv-db db-kort${kveld ? " db-kveld" : ""}" id="dagensbeste"><h2>${ikon("stjerne")}Dagens beste</h2>
+      <p class="krolle db-hjelp">Ett bilde og én linje fra hver av dere – det blir reisedagboka.</p>
+      <div class="db-rutenett">${D.personer.map((p) => dbFlis(d, p, m)).join("")}</div>
+      ${m && dbBilde(d, m) ? "" : m ? `<div class="fv-dbny"><input id="dbTekst" maxlength="200" placeholder="Det beste i dag var …" value="${esc(min ? min.tekst : "")}" aria-label="Det beste i dag"><button class="kb tel" data-dblagre="${esc(d)}">Lagre</button></div>` : `<p class="krolle">Velg hvem du er under Mer for å være med.</p>`}
+      <a class="db-boka" href="#/dagbok/${esc(d)}">${ikon("kalender", "")}Reisedagboka${ikon("chev", "")}</a></section>`;
   }
   document.addEventListener("click", (e) => {
     const b = D && e.target.closest && e.target.closest("[data-dblagre]"); if (!b) return;
@@ -3255,7 +3452,7 @@
     const ig = sjIgjenPa(n.d, m).find((g) => !sjFunnPost(g.tapt, m)), P = ig && SJ().plasser.find((p) => p.id === ig.plass);
     return P ? { d: ig.tapt, m, plass: P, gate: "", igjen: ig } : null;
   }
-  const sjFane = (side) => (["for", "bingo", "tema", "skatt"].includes(side) ? "idag" : ["sted", "fly", "hotell"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : side);
+  const sjFane = (side) => (["for", "bingo", "tema", "skatt"].includes(side) ? "idag" : ["sted", "fly", "hotell", "dagbok"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : side);
   const sjRiktigSide = (P) => { const r = rute(); return P.dag ? r.side === "idag" && dagModus && valgtDag === P.dag : r.side === P.s && (!P.a || r.arg === P.a); };
   // ---- mynten legges inn på siden etter at den er tegnet ----
   function sjPlasser() {
@@ -3573,11 +3770,11 @@
   }
 
   // ---------- ruting ----------
-  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", bingo: "Reisebingo", tema: "Temaer", skatt: "Skattejakt" };
+  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", dagbok: "Reisedagboka", bingo: "Reisebingo", tema: "Temaer", skatt: "Skattejakt" };
   const ruteAv = (hash) => { const [, side = "idag", arg, del] = (String(hash || "").startsWith("#/") ? hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
   const rute = () => ruteAv(location.hash);
   // Fanen en side hører til (markeres nederst)
-  const faneAv = (side) => side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : ["sted", "fly", "hotell"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
+  const faneAv = (side) => side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : ["sted", "fly", "hotell", "dagbok"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
   // ---------- navigasjon (v57): fanene husker hvor du var, og «‹ <dag>» tar deg tilbake til dagen ----------
   const FANE_MINNE = {}; // fane → {hash, y, dag, dm, ark}: siste side i fanen
   let gjenopprett = null, viaFane = false, fraDag = null;
@@ -3587,7 +3784,7 @@
     if (!D) return;
     const { side, arg, del } = rute();
     const html = side === "reisen" ? sideReisen() : side === "sted" ? sideSted(arg) : side === "mat" ? sideMat(arg) : side === "kontakter" ? sideKontakter()
-      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : side === "skatt" ? sideSkatt() : sideIdag();
+      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : side === "skatt" ? sideSkatt() : side === "dagbok" ? sideDagbok(arg) : sideIdag();
     $("#innhold").innerHTML = html;
     sistVistDato = idagISO();
     const fane = faneAv(side);
@@ -3596,7 +3793,7 @@
     const tb = $("#tilbake");
     delete tb.dataset.tilbakedag;
     if (fraDag && side !== "idag" && side !== "sok") { tb.hidden = false; tb.href = "#/idag"; tb.dataset.tilbakedag = "1"; tb.querySelector("span").textContent = dagEtikett(fraDag.dag); }
-    else if (["sted", "fly", "hotell"].includes(side)) { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
+    else if (["sted", "fly", "hotell", "dagbok"].includes(side)) { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
     else if (["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
     else if (["for", "bingo", "tema"].includes(side) || (side === "skatt" && erBarn())) { tb.hidden = false; tb.href = "#/idag"; tb.querySelector("span").textContent = "I dag"; }
     else if (side === "skatt") { tb.hidden = false; tb.href = "#/penger"; tb.querySelector("span").textContent = "Penger"; }
@@ -3609,6 +3806,7 @@
     if (side === "kontakter") koblSok();
     if (side === "sok") koblSokAlt();
     if (side === "for" && arg === "gjort") setTimeout(() => { const el = document.getElementById("fvgjort"); if (el) { el.open = true; el.scrollIntoView({ block: "start" }); } }, 60);
+    if (side === "dagbok" && arg) setTimeout(() => { const el = document.getElementById("db-" + arg); if (el) el.scrollIntoView({ block: "start" }); }, 60);
     if (side === "sted" && del) setTimeout(() => { const el = document.getElementById(del); if (el) { el.open = true; el.scrollIntoView({ block: "start" }); } }, 60);
     skyggeTopp();
     if (SJ()) sjPlasser();
@@ -3908,6 +4106,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    73: "Dagens bilde: velg ditt beste bilde hver kveld – det blir reisedagboka",
     72: "Stedssidene er kortere: det viktigste først – resten ligger i felter du kan åpne",
     71: "Stedssidene: på reisen vises det viktigste først – resten ligger i felter du kan åpne",
     70: "Fly: på reisen er neste fly åpent – trykk på de andre for detaljer",
