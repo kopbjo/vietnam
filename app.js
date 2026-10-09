@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 71, tid: "2026-10-10 kl. 12:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 72, tid: "2026-10-10 kl. 13:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1542,13 +1542,14 @@
       const plan = /planlagt/i.test(x.tittel), best = t === "bestilt" || /\bbestilt\b/i.test(x.tittel) && !/ikke bestilt/i.test(x.tittel);
       if (best) bestilt.push(fold(x, `<span class="bord ja">✓ Bestilt</span>`));
       else if (plan) bestilt.push(fold(x, `<span class="bord nei">Ikke bestilt</span>`));
-      else praktisk.push(fold(x));
+      else praktisk.push({ fold: fold(x), html: seksjon(x) }); // flere praktiske kort: åpne inne i ett felt (ett trykk)
     }
     h += synlig.join("");
-    if (bestilt.length) h += `<div class="seksjonstittel">Bestilt og planlagt her</div>${bestilt.join("")}`;
-    const kk = kartKort(s);
+    const kk = kartKort(s); // kartet før bestilt-lista: samme rekkefølge som før (skattejakten finner kortene i denne rekkefølgen)
     if (kk) h += `<details class="fold sekfold kartfold" id="kartkort"><summary>${ikon("kartark")}<span class="sf-tittel">Kart over ${esc(s.navn)}</span></summary><div class="innhold">${kk.replace(' id="kartkort"', "")}</div></details>`;
-    if (praktisk.length) h += `<details class="fold praktiskfold"><summary>${ikon("info")}<span class="sf-tittel">Praktisk i ${esc(s.navn)}</span><span class="antall">(${praktisk.length})</span></summary><div class="innhold">${praktisk.join("")}</div></details>`;
+    if (bestilt.length) h += `<div class="seksjonstittel">Bestilt og planlagt her</div>${bestilt.join("")}`;
+    if (praktisk.length === 1) h += praktisk[0].fold;
+    else if (praktisk.length) h += `<details class="fold praktiskfold"><summary>${ikon("info")}<span class="sf-tittel">Praktisk i ${esc(s.navn)}</span><span class="antall">(${praktisk.length})</span></summary><div class="innhold">${praktisk.map((p) => p.html).join("")}</div></details>`;
     return h + senere.join("");
   }
 
@@ -1590,12 +1591,7 @@
     // Ankomst er ferdig dagen etter at vi kom, avreise dagen etter at vi dro – da legges de sammen
     const ferdig = (x) => (x.type === "ankomst" && idag > s.fra) || (x.type === "avreise" && idag > s.til);
     const ferdigFold = (x) => `<details class="fold ferdig"><summary>${ikon("bestilt")}${esc(x.tittel)} <span class="antall">ferdig</span></summary><div class="innhold">${seksjon(x)}</div></details>`;
-    if (idag >= start()) h += stedKompakt(s, idag, ferdig, ferdigFold); // v71: på reisen – det viktigste først, resten i felter
-    else {
-      h += hotellKort(s);
-      h += kartKort(s);
-      h += s.seksjoner.map((x) => ferdig(x) ? ferdigFold(x) : seksjon(x)).join("");
-    }
+    h += stedKompakt(s, idag, ferdig, ferdigFold); // v71/v72: det viktigste først, resten i felter (før reisen: ankomst/avreise lukket)
 
     const alle = D.kontakter.filter((k) => k.sted === s.id);
     if (alle.length) h += `<details class="fold" id="kontakterher"><summary>${ikon("kontakt")}Alle kontakter her <span class="antall">(${alle.length})</span></summary><div class="innhold">${alle.map(kontaktHtml).join("")}</div></details>`;
@@ -3912,6 +3908,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    72: "Stedssidene er kortere: det viktigste først – resten ligger i felter du kan åpne",
     71: "Stedssidene: på reisen vises det viktigste først – resten ligger i felter du kan åpne",
     70: "Fly: på reisen er neste fly åpent – trykk på de andre for detaljer",
     69: "Fly og Hotell ligger nå under Reisen. Mer er ryddet i tre grupper",

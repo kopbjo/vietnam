@@ -1958,3 +1958,6 @@ details.sekfold > .innhold > section.kort { box-shadow: none; border: 0; margin:
 details.sekfold > .innhold > section.kort > h2 { display: none; }
 details.praktiskfold > .innhold details.sekfold { box-shadow: none; border: .5px solid var(--linje); }
 .hotell-kort .hnavn { margin-top: 2px; }
+
+/* v72: praktiske kort ligger åpne inne i «Praktisk i …» */
+details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px solid var(--linje); margin: 0 0 10px; }
