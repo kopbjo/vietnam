@@ -1948,3 +1948,13 @@ details.flyfold .ff-nr { flex: none; font-weight: 750; min-width: 58px; }
 details.flyfold .ff-tekst { flex: 1; color: var(--dempet); line-height: 1.35; }
 details.flyfold .ff-tekst b { color: var(--tekst); font-weight: 650; }
 details.flyfold > .innhold .fly { box-shadow: none; border: 0; padding: 0; margin: 0; }
+
+/* ---------- v71: stedssiden på reisen ---------- */
+details.sekfold { margin: 0 0 8px; }
+details.sekfold > summary { display: flex; align-items: center; gap: 8px; min-height: 52px; }
+details.sekfold > summary .sf-tittel { flex: 1 1 auto; min-width: 0; }
+details.sekfold > summary .bord { margin-left: 4px; vertical-align: 2px; }
+details.sekfold > .innhold > section.kort { box-shadow: none; border: 0; margin: 0; padding: 0 0 4px; background: none; }
+details.sekfold > .innhold > section.kort > h2 { display: none; }
+details.praktiskfold > .innhold details.sekfold { box-shadow: none; border: .5px solid var(--linje); }
+.hotell-kort .hnavn { margin-top: 2px; }
