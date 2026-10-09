@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 68, tid: "2026-10-10 kl. 10:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 69, tid: "2026-10-10 kl. 10:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1507,12 +1507,12 @@
     const liste = `<div class="stedliste">${D.steder.map((s, i) => `<a class="kort stedkort mednr ${naa && naa.id === s.id ? "naa" : ""}" href="#/sted/${esc(s.id)}">
       <span class="snr${s.netter ? "" : " hjem"}">${s.netter ? i + 1 : `<svg viewBox="-6 -6 12 12" aria-hidden="true">${K_HUS}</svg>`}</span><b>${esc(s.navn)}</b><span class="netter">${s.netter ? s.netter + (s.netter === 1 ? " natt" : " netter") : ""}${ikon("chev", "")}</span>
       <span class="dato">${esc(s.dato)}${naa && naa.id === s.id ? ' · <span class="naa-merke">Her er vi nå</span>' : ""}</span></a>`).join("")}</div>`;
+    h += `<div class="liste reise-ovs">
+      <a href="#/fly"><span class="lik">${ikon("reise", "")}</span><span class="ltekst">Fly<small>${D.fly.length} flyvninger – tider, seter og referanser</small></span><span class="pil"></span></a>
+      <a href="#/hotell"><span class="lik">${ikon("hotell", "")}</span><span class="ltekst">Hotell<small>${D.steder.filter((s) => s.hotell).length} overnattinger – adresse, innsjekk og referanser</small></span><span class="pil"></span></a></div>`;
     const kart = oversiktKart();
     if (kart) h += kart + `<details class="fold reiseliste" id="reiseliste"${lagre.get("vn.reiseListe") === "1" ? " open" : ""}><summary>${ikon("kalender")}Vis som liste</summary><div class="innhold">${liste}</div></details>`;
     else h += liste;
-    h += `<div class="seksjonstittel">Oversikt</div><div class="liste">
-      <a href="#/fly"><span class="lik">${ikon("reise", "")}</span><span class="ltekst">Alle fly<small>${D.fly.length} flyvninger med seter og referanser</small></span><span class="pil"></span></a>
-      <a href="#/hotell"><span class="lik">${ikon("hotell", "")}</span><span class="ltekst">Alle hotell<small>${D.steder.filter((s) => s.hotell).length} overnattinger med referanser og innsjekk</small></span><span class="pil"></span></a></div>`;
     return h + bunn();
   }
 
@@ -3216,7 +3216,7 @@
     const ig = sjIgjenPa(n.d, m).find((g) => !sjFunnPost(g.tapt, m)), P = ig && SJ().plasser.find((p) => p.id === ig.plass);
     return P ? { d: ig.tapt, m, plass: P, gate: "", igjen: ig } : null;
   }
-  const sjFane = (side) => (["for", "bingo", "tema", "skatt"].includes(side) ? "idag" : side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : side);
+  const sjFane = (side) => (["for", "bingo", "tema", "skatt"].includes(side) ? "idag" : ["sted", "fly", "hotell"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : side);
   const sjRiktigSide = (P) => { const r = rute(); return P.dag ? r.side === "idag" && dagModus && valgtDag === P.dag : r.side === P.s && (!P.a || r.arg === P.a); };
   // ---- mynten legges inn på siden etter at den er tegnet ----
   function sjPlasser() {
@@ -3512,22 +3512,20 @@
   function sideMer() {
     const m = meg();
     let h = tittel("Mer");
-    h += `<div class="liste">
-      <a href="#/fly"><span class="lik">${ikon("reise", "")}</span><span class="ltekst">Fly<small>Tider, seter og referanser</small></span><span class="pil"></span></a>
-      <a href="#/hotell"><span class="lik">${ikon("hotell", "")}</span><span class="ltekst">Hotell<small>Referanser, innsjekk og adresse til sjåføren</small></span><span class="pil"></span></a>
+    h += `<div class="seksjonstittel">Lister</div><div class="liste">
       <a href="#/for"><span class="lik">${ikon("kalender", "")}</span><span class="ltekst">Før vi drar<small>Alt som må gjøres før avreise – med frister</small></span><span class="pil"></span></a>
       <a href="#/pakk"><span class="lik">${ikon("bestilt", "")}</span><span class="ltekst">Pakkeliste<small>Kryss av før avreise og mellom stedene</small></span><span class="pil"></span></a>
       <a href="#/bingo"><span class="lik">${ikon("stjerne", "")}</span><span class="ltekst">Reisebingo<small>Fire på rad – brett for hvert sted</small></span><span class="pil"></span></a>
       ${erBarn() ? `<a href="#/tema"><span class="lik">${ikon("ideer", "")}</span><span class="ltekst">Hva liker du?<small>Temaer for faktaene på forsiden</small></span><span class="pil"></span></a>` : ""}
+    </div><div class="seksjonstittel">Hjelp</div><div class="liste">
       <a href="#/kontakter"><span class="lik">${ikon("kontakt", "")}</span><span class="ltekst">Kontakter<small>Alle hoteller, sjåfører og guider – søkbar</small></span><span class="pil"></span></a>
       <a href="#/parlor"><span class="lik">${ikon("mat", "")}</span><span class="ltekst">Fraser, tips og priser<small>Si det på vietnamesisk · drikkepenger · vanlige priser</small></span><span class="pil"></span></a>
-      <a href="#/nod"><span class="lik rod">${ikon("sykehus", "")}</span><span class="ltekst">Nød og helse<small>Nødnumre, sykehus, forsikring</small></span><span class="pil"></span></a>
-      <button class="rad" data-hk><span class="lik rod">${ikon("advarsel", "")}</span><span class="ltekst">⟦k3⟧<small>Vis på vietnamesisk i stor skrift</small></span><span class="pil"></span></button>
+      <a href="#/nod"><span class="lik rod">${ikon("sykehus", "")}</span><span class="ltekst">Nød og helse<small>Nødnumre, sykehus, forsikring og ⟦k3⟧</small></span><span class="pil"></span></a>
     </div>`;
     h += `<div class="seksjonstittel">Hvem bruker denne telefonen?</div><section class="kort"><div class="personer">${D.personer.map((p) => `<button data-meg="${p.id}" class="${p.id === m ? "valgt" : ""}" aria-pressed="${p.id === m}">${esc(p.navn)}</button>`).join("")}</div><p class="krolle" style="margin-top:10px">Da ser du ditt eget sete på flyene og din egen pakkeliste.</p></section>`;
-    h += `<div class="seksjonstittel">Appen</div><div class="liste">
+    h += `<div class="seksjonstittel">Om appen</div><div class="liste">
       <a href="#/claude"><span class="lik">${ikon("stjerne", "")}</span><span class="ltekst">Oppdater fra Claude<small>Lim inn endringer Claude har skrevet – uten Mac${D.oppdAntall ? ` · ${D.oppdAntall} lagt inn` : ""}</small></span><span class="pil"></span></a>
-      <button class="rad" data-oppdater><span class="lik">${ikon("oppdater", "")}</span><span class="ltekst">Hent nyeste versjon<small>Krever nett · reiseinfo oppdatert ${esc(oppdatertTekst())} · appversjon ${APP.versjon} (${esc(APP.tid)})</small></span></button>
+      <button class="rad" data-oppdater><span class="lik">${ikon("oppdater", "")}</span><span class="ltekst">Hent nyeste versjon<small>Krever nett · nå: versjon ${APP.versjon}, oppdatert ${esc(bunnTid())}</small></span></button>
       <button class="rad" data-laas><span class="lik gul">${ikon("last", "")}</span><span class="ltekst">Lås appen på denne telefonen<small>Passordet må skrives inn på nytt</small></span></button>
     </div>
     <p class="krolle" style="margin:0 4px">Legg appen på hjemskjermen: Del-knappen i Safari → «Legg til på Hjem-skjerm». Da åpnes den i fullskjerm og virker uten nett.</p>
@@ -3540,7 +3538,7 @@
   const ruteAv = (hash) => { const [, side = "idag", arg, del] = (String(hash || "").startsWith("#/") ? hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
   const rute = () => ruteAv(location.hash);
   // Fanen en side hører til (markeres nederst)
-  const faneAv = (side) => side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : side === "sted" ? "reisen" : ["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
+  const faneAv = (side) => side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : ["sted", "fly", "hotell"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
   // ---------- navigasjon (v57): fanene husker hvor du var, og «‹ <dag>» tar deg tilbake til dagen ----------
   const FANE_MINNE = {}; // fane → {hash, y, dag, dm, ark}: siste side i fanen
   let gjenopprett = null, viaFane = false, fraDag = null;
@@ -3559,8 +3557,8 @@
     const tb = $("#tilbake");
     delete tb.dataset.tilbakedag;
     if (fraDag && side !== "idag" && side !== "sok") { tb.hidden = false; tb.href = "#/idag"; tb.dataset.tilbakedag = "1"; tb.querySelector("span").textContent = dagEtikett(fraDag.dag); }
-    else if (side === "sted") { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
-    else if (["fly", "hotell", "kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
+    else if (["sted", "fly", "hotell"].includes(side)) { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
+    else if (["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
     else if (["for", "bingo", "tema"].includes(side) || (side === "skatt" && erBarn())) { tb.hidden = false; tb.href = "#/idag"; tb.querySelector("span").textContent = "I dag"; }
     else if (side === "skatt") { tb.hidden = false; tb.href = "#/penger"; tb.querySelector("span").textContent = "Penger"; }
     else if (side === "sok") { tb.hidden = false; tb.href = sokFra; tb.querySelector("span").textContent = "Tilbake"; }
@@ -3871,6 +3869,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    69: "Fly og Hotell ligger nå under Reisen. Mer er ryddet i tre grupper",
     68: "I dag: kortere topp, og kveldens hotell med «Vis til sjåføren» øverst i dagen",
     67: "Større tekst der den var liten – lettere å lese i sola",
     66: "Det som ikke er bestilt ennå, har gul stiplet kant og merket «Ikke bestilt» – overalt",

@@ -1937,3 +1937,6 @@ html.fg-aapen, html.fg-aapen body { overflow: hidden; }
 .klokkemini .km-natt { font-style: normal; }
 .dagtittel .klokkemini { flex-wrap: nowrap; white-space: nowrap; }
 .dagtittel .km-natt { display: none; }
+
+/* ---------- v69: Fly og Hotell øverst på Reisen ---------- */
+.reise-ovs { margin-top: 4px; }
