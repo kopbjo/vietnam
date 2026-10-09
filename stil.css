@@ -1843,3 +1843,46 @@ a.intern[href^="#/bekr/"]::before { content: ""; width: 15px; height: 15px; flex
 .sj-forkl .sj-kal { display: inline-grid; grid-template-columns: 22px; margin: 0; }
 .sj-forkl .sj-kal > span { width: 22px; font-size: .7rem; }
 .sj-irad div > span + span { display: block; }
+
+/* ---------- bilder (v64) ---------- */
+.fbilde { position: relative; overflow: hidden; background: var(--flate2); border: 0; padding: 0; display: block; cursor: zoom-in; }
+.fbilde img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .35s ease; }
+.fbilde img.klar { opacity: 1; }
+.fbilde.feil::after { content: "Bildet er ikke lastet ned ennå"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .8rem; color: var(--dempet); text-align: center; padding: 8px; }
+/* stedssiden: stort bilde med tittelen oppå */
+.fhero { margin: 4px -16px 12px; aspect-ratio: 4 / 3; border-radius: 0; }
+@media (min-width: 560px) { .fhero { margin: 6px 0 14px; border-radius: var(--r); aspect-ratio: 16 / 9; } }
+.fhero::before { content: ""; position: absolute; inset: 0; z-index: 1; pointer-events: none; background: linear-gradient(to top, rgba(0,0,0,.66) 0%, rgba(0,0,0,.18) 42%, rgba(0,0,0,0) 62%); }
+.fhero-tekst { position: absolute; left: 16px; right: 16px; bottom: 14px; z-index: 2; color: #fff; pointer-events: none; }
+.fhero-tekst h1 { font-size: 2.15rem; font-weight: 760; line-height: 1.05; text-shadow: 0 1px 12px rgba(0,0,0,.35); }
+.fhero-tekst .under { margin-top: 4px; font-size: .95rem; opacity: .92; }
+.falle { position: absolute; z-index: 3; top: 12px; right: 12px; display: inline-flex; align-items: center; gap: 6px; font: 600 .82rem/1 inherit; color: #fff; background: rgba(0,0,0,.45); border: .5px solid rgba(255,255,255,.35); border-radius: 999px; padding: 8px 12px; -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
+.falle .ikon, .falle svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2; }
+.fingress { margin: 0 0 14px; }
+/* hotell og seksjoner: rekke som sveipes */
+.frekke { display: flex; gap: 8px; overflow-x: auto; scroll-snap-type: x mandatory; margin: 0 -16px 12px; padding: 0 16px; scrollbar-width: none; }
+.frekke::-webkit-scrollbar { display: none; }
+.frekke .fbilde { flex: none; width: 82%; aspect-ratio: 3 / 2; border-radius: 12px; scroll-snap-align: start; scroll-margin-left: 16px; }
+.frekke.en .fbilde { width: 100%; }
+/* ideer: lite bilde til høyre for teksten */
+.ide.medfoto { display: flow-root; }
+.ftommel { float: right; width: 92px; height: 92px; margin: 2px 0 6px 12px; border-radius: 12px; }
+.fant::after { content: attr(data-n); }
+.fant { position: absolute; right: 5px; bottom: 5px; z-index: 1; font: 700 .7rem/1 inherit; color: #fff; background: rgba(0,0,0,.55); border-radius: 999px; padding: 3px 6px; }
+/* galleriet */
+#fgalleri { position: fixed; inset: 0; z-index: 9999; background: #000; color: #fff; display: flex; flex-direction: column; }
+#fgalleri[hidden] { display: none !important; }
+html.fg-aapen, html.fg-aapen body { overflow: hidden; }
+.fg-topp { display: flex; align-items: center; gap: 12px; padding: calc(env(safe-area-inset-top) + 10px) 12px 10px 16px; }
+.fg-tittel { flex: 1; font-weight: 650; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.fg-tell { font-size: .85rem; opacity: .75; font-variant-numeric: tabular-nums; }
+.fg-lukk { width: 40px; height: 40px; border-radius: 50%; border: 0; background: rgba(255,255,255,.14); color: #fff; font-size: 26px; line-height: 1; }
+.fg-rad { flex: 1; display: flex; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+.fg-rad::-webkit-scrollbar { display: none; }
+.fg-side { flex: none; width: 100%; margin: 0; scroll-snap-align: center; display: flex; flex-direction: column; justify-content: center; }
+.fg-bilde { flex: 1; display: grid; place-items: center; min-height: 0; }
+.fg-bilde img { max-width: 100%; max-height: 100%; object-fit: contain; opacity: 0; transition: opacity .3s; }
+.fg-bilde img.klar { opacity: 1; }
+.fg-side figcaption { padding: 10px 16px calc(env(safe-area-inset-bottom) + 14px); font-size: .78rem; color: rgba(255,255,255,.72); line-height: 1.35; }
+.fg-side figcaption b { display: block; color: #fff; font-size: .95rem; margin-bottom: 2px; }
+.fg-side figcaption a { color: rgba(255,255,255,.85); }

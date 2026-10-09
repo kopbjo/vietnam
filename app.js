@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 63, tid: "2026-10-07 kl. 22:15" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 64, tid: "2026-10-09 kl. 22:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -238,6 +238,7 @@
     bil: '<path d="M4 16v-5l2-5h12l2 5v5M4 16h16M4 16v2.5M20 16v2.5"/><circle cx="7.5" cy="13" r="1"/><circle cx="16.5" cy="13" r="1"/>',
     kveld: '<path d="M19 14.5A7.5 7.5 0 1 1 9.5 5a6 6 0 0 0 9.5 9.5z"/>',
     dok: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12.5h5M10 16.5h5"/>',
+    bilde: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 8"/>',
     venstre: '<path d="M15 5l-7 7 7 7"/>', hoyre: '<path d="M9 5l7 7-7 7"/>', chev: '<path d="M9 6l6 6-6 6"/>',
   };
   const ikon = (t, cls = "ikon") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[t] || P.info}</svg>`;
@@ -483,7 +484,7 @@
     const resten = `<dt>Rom</dt><dd>${md(h.rom)}</dd><dt>Betaling</dt><dd>${md(h.betaling)}</dd>`;
     const knapper = `<div class="knapper">${h.sjofor !== false ? `<button class="kb" data-sjofor="${esc(s.id)}">${ikon("kart", "")}Vis til sjåføren</button>` : ""}${knapp("kart", h.kartq, "Vis i kart")}${ringeKnapper(k)}${bekrKnapp(h.bekr)}</div>`;
     const nett = h.nett ? `<a class="hnett" href="${esc(h.nett)}" target="_blank" rel="noopener noreferrer">${esc(h.nettTekst || "Hotellets nettside")} ↗</a>` : "";
-    const topp = `<div class="hnavn">${esc(h.navn)}</div>${kompakt ? "" : `<div class="hadr">${esc(h.adr)}</div>`}
+    const topp = `${kompakt ? "" : fotoRekke(h.foto, h.navn)}<div class="hnavn">${esc(h.navn)}</div>${kompakt ? "" : `<div class="hadr">${esc(h.adr)}</div>`}
       <div class="tider"><span>Inn <b>${esc(inn)}</b></span><span>Ut <b>${esc(ut)}</b></span></div>`;
     if (kompakt) return `${topp}<dl class="rader">${ref}</dl>
       <details class="hdet"><summary>Adresse, rom, betaling og kontakt</summary><div class="hadr">${esc(h.adr)}</div><dl class="rader">${resten}</dl>${knapper}${nett}</details>`;
@@ -507,7 +508,7 @@
   }
 
   function seksjon(s) {
-    let h = `<section class="kort ${esc(s.type || "")}"><h2>${ikon(s.type)}${esc(s.tittel)}</h2>`;
+    let h = `<section class="kort ${esc(s.type || "")}"><h2>${ikon(s.type)}${esc(s.tittel)}</h2>${fotoRekke(s.foto, s.tittel.replace(/\s*\(.*\)$/, ""))}`;
     if (s.steg) h += `<ol class="steg">${s.steg.map((x) => `<li>${md(x)}</li>`).join("")}</ol>`;
     if (s.rader && s.rader.length) h += `<dl class="rader">${s.rader.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${md(v)}</dd>`).join("")}</dl>`;
     if (s.tekst) h += s.tekst.map((t) => `<p>${md(t)}</p>`).join("");
@@ -526,7 +527,7 @@
     </div>`).join("");
   }
   // sId gir «Legg i planen» på hver idé; dag = fast dag (fra I dag), ellers velges dag i skjemaet
-  const ideerHtml = (liste, sId, dag) => (liste || []).map((i) => `<div class="ide"><b>${i.kart ? `<span class="knr kn-ide ide-nr" title="På kartet">${esc(i.kart)}</span>` : ""}${esc(i.navn)}</b>${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}${infoFold(i)}${sId ? idePlanHtml(sId, i, dag) : ""}</div>`).join("");
+  const ideerHtml = (liste, sId, dag) => (liste || []).map((i) => `<div class="ide${i.foto ? " medfoto" : ""}">${fotoTommel(i.foto, i.navn)}<b>${i.kart ? `<span class="knr kn-ide ide-nr" title="På kartet">${esc(i.kart)}</span>` : ""}${esc(i.navn)}</b>${esc(i.tekst)}${i.praktisk ? `<div class="praktisk">${md(i.praktisk)}</div>` : ""}${infoFold(i)}${sId ? idePlanHtml(sId, i, dag) : ""}</div>`).join("");
   function idePlanHtml(sId, i, dag) {
     const k = (D.ideer[sId] || []).indexOf(i), planer = ideIPlan(sId, i.navn);
     const denne = dag ? planer.find((a) => a.d === dag) : null, andre = planer.filter((a) => a !== denne);
@@ -1073,6 +1074,107 @@
     f.classList.toggle("stor"); if (f.classList.contains("stor")) f.scrollLeft = 0;
   });
 
+  // ---------- bilder av steder, hotell og ideer (v64) – kryptert hver for seg i f/<hash>.enc ----------
+  // Data: D.foto[id] = [{f: hash, k: kreditering, s: kildeside}]; s.foto / hotell.foto / seksjon.foto / idé.foto = [id, …].
+  // Bildene dekrypteres først når de vises (lat innlasting) og lagres i «vn-foto», som overlever nye appversjoner.
+  const FO_LAGER = "vn-foto", FO_URL = new Map();
+  const fotoUrl = (navn) => new URL("f/" + navn + ".enc", location.href).href;
+  const fotoListe = (ids) => (ids || []).flatMap((id) => (D.foto && D.foto[id]) || []);
+  async function fotoFil(navn) {
+    if (FO_URL.has(navn)) return FO_URL.get(navn);
+    const url = fotoUrl(navn); let r = null;
+    try {
+      const c = await caches.open(FO_LAGER); r = await c.match(url);
+      if (!r) { const n = await fetch(url, { cache: "no-cache" }); if (n.ok) { await c.put(url, n.clone()); r = n; } }
+    } catch { r = await fetch(url).catch(() => null); }
+    if (!r || !r.ok) throw new Error("ikke lastet");
+    const u = new Uint8Array(await r.arrayBuffer());
+    const klar = await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, K, u.slice(12));
+    const src = URL.createObjectURL(new Blob([klar], { type: "image/jpeg" })); FO_URL.set(navn, src); return src;
+  }
+  // <img data-fb="hash"> fylles når det nærmer seg skjermen (også inne i ark og lukkede folder når de åpnes)
+  const foIO = "IntersectionObserver" in window ? new IntersectionObserver((es) => es.forEach((e) => { if (e.isIntersecting) { foIO.unobserve(e.target); fotoFyll(e.target); } }), { rootMargin: "300px 300px" }) : null;
+  async function fotoFyll(img) {
+    const navn = img.dataset.fb; if (!navn || img.dataset.fok) return; img.dataset.fok = "1";
+    try { img.src = await fotoFil(navn); img.onload = () => img.classList.add("klar"); }
+    catch { img.closest(".fbilde") && img.closest(".fbilde").classList.add("feil"); }
+  }
+  new MutationObserver(() => { for (const im of document.querySelectorAll("img[data-fb]:not([data-fs])")) { im.dataset.fs = "1"; if (foIO) foIO.observe(im); else fotoFyll(im); } })
+    .observe(document.documentElement, { childList: true, subtree: true });
+  const fImg = (b, alt = "") => `<img data-fb="${esc(b.f)}" alt="${esc(alt)}" decoding="async">`;
+  // gal = «id,id|tittel|start»: hvilke bilder galleriet viser
+  const fGal = (ids, t, i = 0) => esc(`${ids.join(",")}|${t}|${i}`);
+  // Stort bilde øverst på stedssiden med tittelen oppå, og «Alle bilder» for hele stedet
+  function fotoHero(s, under) {
+    const l = fotoListe(s.foto); if (!l.length) return "";
+    const alle = stedFotoIds(s), ant = fotoListe(alle).length;
+    return `<div class="fhero fbilde" data-fgal="${fGal(s.foto, s.navn)}">${fImg(l[0], s.navn)}<div class="fhero-tekst"><h1>${esc(s.navn)}</h1>${under ? `<div class="under">${under}</div>` : ""}</div>
+      ${ant > 1 ? `<button class="falle" data-fgal="${fGal(alle, "Bilder fra " + s.navn)}">${ikon("bilde", "")}Alle bilder (${ant})</button>` : ""}</div>`;
+  }
+  // Rekke med bilder (hotell, seksjoner): første stort, resten sveipes fram
+  function fotoRekke(ids, t) {
+    const l = fotoListe(ids); if (!l.length) return "";
+    return `<div class="frekke${l.length === 1 ? " en" : ""}">${l.map((b, i) => `<button class="fbilde" data-fgal="${fGal(ids, t, i)}">${fImg(b, t)}</button>`).join("")}</div>`;
+  }
+  // Lite bilde ved idéen
+  function fotoTommel(ids, t) {
+    const l = fotoListe(ids); if (!l.length) return "";
+    return `<button class="ftommel fbilde" data-fgal="${fGal(ids, t)}" aria-label="Se bilder av ${esc(t)}">${fImg(l[0])}${l.length > 1 ? `<span class="fant" data-n="${l.length}"></span>` : ""}</button>`;
+  }
+  function stedFotoIds(s) {
+    const ids = [...(s.foto || []), ...((s.hotell && s.hotell.foto) || [])];
+    (s.seksjoner || []).forEach((x) => ids.push(...(x.foto || [])));
+    (D.ideer[s.id] || []).forEach((i) => ids.push(...(i.foto || [])));
+    return [...new Set(ids)];
+  }
+  const fotoTittel = (id) => { // navnet på det bildet viser, til galleriet
+    for (const s of D.steder) {
+      if ((s.foto || []).includes(id)) return s.navn;
+      if (s.hotell && (s.hotell.foto || []).includes(id)) return s.hotell.navn;
+      for (const x of s.seksjoner || []) if ((x.foto || []).includes(id)) return x.tittel.replace(/\s*\(.*\)$/, "");
+      for (const i of D.ideer[s.id] || []) if ((i.foto || []).includes(id)) return i.navn;
+    }
+    return "";
+  };
+  // Galleriet: hele skjermen, sveip sidelengs, kreditering under hvert bilde
+  function visGalleri(spes) {
+    const [idS, t, st] = spes.split("|"), ids = idS.split(",");
+    const l = ids.flatMap((id) => fotoListe([id]).map((b) => ({ ...b, n: ids.length > 1 ? fotoTittel(id) : t })));
+    if (!l.length) return;
+    let g = $("#fgalleri"); if (!g) { g = document.createElement("div"); g.id = "fgalleri"; document.body.appendChild(g); }
+    g.innerHTML = `<div class="fg-topp"><span class="fg-tittel">${esc(t)}</span><span class="fg-tell"><b>1</b> / ${l.length}</span><button class="fg-lukk" aria-label="Lukk">×</button></div>
+      <div class="fg-rad">${l.map((b) => `<figure class="fg-side"><div class="fg-bilde">${fImg(b, b.n)}</div><figcaption>${ids.length > 1 ? `<b>${esc(b.n)}</b>` : ""}<span>${esc(b.k)}${b.s ? ` · <a href="${esc(b.s)}" target="_blank" rel="noopener noreferrer">kilde ↗</a>` : ""}</span></figcaption></figure>`).join("")}</div>`;
+    g.hidden = false; document.documentElement.classList.add("fg-aapen");
+    const rad = g.querySelector(".fg-rad"); rad.scrollLeft = Number(st || 0) * rad.clientWidth;
+    rad.onscroll = () => { g.querySelector(".fg-tell b").textContent = Math.round(rad.scrollLeft / rad.clientWidth) + 1; };
+    history.pushState({ fg: 1 }, "");
+  }
+  function lukkGalleri(fraHist) {
+    const g = $("#fgalleri"); if (!g || g.hidden) return;
+    g.hidden = true; g.innerHTML = ""; document.documentElement.classList.remove("fg-aapen");
+    if (!fraHist && history.state && history.state.fg) history.back();
+  }
+  window.addEventListener("popstate", () => lukkGalleri(true));
+  document.addEventListener("click", (e) => {
+    if (e.target.closest && e.target.closest(".fg-lukk")) { lukkGalleri(); return; }
+    const t = e.target.closest && e.target.closest("[data-fgal]"); if (!t || !D) return;
+    e.preventDefault(); e.stopPropagation(); visGalleri(t.dataset.fgal);
+  }, true);
+  document.addEventListener("keydown", (e) => { if (e.key === "Escape") lukkGalleri(); });
+  // Etter opplåsing: last ned bilder som mangler (i bakgrunnen, ett om gangen) og rydd bort gamle
+  async function fotoForhand() {
+    if (!D || !D.foto || !navigator.onLine || !window.caches) return;
+    try {
+      const c = await caches.open(FO_LAGER), onsket = new Set(Object.values(D.foto).flat().map((b) => fotoUrl(b.f)));
+      for (const r of await c.keys()) if (!onsket.has(r.url)) await c.delete(r);
+      for (const url of onsket) {
+        if (await c.match(url)) continue;
+        const n = await fetch(url, { cache: "no-cache" }).catch(() => null);
+        if (n && n.ok) await c.put(url, n); else break;
+      }
+    } catch {}
+  }
+
   // ---------- kortet fra stedssiden i detaljarket (v57) ----------
   // Hendelser har kort: {s: sted, t: seksjonstittel | hotell: 1 | ide: idénavn}. Arket viser SELVE kortet, ikke en kopi.
   let ARK = []; // tidligere ark når et kort er åpnet inne i arket («‹ Tilbake»): {html, y}
@@ -1393,7 +1495,9 @@
     if (i < 0) return sideReisen();
     const s = D.steder[i], forr = D.steder[i - 1], neste = D.steder[i + 1];
         const antRest = D.restauranter.liste.filter((r) => r.sted === s.id).length;
-    let h = tittel(s.navn, `${esc(s.dato)}${s.netter ? " · " + s.netter + (s.netter === 1 ? " natt" : " netter") : ""}`, s.ingress);
+    const underT = `${esc(s.dato)}${s.netter ? " · " + s.netter + (s.netter === 1 ? " natt" : " netter") : ""}`;
+    const hero = fotoHero(s, underT);
+    let h = hero ? hero + (s.ingress ? `<p class="ingress fingress">${md(s.ingress)}</p>` : "") : tittel(s.navn, underT, s.ingress);
     const sn = [];
     const harKart = !!(D.kart && D.kart.steder[s.id]);
     if (harKart) sn.push(`<button class="kb" data-rull="kartkort">${ikon("kartark", "")}Kart</button>`);
@@ -3733,6 +3837,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    64: "Bilder av stedene, hotellene og ideene – trykk på et bilde for å bla",
     63: "Skattejakten: dager du er borte, kan tas igjen senere – da er det to mynter den dagen",
     62: "⟦k2⟧ kan leses høyt på vietnamesisk og har fått bilder",
     61: "Nødkortet viser første og andre klokkeslett",
@@ -4738,11 +4843,12 @@
     try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {}); } catch {}
     synk();
     setTimeout(bekrForhand, 4000);
+    setTimeout(fotoForhand, 9000);
     hentetMelding();
     hentKurs().then((ny) => { if (ny && rute().side === "penger") vis(); });
     if (nyVenter) nyReiseinfo();
   }
-  window.addEventListener("online", () => { if (D) { synk(); bekrForhand(); } });
+  window.addEventListener("online", () => { if (D) { synk(); bekrForhand(); fotoForhand(); } });
   window.addEventListener("offline", () => synkStatus("vent"));
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible" && D) synk(); });
   // Hvert 10. s mens nødkortet er åpent (tidspunktet), ellers hvert 30. s – et tomt søk i databasen er billig.
