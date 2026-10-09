@@ -77,9 +77,9 @@ svg { flex: none; }
 .tilbake svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; margin-left: -6px; }
 .sos {
   display: inline-flex; align-items: center; justify-content: center; min-width: 60px; min-height: 44px; padding: 0 14px;
-  border-radius: 99px; background: var(--sos-bg); color: #fff; font-weight: 800; font-size: .82rem; letter-spacing: .06em; text-decoration: none;
+  border-radius: 99px; background: var(--sos-bg); color: #fff; font-weight: 800; font-size: .83rem; letter-spacing: .06em; text-decoration: none;
 }
-.nett { position: sticky; top: calc(var(--topp-h) + env(safe-area-inset-top)); z-index: 9; text-align: center; font-size: .78rem; padding: 4px; background: var(--gul-bg); color: var(--gul); }
+.nett { position: sticky; top: calc(var(--topp-h) + env(safe-area-inset-top)); z-index: 9; text-align: center; font-size: .83rem; padding: 4px; background: var(--gul-bg); color: var(--gul); }
 
 main {
   max-width: 680px; margin: 0 auto; outline: none;
@@ -159,7 +159,7 @@ main {
 .kort.bestilt { border-left: 4px solid var(--gronn); }
 .kort.bestilt > h2 .ikon { stroke: var(--gronn); }
 .kort.ideer > h2 .ikon { stroke: var(--gul); }
-.seksjonstittel { font-size: .8rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--dempet); margin: 22px 4px 8px; }
+.seksjonstittel { font-size: .83rem; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--dempet); margin: 22px 4px 8px; }
 
 dl.rader { margin: 0; display: grid; grid-template-columns: minmax(82px, 28%) 1fr; gap: 8px 12px; }
 dl.rader dt { color: var(--dempet); font-size: .88rem; padding-top: 1px; }
@@ -183,10 +183,10 @@ details.fold > .innhold { padding: 0 16px 14px; }
 .bilder { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
 .bilder figure { margin: 0; }
 .bilder img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: 12px; border: .5px solid var(--linje); background: var(--flate2); cursor: zoom-in; display: block; }
-.bilder figcaption { font-size: .8rem; color: var(--dempet); margin-top: 4px; }
+.bilder figcaption { font-size: .83rem; color: var(--dempet); margin-top: 4px; }
 
 .ref { display: inline; text-align: left; line-height: 1.6; -webkit-box-decoration-break: clone; box-decoration-break: clone; font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: .9em; background: var(--flate2); padding: 2px 7px; border-radius: 7px; border: 0; color: var(--tekst); cursor: copy; }
-.brikke { display: inline-block; font-size: .74rem; font-weight: 650; padding: 2px 8px; border-radius: 99px; background: var(--flate2); color: var(--dempet); vertical-align: 1px; }
+.brikke { display: inline-block; font-size: .83rem; font-weight: 650; padding: 2px 8px; border-radius: 99px; background: var(--flate2); color: var(--dempet); vertical-align: 1px; }
 .brikke.husk { background: var(--gul-bg); color: var(--gul); }
 .brikke.bestilt { background: var(--gronn-bg); color: var(--gronn); }
 
@@ -196,7 +196,7 @@ details.fold > .innhold { padding: 0 16px 14px; }
 .tider { display: flex; gap: 8px; margin: 8px 0 10px; flex-wrap: wrap; }
 .tider span { background: var(--flate2); border-radius: 10px; padding: 6px 10px; font-size: .88rem; }
 .tider b { font-weight: 650; }
-.hnett { display: inline-block; margin-top: 10px; color: var(--dempet); font-size: .82rem; text-decoration: underline; text-underline-offset: 2px; }
+.hnett { display: inline-block; margin-top: 10px; color: var(--dempet); font-size: .83rem; text-decoration: underline; text-underline-offset: 2px; }
 
 /* ---------- kontakt ---------- */
 .kontakt { padding: 12px 0; border-top: .5px solid var(--linje); }
@@ -247,7 +247,7 @@ details.fold > .innhold { padding: 0 16px 14px; }
 .nedtelling { background: var(--aksent-lys); border-color: transparent; box-shadow: none; }
 .nedtelling h2 { color: var(--aksent); font-size: 1.3rem; }
 .neste { border-left: 4px solid var(--aksent); }
-.neste .nesteetikett { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--aksent); }
+.neste .nesteetikett { font-size: .83rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--aksent); }
 .neste .nestetittel { font-size: 1.15rem; font-weight: 700; margin: 2px 0; }
 .neste .nestetid { color: var(--dempet); font-size: .9rem; }
 
@@ -310,11 +310,11 @@ ul.program li:first-child { border-top: 0; }
 .rest .rnavn { font-weight: 700; font-size: 1.02rem; }
 .rest .rkj { color: var(--dempet); font-size: .86rem; }
 .rest .scorer { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 4px; }
-.score { display: inline-flex; align-items: center; gap: 4px; font-size: .76rem; font-weight: 700; padding: 3px 8px; border-radius: 8px; }
+.score { display: inline-flex; align-items: center; gap: 4px; font-size: .83rem; font-weight: 700; padding: 3px 8px; border-radius: 8px; }
 .score.g { background: var(--gronn-bg); color: var(--gronn); }
 .score.y { background: var(--gul-bg); color: var(--gul); }
 .score.r { background: var(--rod-bg); color: var(--rod); }
-.maaltid { font-size: .74rem; font-weight: 700; color: var(--dempet); letter-spacing: .03em; white-space: nowrap; }
+.maaltid { font-size: .83rem; font-weight: 700; color: var(--dempet); letter-spacing: .03em; white-space: nowrap; }
 .rest .rinnhold { padding: 0 14px 14px; }
 .rest .rinnhold p { margin: 0 0 8px; font-size: .92rem; }
 .rest .rinnhold dl.rader dd { font-size: .92rem; }
@@ -333,7 +333,7 @@ ul.program li:first-child { border-top: 0; }
 .nodgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 8px; }
 .nodgrid a { display: block; text-align: center; text-decoration: none; background: var(--rod); color: var(--rod-tekst); border-radius: 16px; padding: 12px 4px; min-height: 80px; }
 .nodgrid a b { display: block; font-size: 1.9rem; line-height: 1.1; }
-.nodgrid a span { font-size: .8rem; font-weight: 600; }
+.nodgrid a span { font-size: .83rem; font-weight: 600; }
 .nodmerk { font-size: .85rem; color: var(--dempet); margin: 0 4px 14px; }
 
 /* ---------- mer (liste) ---------- */
@@ -345,7 +345,7 @@ ul.program li:first-child { border-top: 0; }
 .liste .lik.rod { background: var(--rod); color: var(--rod-tekst); }
 .liste .lik.gul { background: var(--gul); color: var(--gul-bg); }
 .liste .ltekst { flex: 1; }
-.liste .ltekst small { display: block; color: var(--dempet); font-size: .8rem; }
+.liste .ltekst small { display: block; color: var(--dempet); font-size: .83rem; }
 .liste .pil { width: 9px; height: 9px; border-right: 2px solid var(--dempet); border-top: 2px solid var(--dempet); transform: rotate(45deg); opacity: .6; }
 .personer { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; }
 .personer button { min-height: 48px; border-radius: 12px; border: .5px solid var(--linje); background: var(--flate); font-weight: 650; cursor: pointer; color: var(--tekst); }
@@ -363,7 +363,7 @@ ul.program li:first-child { border-top: 0; }
 .hk-stor { max-width: 640px; margin: 0 auto; }
 .hk-stor .no { font-size: .95rem; color: #555; margin: 0 0 26px; }
 
-.bunn { text-align: center; color: var(--dempet); font-size: .8rem; margin-top: 26px; }
+.bunn { text-align: center; color: var(--dempet); font-size: .83rem; margin-top: 26px; }
 @media (min-width: 700px) { .nodgrid a b { font-size: 2.2rem; } }
 @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 .kontaktblokk { margin-top: 12px; padding-top: 4px; border-top: .5px solid var(--linje); }
@@ -380,9 +380,9 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 
 .kontakt .kbruk { font-size: .9rem; margin-top: 4px; }
 .kontakt .kmerk { color: var(--dempet); font-size: .85rem; }
-.hvem { font-size: .82rem; color: var(--dempet); margin-top: 6px; }
+.hvem { font-size: .83rem; color: var(--dempet); margin-top: 6px; }
 
-.kursinfo { grid-column: 1 / -1; font-size: .8rem; color: var(--dempet); margin-top: -4px; }
+.kursinfo { grid-column: 1 / -1; font-size: .83rem; color: var(--dempet); margin-top: -4px; }
 .kort .velger { margin: 0 -16px 10px; }
 .kortvalg { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin: 26px 0 8px; background: #eee; padding: 3px; border-radius: 12px; }
 .kortvalg button { border: 0; background: none; min-height: 40px; border-radius: 10px; font-weight: 700; color: #555; cursor: pointer; font-size: .9rem; }
@@ -393,12 +393,12 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 .fbar { flex: 1; height: 8px; border-radius: 99px; background: var(--flate2); overflow: hidden; }
 .fbar span { display: block; height: 100%; background: var(--gronn); border-radius: 99px; transition: width .2s; }
 .kort.pakk { padding-bottom: 6px; }
-.pakkunder { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--dempet); margin: 12px 0 2px; }
+.pakkunder { font-size: .83rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--dempet); margin: 12px 0 2px; }
 .pakkrad { display: flex; gap: 12px; align-items: flex-start; min-height: 48px; padding: 10px 0; border-top: .5px solid var(--linje); cursor: pointer; }
 .kort.pakk > h2 + .pakkrad, .pakkunder + .pakkrad { border-top: 0; }
 .pakkrad input { width: 24px; height: 24px; margin: 1px 0 0; flex: none; accent-color: var(--gronn); }
 .pakkrad .pnavn { display: block; }
-.pakkrad .pmerk { display: block; font-size: .82rem; color: var(--dempet); }
+.pakkrad .pmerk { display: block; font-size: .83rem; color: var(--dempet); }
 .pakkrad.ok .pnavn { color: var(--dempet); text-decoration: line-through; }
 .knapp-sek { background: var(--flate2); color: var(--tekst); margin-top: 6px; }
 .overlay::before { content: ""; position: fixed; top: 0; left: 0; right: 0; height: calc(66px + env(safe-area-inset-top)); background: rgba(255,255,255,.96); z-index: 1; }
@@ -407,12 +407,12 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 
 .klokker { position: relative; display: grid; grid-template-columns: 1fr 1fr; gap: 1px; margin: 4px 0 14px; background: var(--linje); border-radius: var(--r); overflow: hidden; border: .5px solid var(--linje); box-shadow: var(--skygge); }
 .klokke { background: var(--flate); padding: 12px 14px 14px; display: grid; gap: 1px; }
-.klokke .ksted { font-size: .72rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--dempet); }
+.klokke .ksted { font-size: .83rem; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; color: var(--dempet); }
 .klokke .ktid { font-size: 2.1rem; font-weight: 700; font-variant-numeric: tabular-nums; letter-spacing: -.02em; line-height: 1.05; }
-.klokke .kdag { font-size: .82rem; color: var(--dempet); }
+.klokke .kdag { font-size: .83rem; color: var(--dempet); }
 .klokke.natt .ktid { color: var(--dempet); }
 .klokke.natt .ksted::after { content: " · natt"; font-weight: 600; letter-spacing: .02em; text-transform: none; }
-.kdiff { grid-column: 1 / -1; background: var(--flate2); color: var(--dempet); font-size: .78rem; font-weight: 600; text-align: center; padding: 6px; }
+.kdiff { grid-column: 1 / -1; background: var(--flate2); color: var(--dempet); font-size: .83rem; font-weight: 600; text-align: center; padding: 6px; }
 .segment-stor button { min-height: 40px; font-size: .95rem; }
 .nedtelling h2 { margin-bottom: 0; }
 
@@ -438,12 +438,12 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 .ak-intro { margin: 0 0 14px; font-size: 1.22rem; line-height: 1.35; font-weight: 700; }
 .ak-forbud, .ak-linjer { list-style: none; margin: 0 0 18px; padding: 0; }
 .ak-forbud li { position: relative; padding: 10px 0 10px 38px; border-top: 1px solid #e6e6e6; font-size: 1.1rem; line-height: 1.35; font-weight: 600; }
-.ak-forbud li::before { content: "✕"; position: absolute; left: 4px; top: 9px; width: 24px; height: 24px; border-radius: 50%; background: #b3261e; color: #fff; font-size: .8rem; font-weight: 900; display: grid; place-items: center; }
+.ak-forbud li::before { content: "✕"; position: absolute; left: 4px; top: 9px; width: 24px; height: 24px; border-radius: 50%; background: #b3261e; color: #fff; font-size: .83rem; font-weight: 900; display: grid; place-items: center; }
 .ak-sp { background: #f3f3f3; border-radius: 14px; padding: 14px; margin: 0 0 12px; }
 .ak-sp > p { margin: 0 0 12px; font-size: 1.15rem; line-height: 1.35; font-weight: 750; }
 .ak-svar { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; }
 .ak-svar button { min-height: 64px; border-radius: 12px; border: 2px solid; background: #fff; font-weight: 900; font-size: 1.08rem; line-height: 1.1; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px; padding: 6px 4px; }
-.ak-svar button small { font-size: .7rem; font-weight: 600; opacity: .75; }
+.ak-svar button small { font-size: .83rem; font-weight: 600; opacity: .75; }
 .ak-svar .rod { border-color: #b3261e; color: #b3261e; }
 .ak-svar .gronn { border-color: #1f6b3a; color: #1f6b3a; }
 .ak-svar .gul { border-color: #8a5a00; color: #8a5a00; }
@@ -467,7 +467,7 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 .ak-nodtittel { margin: 0 0 14px; background: #b3261e; color: #fff; font-weight: 900; font-size: clamp(2.2rem, 12vw, 3.2rem); text-align: center; border-radius: 14px; padding: 8px; letter-spacing: .02em; }
 .ak-hoved { margin: 0 0 14px; font-size: 1.45rem; line-height: 1.25; font-weight: 800; }
 .ak-115 { display: block; background: #111; color: #fff; text-decoration: none; border-radius: 14px; padding: 14px; font-size: 1.45rem; font-weight: 900; line-height: 1.2; margin: 0 0 14px; text-align: center; }
-.ak-115 small { display: block; font-size: .8rem; font-weight: 600; opacity: .8; margin-top: 4px; }
+.ak-115 small { display: block; font-size: .83rem; font-weight: 600; opacity: .8; margin-top: 4px; }
 .ak-tid { margin: 0 0 12px; background: #fff3c4; border: 2px solid #8a5a00; border-radius: 12px; padding: 10px 12px; font-size: 1.35rem; font-weight: 900; text-align: center; }
 .ak-linjer li { padding: 10px 0; border-top: 1px solid #e6e6e6; font-size: 1.15rem; line-height: 1.35; font-weight: 650; }
 .ak-kontakt { font-size: 1.15rem; font-weight: 700; margin: 0 0 16px; }
@@ -518,7 +518,7 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 .pfelt input { font: inherit; font-size: 1rem; border: 0; border-bottom: 1px solid transparent; background: none; color: var(--tekst); padding: 4px 2px; border-radius: 0; min-width: 0; }
 .pfelt input.pmerkfelt { font-size: .85rem; color: var(--dempet); }
 .pfelt input:hover { border-bottom-color: var(--linje); }
-.predrad.under .pfelt input { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--dempet); }
+.predrad.under .pfelt input { font-size: .83rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--dempet); }
 .ppiler { display: flex; flex: none; }
 .ppiler button { width: 36px; height: 36px; border: 0; background: none; color: var(--dempet); display: grid; place-items: center; border-radius: 8px; cursor: pointer; }
 .ppiler button:disabled { opacity: .25; }
@@ -528,7 +528,7 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 /* ---------- vær ---------- */
 .kort.vaer .vtopp { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; margin-bottom: 6px; }
 .kort.vaer h2 { margin: 0; }
-.vtid { font-size: .75rem; color: var(--dempet); white-space: nowrap; }
+.vtid { font-size: .83rem; color: var(--dempet); white-space: nowrap; }
 .vikon { width: 30px; height: 30px; flex: none; }
 .vikon.stor { width: 64px; height: 64px; }
 .vhoved { display: flex; align-items: center; gap: 14px; margin: 4px 0 12px; }
@@ -537,9 +537,9 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 .vbeskr { font-size: .95rem; color: var(--dempet); margin-top: 4px; }
 .vfakta { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
 .vfakta > div, .vnormal { background: var(--flate2); border-radius: 12px; padding: 10px 12px; display: grid; }
-.vfakta span, .vnormal span, .vtimer span { font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--dempet); }
+.vfakta span, .vnormal span, .vtimer span { font-size: .83rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--dempet); }
 .vfakta b, .vnormal b { font-size: 1.15rem; margin-top: 2px; }
-.vfakta small, .vnormal small, .vtimer small { font-size: .8rem; color: var(--dempet); }
+.vfakta small, .vnormal small, .vtimer small { font-size: .83rem; color: var(--dempet); }
 .vtimer { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 8px; }
 .vtimer > div { border: .5px solid var(--linje); border-radius: 12px; padding: 8px 6px; display: grid; justify-items: center; gap: 2px; }
 .vtimer b { font-size: 1.05rem; }
@@ -547,7 +547,7 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 .vnormal { margin-top: 10px; }
 .pfelt { gap: 0; }
 .pfelt input { padding: 2px 2px; }
-.pfelt input.pmerkfelt { font-size: .8rem; }
+.pfelt input.pmerkfelt { font-size: .83rem; }
 .pfelt input.pmerkfelt::placeholder { color: var(--dempet); opacity: .55; }
 .predrad { padding: 4px 0; }
 /* synk-status i pakkelista */
@@ -559,9 +559,9 @@ details.flydet[open] > summary::after { transform: rotate(90deg); }
 
 /* Hotell-siden */
 .hliste .htopp { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; margin-bottom: 6px; }
-.hliste .hsted { font-size: .78rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--aksent); }
+.hliste .hsted { font-size: .83rem; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--aksent); }
 .hliste .hdato { font-size: .85rem; color: var(--dempet); text-align: right; }
-.hliste .hmerke { display: inline-block; margin: 0 0 8px; padding: 3px 10px; border-radius: 99px; background: var(--aksent); color: #fff; font-size: .8rem; font-weight: 700; }
+.hliste .hmerke { display: inline-block; margin: 0 0 8px; padding: 3px 10px; border-radius: 99px; background: var(--aksent); color: #fff; font-size: .83rem; font-weight: 700; }
 .hliste.naa { border-color: var(--aksent); box-shadow: 0 0 0 1.5px var(--aksent); }
 .hliste .hmer { display: flex; align-items: center; justify-content: flex-end; gap: 4px; margin-top: 12px; color: var(--aksent); font-weight: 600; font-size: .9rem; text-decoration: none; }
 .hliste .hmer svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; }
@@ -687,7 +687,7 @@ details.hdet .hadr { margin-top: 2px; }
 .kpunkt:last-child { border-bottom: 0; }
 .kptekst { flex: 1; min-width: 0; }
 .kptekst b { display: block; font-size: .95rem; line-height: 1.25; }
-.kptekst small { display: block; color: var(--dempet); font-size: .8rem; line-height: 1.3; margin-top: 1px; }
+.kptekst small { display: block; color: var(--dempet); font-size: .83rem; line-height: 1.3; margin-top: 1px; }
 .kinnhold.hoy .kptekst b { font-size: .88rem; }
 .kpil { width: 16px; height: 16px; flex: none; fill: none; stroke: var(--dempet); stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .knr { flex: none; width: 26px; height: 26px; border-radius: 50%; display: inline-grid; place-items: center; font-size: .78rem; font-weight: 700; font-style: normal; }
@@ -698,14 +698,14 @@ details.hdet .hadr { margin-top: 2px; }
 .knr.kn-fly { background: var(--flate); color: var(--aksent); box-shadow: inset 0 0 0 1.5px var(--aksent); }
 .knr svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .kmerk { font-size: .84rem; color: var(--dempet); margin: 8px 4px 0; }
-.kforkl { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: .76rem; color: var(--dempet); margin: 10px 4px 0; }
+.kforkl { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 14px; font-size: .83rem; color: var(--dempet); margin: 10px 4px 0; }
 .kforkl span { display: inline-flex; align-items: center; gap: 6px; }
 .kforkl .knr { width: 18px; height: 18px; font-size: .62rem; }
 .kforkl .f-fly, .kforkl .f-bil { display: inline-block; width: 18px; }
 .kforkl .f-fly { border-top: 2px dashed var(--aksent); } .kforkl .f-bil { border-top: 3px solid var(--k-rute); }
 .ide-nr { width: 20px; height: 20px; font-size: .68rem; margin-right: 7px; vertical-align: 1px; }
 .stedkort.mednr { grid-template-columns: auto 1fr auto; }
-.stedkort .snr { grid-row: span 2; width: 28px; height: 28px; border-radius: 50%; background: var(--aksent); color: var(--aksent-tekst); display: grid; place-items: center; font-size: .82rem; font-weight: 700; }
+.stedkort .snr { grid-row: span 2; width: 28px; height: 28px; border-radius: 50%; background: var(--aksent); color: var(--aksent-tekst); display: grid; place-items: center; font-size: .83rem; font-weight: 700; }
 .stedkort .snr.hjem { background: var(--tekst); }
 .stedkort .snr svg { width: 16px; height: 16px; }
 .stedkort .snr .kglyf { stroke: var(--bg); }
@@ -728,15 +728,15 @@ details.reiseliste > .innhold { padding: 0; }
 .overlay .synk-ok::before { background: #1f6b3a; }
 .overlay .synk-feil::before { background: #b7791f; }
 .pl-lenke { margin: 22px 4px 0; text-align: center; }
-.pl-lenke a { font-size: .75rem; color: var(--dempet); text-decoration: none; }
-.pl-lenke button { background: none; border: 0; padding: 6px 8px; font: inherit; font-size: .75rem; color: var(--dempet); cursor: pointer; }
+.pl-lenke a { font-size: .83rem; color: var(--dempet); text-decoration: none; }
+.pl-lenke button { background: none; border: 0; padding: 6px 8px; font: inherit; font-size: .83rem; color: var(--dempet); cursor: pointer; }
 .tlogg .pl-rad { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border-top: 1px solid var(--linje); }
 .tlogg .pl-rad:first-child { border-top: 0; }
 .tlogg .pl-rad > div { flex: 1; min-width: 0; }
 .tlogg b { display: block; font-weight: 700; }
-.tlogg small { display: block; color: var(--dempet); font-size: .82rem; margin-top: 2px; }
+.tlogg small { display: block; color: var(--dempet); font-size: .83rem; margin-top: 2px; }
 .tlogg small i { color: var(--gul); font-style: normal; }
-.tlogg .pl-aktiv, .tlogg .pl-bort, .tlogg .pl-gammel { display: inline-block; margin-top: 5px; font-size: .78rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+.tlogg .pl-aktiv, .tlogg .pl-bort, .tlogg .pl-gammel { display: inline-block; margin-top: 5px; font-size: .83rem; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
 .tlogg .pl-aktiv { background: var(--rod-bg); color: var(--rod); }
 .tlogg .pl-bort { background: var(--gul-bg); color: var(--gul); }
 .tlogg .pl-gammel { background: var(--linje); color: var(--dempet); }
@@ -752,7 +752,7 @@ details.reiseliste > .innhold { padding: 0; }
 .stedrad-ikon { display: grid; place-items: center; width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,.14); }
 .stedrad-ikon svg { width: 20px; height: 20px; stroke: currentColor; fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 .stedrad b { display: block; font-size: 1.05rem; }
-.stedrad small { opacity: .85; font-size: .82rem; }
+.stedrad small { opacity: .85; font-size: .83rem; }
 .stedrad-mer { width: 9px; height: 9px; border-right: 2px solid currentColor; border-top: 2px solid currentColor; transform: rotate(45deg); opacity: .85; }
 details.vaerfold > summary { display: flex; align-items: center; gap: 10px; font-weight: 400; font-size: .95rem; }
 details.vaerfold > summary > span { flex: 1; min-width: 0; }
@@ -792,7 +792,7 @@ details.vaerfold > .innhold .kort.vaer h2 { font-size: 1rem; }
 .stedkort2 { margin-bottom: 12px; border-radius: var(--r); overflow: hidden; background: var(--flate); border: .5px solid var(--linje); box-shadow: var(--skygge); }
 .stedkort2 .stedrad { margin: 0; border-radius: 0; }
 .inatt { padding: 12px 16px 14px; }
-.inatt-etikett { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--dempet); }
+.inatt-etikett { font-size: .83rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--dempet); }
 .inatt-navn { font-weight: 700; font-size: 1.05rem; margin-top: 1px; }
 .inatt .knapper { margin-top: 8px; }
 
@@ -801,17 +801,17 @@ details.vaerfold > .innhold .kort.vaer h2 { font-size: 1rem; }
 .huskrad input { width: 24px; height: 24px; margin: 1px 0 0; flex: none; accent-color: var(--gronn); }
 .huskrad > span { display: grid; gap: 1px; min-width: 0; }
 .huskrad .merk { color: var(--dempet); font-size: .9rem; }
-.huskrad .huskav { color: var(--gronn); font-size: .8rem; font-weight: 600; }
+.huskrad .huskav { color: var(--gronn); font-size: .83rem; font-weight: 600; }
 .huskrad.gjort .htittel { color: var(--dempet); text-decoration: line-through; }
 .huskrad.gjort .brikke.husk { background: var(--gronn-bg); color: var(--gronn); }
 ul.tidslinje .oppg.gjort .kl { color: var(--dempet); }
-.huskkort h2 .antall { margin-left: auto; font-size: .82rem; }
+.huskkort h2 .antall { margin-left: auto; font-size: .83rem; }
 .huskkort h2 { display: flex; align-items: center; gap: 8px; }
 .husk-l { padding: 10px 0; border-top: .5px solid var(--gul-linje); }
 .huskkort h2 + .husk-l { border-top: 0; padding-top: 4px; }
-.husk-tid { display: block; font-size: .78rem; font-weight: 700; color: var(--gul); margin: 0 0 4px 36px; }
+.husk-tid { display: block; font-size: .83rem; font-weight: 700; color: var(--gul); margin: 0 0 4px 36px; }
 .husk-l.gjort .husk-tid { color: var(--dempet); }
-.huskhjelp { margin: 6px 0 0; font-size: .8rem; }
+.huskhjelp { margin: 6px 0 0; font-size: .83rem; }
 
 /* ---------- v21: sammenfoldet «ferdig», fly, nød, pakkeliste ---------- */
 details.fold.ferdig > summary { color: var(--dempet); font-weight: 600; }
@@ -819,7 +819,7 @@ details.fold.huskfold { border-left: 4px solid var(--gronn); }
 details.fold.huskfold > summary .ikon { stroke: var(--gronn); }
 details.fold.huskfold > summary::after { margin-left: 10px; }
 details.fold.huskfold > summary .hfnavn { white-space: nowrap; }
-details.fold.huskfold > summary .antall { margin-left: auto; white-space: nowrap; color: var(--dempet); font-size: .82rem; font-weight: 500; }
+details.fold.huskfold > summary .antall { margin-left: auto; white-space: nowrap; color: var(--dempet); font-size: .83rem; font-weight: 500; }
 details.fold.huskfold > .innhold > .krolle:first-child { margin-top: 0; }
 .huskfold .husk-l { border-top-color: var(--linje); }
 .huskfold .krolle + .husk-l { border-top: 0; }
@@ -830,7 +830,7 @@ details.fold.innfelt { box-shadow: none; background: transparent; border: 0; bor
 details.fold.innfelt > summary { padding-left: 0; padding-right: 0; font-size: .95rem; }
 details.fold.innfelt > .innhold { padding: 0; }
 .flyneste { border-radius: var(--r); background: var(--aksent-lys); padding: 10px 10px 2px; margin-bottom: 12px; }
-.flyneste-etikett { font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--aksent); margin: 0 4px 8px; }
+.flyneste-etikett { font-size: .83rem; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; color: var(--aksent); margin: 0 4px 8px; }
 .flyneste .fly { margin-bottom: 8px; }
 .pakkskjul { border: .5px solid var(--linje); background: var(--flate); color: var(--tekst); font-weight: 600; font-size: .86rem; min-height: 36px; padding: 0 12px; border-radius: 99px; cursor: pointer; white-space: nowrap; }
 .pakkskjul[aria-pressed="true"] { background: var(--aksent-lys); color: var(--aksent); border-color: var(--aksent); }
@@ -877,16 +877,16 @@ details.fold.innfelt > .innhold { padding: 0; }
   background: color-mix(in srgb, var(--tekst) 7%, transparent); color: var(--dempet); cursor: pointer; }
 .vs-lukk svg { width: 14px; height: 14px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; }
 .vs-chips { position: relative; display: flex; flex-wrap: wrap; gap: 5px; margin: 12px 0 0 59px; }
-.vs-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px 5px 8px; border-radius: 99px; font-size: .78rem; line-height: 1.2;
+.vs-chip { display: inline-flex; align-items: center; gap: 5px; padding: 5px 9px 5px 8px; border-radius: 99px; font-size: .83rem; line-height: 1.2;
   background: color-mix(in srgb, var(--tekst) 6%, transparent); color: var(--tekst); font-variant-numeric: tabular-nums; white-space: nowrap; }
-.vs-chip small { font-size: .7rem; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; color: var(--dempet); margin-right: 2px; }
+.vs-chip small { font-size: .83rem; font-weight: 650; text-transform: uppercase; letter-spacing: .05em; color: var(--dempet); margin-right: 2px; }
 .vs-chip b { font-weight: 700; }
 .vs-chip s { color: var(--dempet); text-decoration: none; opacity: .8; }
 .vs-chip.ny { background: var(--aksent-lys); color: var(--aksent); }
 .vs-chip.ny small { color: var(--aksent); opacity: .8; }
 .vs-pil { width: 13px; height: 13px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; opacity: .75; }
 .vs-nytt { position: relative; margin: 12px 0 0 59px; padding-top: 10px; border-top: .5px solid color-mix(in srgb, var(--tekst) 12%, transparent); }
-.vs-nytt small { display: block; font-size: .7rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--dempet); margin-bottom: 4px; }
+.vs-nytt small { display: block; font-size: .83rem; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; color: var(--dempet); margin-bottom: 4px; }
 .vs-nytt ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 3px; }
 .vs-nytt li { position: relative; padding-left: 18px; font-size: .86rem; line-height: 1.35; }
 .vs-nytt li::before { content: ""; position: absolute; left: 1px; top: .32em; width: 10px; height: 10px; background: #d9a441;
@@ -966,7 +966,7 @@ details.fold.innfelt > .innhold { padding: 0; }
 .ol-merke::after { content: ""; position: absolute; inset: -2px; border-radius: 12px; border: 2px solid #3a9a74; opacity: 0; animation: vs-ring 1.6s 1s ease-out infinite; }
 .ol-tekst { display: flex; flex-direction: column; min-width: 0; }
 .ol-tekst b { font-size: .92rem; font-weight: 750; letter-spacing: -.01em; }
-.ol-tekst span { font-size: .8rem; font-weight: 500; color: var(--dempet); }
+.ol-tekst span { font-size: .83rem; font-weight: 500; color: var(--dempet); }
 .ol-pil { width: 16px; height: 16px; fill: none; stroke: var(--dempet); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; margin-left: 4px; }
 .oppdlinje.henter { cursor: progress; }
 .oppdlinje.henter .ol-merke svg { animation: vn-snurr .9s linear infinite; }
@@ -981,7 +981,7 @@ details.fold.innfelt > .innhold { padding: 0; }
   .ts-feil.inn .ts-merke, .ol-merke::after, .oppdlinje.henter .ol-merke svg { animation: none; }
 }
 /* ---------- v26: egne avtaler og notater, fri dag, rommet, innsjekk, parlør ---------- */
-ul.tidslinje li.egen .egenav { font-size: .78rem; color: var(--dempet); margin-top: 2px; }
+ul.tidslinje li.egen .egenav { font-size: .83rem; color: var(--dempet); margin-top: 2px; }
 ul.tidslinje li.egen > .kl { color: var(--aksent); }
 ul.tidslinje li.mote b { color: var(--aksent); }
 .pny.avtny { margin-top: 10px; }
@@ -998,10 +998,10 @@ details.romsjekk { border-left: 4px solid var(--gul); }
 details.romsjekk .pakkrad:first-child { border-top: 0; }
 .romhjelp { margin-top: 8px; }
 .flyknapper { margin-top: 8px; }
-.finnsj { font-size: .8rem; color: var(--dempet); margin-top: 6px; }
+.finnsj { font-size: .83rem; color: var(--dempet); margin-top: 6px; }
 .husk-kn { margin: 6px 0 2px 36px; }
 ul.tidslinje .husk-kn { margin-left: 0; }
-.husk-kn .ref { font-size: .82rem; }
+.husk-kn .ref { font-size: .83rem; }
 /* skjema i det hvite overlayet */
 .avtskjema { max-width: 560px; margin: 0 auto; color: #111; }
 .avtskjema h2 { font-size: 1.5rem; margin: 0 0 12px; color: #111; }
@@ -1026,7 +1026,7 @@ ul.tidslinje .husk-kn { margin-left: 0; }
 .frase { display: grid; gap: 1px; text-align: left; font: inherit; padding: 11px 0; border: 0; background: none; color: var(--tekst); cursor: pointer; min-width: 0; }
 .frase .fno { font-size: .85rem; color: var(--dempet); }
 .frase .fvi { font-size: 1.12rem; font-weight: 650; color: var(--aksent); }
-.frase .fmerk { font-size: .8rem; color: var(--dempet); }
+.frase .fmerk { font-size: .83rem; color: var(--dempet); }
 .frase-stor .snavn { font-size: 2.4rem; line-height: 1.25; margin: 10px 0 14px; }
 .frase-stor .fstor-no { font-size: 1.1rem; color: #333; margin: 0 0 10px; }
 
@@ -1069,7 +1069,7 @@ ul.tidslinje .husk-kn { margin-left: 0; }
 .bordvalg button .ikon, .bordvalg button svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; }
 .bordvalg button[data-avtbordvalg="0"].valgt { background: #fdf3d6; border-color: #b58300; color: #6f5000; }
 .bordvalg button[data-avtbordvalg="1"].valgt { background: #e2f1e9; border-color: #1f5f4a; color: #1f5f4a; }
-.bord { display: inline-block; font-size: .74rem; font-weight: 700; padding: 2px 8px; border-radius: 8px; margin-left: 8px; vertical-align: 2px; white-space: nowrap; }
+.bord { display: inline-block; font-size: .83rem; font-weight: 700; padding: 2px 8px; border-radius: 8px; margin-left: 8px; vertical-align: 2px; white-space: nowrap; }
 .bord.ja { background: var(--gronn-bg); color: var(--gronn); }
 .bord.nei { background: var(--gul-bg); color: var(--gul); }
 
@@ -1091,11 +1091,11 @@ ul.oppdlinjer li.ikkeok::before { content: "✕"; color: var(--rod); }
 .oppdvalg .knapp { min-height: 44px; }
 .oppdvalg .knapp:disabled { opacity: .45; }
 details.oppdpost .oppdtit { display: flex; flex-direction: column; min-width: 0; }
-details.oppdpost .oppdtit small { font-weight: 400; font-size: .8rem; color: var(--dempet); }
+details.oppdpost .oppdtit small { font-weight: 400; font-size: .83rem; color: var(--dempet); }
 details.oppdpost.av summary { color: var(--dempet); }
 .bunn a { color: inherit; }
 
-.fraclaude { font-size: .8rem; color: var(--gul); }
+.fraclaude { font-size: .83rem; color: var(--gul); }
 .rinnhold .fraclaude { background: var(--gul-bg); border: .5px solid var(--gul-linje); border-radius: 10px; padding: 6px 10px; }
 /* Bruksstatistikk (skjult side #/stat) – én farge for alle stolper, tekst i teksttoner */
 .bunn { touch-action: manipulation; -webkit-user-select: none; user-select: none; }
@@ -1138,7 +1138,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 .dchip i { font-style: normal; font-weight: 500; color: var(--dempet); margin-left: 4px; }
 .betaldag { display: flex; gap: 10px; align-items: flex-start; background: var(--gul-bg); border: 1px solid var(--gul-linje); border-radius: 14px; padding: 10px 14px; margin-bottom: 12px; font-size: .92rem; }
 .betaldag > svg { width: 21px; height: 21px; flex: none; margin-top: 1px; fill: none; stroke: var(--gul); stroke-width: 1.9; stroke-linecap: round; stroke-linejoin: round; }
-.betaldag b { display: block; color: var(--gul); font-size: .78rem; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
+.betaldag b { display: block; color: var(--gul); font-size: .83rem; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 2px; }
 .kort.fridag2 > h2 { margin-bottom: 2px; }
 .kort.fridag2 .knapper { margin-top: 8px; }
 .kort.dag { padding: 10px 14px 4px; }
@@ -1161,7 +1161,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 .tr.aktiv > .pr { background: var(--aksent); border-color: var(--aksent); color: var(--aksent-tekst); }
 .tr.aktiv > .inn { background: var(--aksent-lys); border-radius: 14px; padding: 10px 12px 12px; margin-left: 8px; }
 .tr.aktiv .tt { font-size: 1.08rem; font-weight: 700; }
-.tr .netikett { font-size: .72rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--aksent); margin-bottom: 1px; }
+.tr .netikett { font-size: .83rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--aksent); margin-bottom: 1px; }
 .tr.oppg > .pr { border-color: var(--gul-linje); background: var(--gul-bg); color: var(--gul); }
 .tr.oppg > .kl { color: var(--gul); }
 .tr.oppg.gjort > .kl { color: var(--dempet); }
@@ -1178,10 +1178,10 @@ details.oppdpost.av summary { color: var(--dempet); }
 .tr .bord { margin-left: 6px; vertical-align: 1px; }
 .tr details.fold.romsjekk { margin: 8px 0 0; box-shadow: none; background: var(--gul-bg); border: 1px solid var(--gul-linje); border-radius: 12px; }
 .tr details.fold.romsjekk > summary { min-height: 42px; padding: 6px 10px; gap: 6px; font-size: .86rem; color: var(--gul); }
-.tr details.fold.romsjekk > summary .antall { white-space: nowrap; font-size: .8rem; }
+.tr details.fold.romsjekk > summary .antall { white-space: nowrap; font-size: .83rem; }
 .tr details.fold.romsjekk > summary .ikon { stroke: var(--gul); width: 18px; height: 18px; }
 .tr details.fold.romsjekk > .innhold { padding: 0 12px 10px; }
-.naastrek { display: grid; grid-template-columns: 48px 1fr; align-items: center; margin: 1px 0; color: var(--rod); font-size: .75rem; font-weight: 700; font-variant-numeric: tabular-nums; }
+.naastrek { display: grid; grid-template-columns: 48px 1fr; align-items: center; margin: 1px 0; color: var(--rod); font-size: .83rem; font-weight: 700; font-variant-numeric: tabular-nums; }
 .naastrek i { height: 2px; background: currentColor; position: relative; border-radius: 1px; }
 .naastrek i::before { content: ""; position: absolute; left: 8px; top: -4px; width: 10px; height: 10px; border-radius: 50%; background: currentColor; }
 .billett { display: flex; gap: 10px; align-items: center; justify-content: space-between; width: 100%; margin-top: 8px; padding: 8px 10px; border: 1px dashed var(--linje); border-radius: 12px; background: var(--flate); color: var(--tekst); font: inherit; font-size: .88rem; text-align: left; cursor: pointer; }
@@ -1198,7 +1198,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 .islutt details.fold.romsjekk { margin: 10px 0 0; box-shadow: none; background: var(--gul-bg); border: 1px solid var(--gul-linje); }
 .imorgen { border-top: .5px solid var(--linje); margin-top: 8px; padding-top: 4px; }
 .kort.dag > .pny { margin-top: 6px; }
-.resortkilde { text-align: center; margin: -4px 0 12px; font-size: .82rem; }
+.resortkilde { text-align: center; margin: -4px 0 12px; font-size: .83rem; }
 /* Detaljark nedenfra */
 .overlay.ark { background: rgba(10,14,12,.45); color: var(--tekst); padding: 0; display: flex; align-items: flex-end; overflow: hidden; }
 .overlay.ark::before { display: none; }
@@ -1208,7 +1208,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 .ark-topp { position: relative; display: flex; justify-content: center; align-items: center; min-height: 44px; margin-bottom: 4px; }
 .ark-topp .hank { width: 40px; height: 5px; border-radius: 3px; background: var(--linje); }
 .overlay.ark .lukk { position: absolute; top: 4px; right: 0; min-height: 38px; padding: 0 16px; background: var(--flate2); color: var(--tekst); }
-.ark-etikett { font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--aksent); }
+.ark-etikett { font-size: .83rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--aksent); }
 .ark-flate > h2 { font-size: 1.35rem; font-weight: 750; margin: 2px 0 6px; line-height: 1.25; }
 .ark-flate > p { margin: 0 0 8px; }
 .ark-flate > .fly, .ark-flate > .kort, .ark-flate > .hotell { margin-top: 12px; }
@@ -1270,7 +1270,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 .pl-dor { fill: var(--dempet); }
 .pl-dere { fill: var(--stk-mork); }
 .pl-front { font-size: 10.5px; font-weight: 600; fill: var(--dempet); }
-.pl-legende { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; font-size: .8rem; color: var(--dempet); margin-top: 6px; }
+.pl-legende { display: flex; flex-wrap: wrap; gap: 4px 14px; justify-content: center; font-size: .83rem; color: var(--dempet); margin-top: 6px; }
 .pl-legende span { display: inline-flex; align-items: center; gap: 5px; }
 .pl-legende i { width: 12px; height: 12px; border-radius: 3px; display: inline-block; }
 .pl-legende i.pl-bus { background: var(--stk-bus); } .pl-legende i.pl-prem { background: var(--stk-prem); }
@@ -1285,8 +1285,8 @@ details.oppdpost.av summary { color: var(--dempet); }
 :root[data-theme="dark"] .stk-hvem button::before { background: rgba(0,0,0,.25); }
 @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) .stk-hvem button::before { background: rgba(0,0,0,.25); } }
 .stk-forklar { font-size: .95rem; margin: 8px 0 0; }
-.stk-tips { font-size: .8rem; color: var(--dempet); margin: 10px 0 0; }
-.stk-deltittel { font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin: 18px 0 6px; }
+.stk-tips { font-size: .83rem; color: var(--dempet); margin: 10px 0 0; }
+.stk-deltittel { font-size: .83rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin: 18px 0 6px; }
 /* inngangene: setenumrene på flykortet */
 .fly button.dittsete { border: 0; font: inherit; font-weight: 700; cursor: pointer; }
 .fly button.dittsete small { font-weight: 600; opacity: .85; }
@@ -1320,7 +1320,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 @keyframes knaaprikk { 0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--aksent) 60%, transparent); } 70%, 100% { box-shadow: 0 0 0 8px transparent; } }
 .knaa-linje { display: flex; align-items: baseline; gap: 8px; flex-wrap: wrap; margin-top: 3px; }
 .knaa-linje b { font-size: 17px; line-height: 1.25; font-weight: 700; }
-.knaa-linje small { font-size: 13px; color: var(--dempet); }
+.knaa-linje small { font-size: .83rem; color: var(--dempet); }
 .knaa-band { position: relative; display: block; height: 5px; margin-top: 9px; border-radius: 3px; background: color-mix(in srgb, var(--tekst) 13%, transparent); overflow: hidden; }
 .knaa-band::before { content: ""; position: absolute; inset: 0 auto 0 0; width: var(--f); background: linear-gradient(90deg, color-mix(in srgb, var(--aksent) 55%, transparent), var(--aksent)); border-radius: 3px; }
 .knaa-band i { position: absolute; top: 0; bottom: 0; width: 2px; margin-left: -1px; background: var(--flate); }
@@ -1334,7 +1334,7 @@ details.oppdpost.av summary { color: var(--dempet); }
   box-shadow: var(--skygge); -webkit-tap-highlight-color: transparent; }
 .fv-hero:active { transform: scale(.995); }
 .fv-karst { position: absolute; right: -6px; bottom: -2px; width: 250px; height: 100px; fill: currentColor; opacity: .09; pointer-events: none; }
-.fv-eyebrow { font-size: .74rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; opacity: .75; position: relative; }
+.fv-eyebrow { font-size: .83rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; opacity: .75; position: relative; }
 .fv-tall { font-size: 5rem; font-weight: 780; letter-spacing: -.05em; line-height: .95; margin-top: 8px; position: relative; font-variant-numeric: tabular-nums; }
 .fv-tall small { font-size: 1.3rem; font-weight: 600; letter-spacing: -.01em; margin-left: 6px; opacity: .9; }
 .fv-under { font-size: .92rem; opacity: .82; margin-top: 6px; position: relative; }
@@ -1348,7 +1348,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fv-pille svg { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
 .fv-klokker { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 0 0 12px; }
 .fv-kl { display: flex; justify-content: space-between; align-items: baseline; background: var(--flate); border: .5px solid var(--linje); border-radius: 14px; padding: 9px 12px; box-shadow: var(--skygge); }
-.fv-kl span { font-size: .78rem; color: var(--dempet); }
+.fv-kl span { font-size: .83rem; color: var(--dempet); }
 .fv-kl b { font-size: 1.2rem; font-weight: 680; letter-spacing: -.02em; font-variant-numeric: tabular-nums; }
 .fv-hode { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 10px; }
 .fv-hode h2 { font-size: 1.12rem; font-weight: 680; }
@@ -1368,8 +1368,8 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fv-dikon svg { width: 20px; height: 20px; fill: none; stroke: var(--aksent); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .fv-tekst { flex: 1; min-width: 0; display: block; }
 .fv-t { display: block; font-size: .98rem; line-height: 1.32; font-weight: 520; }
-.fv-m { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: .8rem; color: var(--dempet); margin-top: 3px; }
-.fv-hvem { font-size: .72rem; font-weight: 650; padding: 2px 8px; border-radius: 99px; background: var(--flate2); color: var(--dempet); }
+.fv-m { display: flex; flex-wrap: wrap; gap: 4px 6px; align-items: center; font-size: .83rem; color: var(--dempet); margin-top: 3px; }
+.fv-hvem { font-size: .83rem; font-weight: 650; padding: 2px 8px; border-radius: 99px; background: var(--flate2); color: var(--dempet); }
 .fv-pil svg { width: 18px; height: 18px; fill: none; stroke: var(--dempet); stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .fv-frist { font-weight: 650; color: var(--gul); }
 .fv-frist.gronn { color: var(--aksent); }
@@ -1388,8 +1388,8 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fv-chips button { border: 0; font-size: .86rem; font-weight: 600; padding: 7px 12px; border-radius: 99px; background: var(--flate2); color: var(--dempet); cursor: pointer; }
 .fv-chips button.p { background: var(--aksent); color: var(--aksent-tekst); }
 .fv-gtittel { display: flex; justify-content: space-between; align-items: baseline; margin: 18px 4px 6px; }
-.fv-gtittel h3 { font-size: .8rem; letter-spacing: .07em; text-transform: uppercase; color: var(--dempet); font-weight: 700; }
-.fv-gtittel span { font-size: .82rem; color: var(--dempet); }
+.fv-gtittel h3 { font-size: .83rem; letter-spacing: .07em; text-transform: uppercase; color: var(--dempet); font-weight: 700; }
+.fv-gtittel span { font-size: .83rem; color: var(--dempet); }
 .fv-gtittel.rod h3 { color: var(--rod); }
 .fv-gruppe { background: var(--flate); border-radius: 16px; padding: 2px 14px; border: .5px solid var(--linje); box-shadow: var(--skygge); }
 .fv-lrad { display: flex; gap: 12px; align-items: flex-start; padding: 12px 0; border-top: .5px solid var(--linje); cursor: pointer; }
@@ -1402,13 +1402,13 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fv-boks input:checked + span::after { content: ""; position: absolute; left: 8px; top: 3.5px; width: 6px; height: 11px; border: solid var(--aksent-tekst); border-width: 0 2.5px 2.5px 0; transform: rotate(45deg); }
 .fv-boks input:focus-visible + span { outline: 2px solid var(--aksent); outline-offset: 2px; }
 .fv-gjortfold { margin-top: 16px; }
-.fv-kilde { margin: 14px 4px 0; font-size: .8rem; }
+.fv-kilde { margin: 14px 4px 0; font-size: .83rem; }
 /* Veien til Vietnam */
 .fv-linje { position: relative; padding-left: 30px; margin-top: 10px; }
 .fv-linje::before { content: ""; position: absolute; left: 10px; top: 6px; bottom: 24px; width: 2px; background: var(--linje); }
 .fv-gjortlinje { display: flex; gap: 8px; align-items: center; color: var(--dempet); font-size: .88rem; margin: 0 0 14px -30px; }
 .fv-gjortlinje svg { width: 20px; height: 20px; fill: none; stroke: var(--aksent); stroke-width: 2.4; stroke-linecap: round; stroke-linejoin: round; }
-.fv-naa { position: relative; display: flex; align-items: center; gap: 8px; margin: 0 0 14px -30px; color: var(--rod); font-size: .78rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
+.fv-naa { position: relative; display: flex; align-items: center; gap: 8px; margin: 0 0 14px -30px; color: var(--rod); font-size: .83rem; font-weight: 700; letter-spacing: .04em; text-transform: uppercase; }
 .fv-naa::before { content: ""; width: 22px; height: 2px; background: var(--rod); }
 .fv-naa::after { content: ""; flex: 1; height: 2px; background: var(--rod); opacity: .5; }
 .fv-naa i { position: absolute; left: 5px; top: 50%; width: 12px; height: 12px; margin-top: -6px; border-radius: 50%; background: var(--rod); }
@@ -1417,7 +1417,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fv-node.avt::before { background: var(--aksent); border-color: var(--aksent); }
 .fv-node.gul::before { border-color: var(--gul); }
 .fv-node.rod::before { border-color: var(--rod); background: var(--rod-bg); }
-.fv-nd { font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin-bottom: 5px; }
+.fv-nd { font-size: .83rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin-bottom: 5px; }
 .fv-node.gul .fv-nd { color: var(--gul); } .fv-node.rod .fv-nd { color: var(--rod); }
 .fv-nkort { display: flex; gap: 11px; align-items: flex-start; background: var(--flate); border: .5px solid var(--linje); border-radius: 14px; padding: 11px 13px; cursor: pointer; box-shadow: var(--skygge); }
 .fv-nkort + .fv-nkort { margin-top: 6px; }
@@ -1430,7 +1430,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fv-mal b { display: block; font-size: 1rem; } .fv-mal small { font-size: .84rem; opacity: .8; }
 /* detaljark */
 .fv-meta { display: flex; flex-wrap: wrap; gap: 7px; margin: 0 0 12px; }
-.fv-meta span { font-size: .82rem; font-weight: 600; padding: 5px 11px; border-radius: 99px; background: var(--flate2); color: var(--dempet); }
+.fv-meta span { font-size: .83rem; font-weight: 600; padding: 5px 11px; border-radius: 99px; background: var(--flate2); color: var(--dempet); }
 .fv-meta .fv-frist { background: var(--gul-bg); color: var(--gul); }
 .fv-meta .fv-frist.rod { background: var(--rod-bg); color: var(--rod); }
 .fv-meta .fv-frist.gronn { background: var(--aksent-lys); color: var(--aksent); }
@@ -1443,16 +1443,16 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fv-fakta[data-tema="shopping"] { --fh: #1fa99a; } .fv-fakta[data-tema="sminke"] { --fh: #e0579b; } .fv-fakta[data-tema="handball"] { --fh: #f08a3c; }
 .fv-fakta[data-tema="mote"] { --fh: #c9a227; } .fv-fakta[data-tema="mat"] { --fh: #e5604f; } .fv-fakta[data-tema="dyr"] { --fh: #4caf50; }
 .fv-fakta[data-tema="tiktok"] { --fh: #3aa0e8; } .fv-fakta[data-tema="film"] { --fh: #7a7fe8; } .fv-fakta[data-tema="rare"] { --fh: #b07ad6; }
-.fv-fkat { display: inline-flex; align-items: center; gap: 6px; font-size: .74rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: color-mix(in srgb, var(--fh) 70%, var(--tekst)); }
+.fv-fkat { display: inline-flex; align-items: center; gap: 6px; font-size: .83rem; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: color-mix(in srgb, var(--fh) 70%, var(--tekst)); }
 .fv-fkat i { width: 8px; height: 8px; border-radius: 50%; background: var(--fh); }
 .fv-ft { font-size: 1.1rem; line-height: 1.38; font-weight: 600; margin: 10px 0 12px; letter-spacing: -.01em; }
 .fv-fakta.kompakt .fv-ft { font-size: 1rem; }
-.fv-fbunn { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .8rem; color: var(--dempet); }
+.fv-fbunn { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: .83rem; color: var(--dempet); }
 .fv-fbunn a { color: inherit; }
 .fv-ny { border: 0; cursor: pointer; flex: none; font-weight: 650; font-size: .86rem; padding: 8px 12px; border-radius: 99px; color: color-mix(in srgb, var(--fh) 60%, var(--tekst)); background: color-mix(in srgb, var(--fh) 18%, transparent); }
 .fv-ord { display: flex; align-items: center; gap: 12px; }
 .fv-ord > div { flex: 1; }
-.fv-eyebrow2 { font-size: .68rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--dempet); margin-bottom: 3px; }
+.fv-eyebrow2 { font-size: .83rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: var(--dempet); margin-bottom: 3px; }
 .fv-vi { font-size: 1.45rem; font-weight: 720; letter-spacing: -.015em; }
 .fv-no { font-size: .86rem; color: var(--dempet); }
 .fv-lyd { width: 46px; height: 46px; border-radius: 50%; border: 0; background: var(--aksent-lys); color: var(--aksent); display: grid; place-items: center; cursor: pointer; flex: none; }
@@ -1461,7 +1461,7 @@ details.oppdpost.av summary { color: var(--dempet); }
 .fv-pakkrad { display: flex; gap: 12px; align-items: center; padding: 11px 0 3px; border-top: .5px solid var(--linje); color: var(--tekst); text-decoration: none; }
 .fv-temaer { display: flex; flex-wrap: wrap; gap: 9px; margin: 6px 0 4px; }
 .fv-temaer button { display: inline-flex; align-items: center; gap: 7px; font-size: .98rem; font-weight: 600; padding: 11px 14px; border-radius: 14px; background: var(--flate); border: 1.5px solid var(--linje); color: var(--tekst); cursor: pointer; }
-.fv-temaer button small { font-size: .74rem; color: var(--dempet); font-weight: 600; }
+.fv-temaer button small { font-size: .83rem; color: var(--dempet); font-weight: 600; }
 .fv-temaer button.p { border-color: #9b6bff; background: color-mix(in srgb, #9b6bff 16%, var(--flate)); }
 .fv-hake { width: 18px; height: 18px; border-radius: 50%; background: #9b6bff; display: grid; place-items: center; }
 .fv-hake svg { width: 12px; height: 12px; fill: none; stroke: #fff; stroke-width: 3; stroke-linecap: round; stroke-linejoin: round; }
@@ -1526,12 +1526,12 @@ ul.fv-resort li:first-child { border-top: 0; }
 .dchip svg.lk-bolge { width: 18px; height: 18px; stroke: #2f7fd8; }
 .lk-sol { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 10px; padding: 9px 12px; border-radius: 12px; background: var(--flate2); font-size: .9rem; }
 .lk-sol svg { width: 22px; height: 22px; fill: none; stroke: #f5b400; stroke-width: 2; stroke-linecap: round; flex: none; }
-.lk-sol small { margin-left: auto; color: var(--dempet); font-size: .8rem; }
+.lk-sol small { margin-left: auto; color: var(--dempet); font-size: .83rem; }
 
 /* ---------- flystatus og punktlighet (v47) ---------- */
 .fs-linje { display: flex; flex-wrap: wrap; align-items: center; gap: 4px 8px; margin-top: 6px; font-size: .85rem; color: var(--dempet); }
 .fs-linje b { color: var(--tekst); }
-.fs-pille { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: .8rem; font-weight: 700; white-space: nowrap; }
+.fs-pille { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: .83rem; font-weight: 700; white-space: nowrap; }
 .fs-gronn { background: var(--gronn-bg); color: var(--gronn); }
 .fs-gul { background: var(--gul-bg); color: var(--gul); }
 .fs-rod { background: var(--rod); color: var(--rod-tekst); }
@@ -1541,7 +1541,7 @@ ul.fv-resort li:first-child { border-top: 0; }
 .fs-blokk .vfakta small s { opacity: .8; }
 .fs-snart { margin: 8px 0 0; }
 .fs-stat { margin: 6px 0 10px; font-size: .9rem; }
-.fs-stat small { display: block; color: var(--dempet); font-size: .78rem; margin-top: 3px; }
+.fs-stat small { display: block; color: var(--dempet); font-size: .83rem; margin-top: 3px; }
 .fs-bar { display: flex; height: 10px; border-radius: 6px; overflow: hidden; margin-top: 6px; background: var(--flate2); }
 .fs-bar i, .fs-forkl i { display: block; height: 100%; }
 .fs-forkl { display: flex; flex-wrap: wrap; gap: 4px 12px; }
@@ -1552,7 +1552,7 @@ ul.fv-resort li:first-child { border-top: 0; }
 .fs-bar .g1, .fs-forkl .g1 { background: #e0b400; }
 .fs-bar .g2, .fs-forkl .g2 { background: #ef7d00; }
 .fs-bar .rd, .fs-forkl .rd { background: #d93025; }
-.fs-kilde { font-size: .72rem; color: var(--dempet); margin: 4px 0 0; text-align: right; }
+.fs-kilde { font-size: .83rem; color: var(--dempet); margin: 4px 0 0; text-align: right; }
 
 /* ---------- v50: skattejakt (gullmynt gjemt i appen) ---------- */
 .sj-img { display: block; width: 100%; height: auto; -webkit-user-select: none; user-select: none; -webkit-touch-callout: none; pointer-events: none; }
@@ -1569,7 +1569,7 @@ ul.fv-resort li:first-child { border-top: 0; }
 .sj-kort { position: relative; overflow: hidden; border-radius: 20px; padding: 15px 16px 12px; margin-bottom: 12px; color: #fbe9c0;
   background: radial-gradient(110% 80% at 100% 0%, #5a3f0f 0%, rgba(90,63,15,0) 60%), linear-gradient(160deg, #3b2a0e 0%, #1d1508 100%); border: .5px solid #5a4416; }
 .sj-hode { display: flex; justify-content: space-between; gap: 12px; align-items: flex-start; }
-.sj-eyebrow { font-size: .72rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #e7c77a; }
+.sj-eyebrow { font-size: .83rem; font-weight: 700; letter-spacing: .09em; text-transform: uppercase; color: #e7c77a; }
 .sj-kort h2 { font-size: 1.17rem; font-weight: 700; line-height: 1.28; margin: 6px 0 0; color: #fff4d6; letter-spacing: -.01em; }
 .sj-kortmynt { width: 58px; flex: none; filter: drop-shadow(0 4px 8px rgba(0,0,0,.45)); }
 .sj-sover { opacity: .45; filter: grayscale(.6); }
@@ -1577,7 +1577,7 @@ ul.fv-resort li:first-child { border-top: 0; }
 .sj-under { font-size: .9rem; color: #dcc390; margin: 6px 0 0; line-height: 1.4; }
 .sj-gate { font-family: Georgia, "Times New Roman", serif; font-style: italic; font-size: 1.22rem; line-height: 1.32; color: #3a2a10; background: linear-gradient(165deg, #efe2c2, #e2cf9f); border-radius: 14px; padding: 12px 14px; margin: 12px 0 2px; }
 .sj-hintknapp { display: flex; align-items: center; gap: 8px; margin-top: 12px; width: 100%; min-height: 44px; padding: 8px 12px; border-radius: 12px; border: 1px solid rgba(241,194,101,.35); background: rgba(241,194,101,.1); color: #f6dc9f; font: inherit; font-size: .92rem; font-weight: 650; cursor: pointer; text-align: left; }
-.sj-hintknapp small { margin-left: auto; font-weight: 500; font-size: .8rem; color: #d9c08a; }
+.sj-hintknapp small { margin-left: auto; font-weight: 500; font-size: .83rem; color: #d9c08a; }
 .sj-hintknapp svg, .sj-hintpaa svg, .sj-det svg { width: 19px; height: 19px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; flex: none; }
 .sj-hintpaa { display: flex; align-items: center; gap: 8px; margin: 12px 0 0; padding: 9px 12px; border-radius: 12px; background: rgba(255,140,60,.16); color: #ffc58f; font-size: .9rem; }
 .sj-hintpaa b { color: #fff; }
@@ -1622,7 +1622,7 @@ ul.fv-resort li:first-child { border-top: 0; }
 .sj-sum small { font-size: 1.3rem; font-weight: 650; margin-left: 4px; color: #f1c265; letter-spacing: 0; }
 .sj-vnd { font-size: .95rem; color: #e7c77a; margin-top: 6px; }
 .sj-chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 12px; position: relative; z-index: 1; max-width: 72%; }
-.sj-chips > span { font-size: .8rem; font-weight: 650; padding: 5px 10px; border-radius: 99px; background: rgba(241,194,101,.14); color: #f6dc9f; }
+.sj-chips > span { font-size: .83rem; font-weight: 650; padding: 5px 10px; border-radius: 99px; background: rgba(241,194,101,.14); color: #f6dc9f; }
 .sj-stabel { position: absolute; right: 16px; top: 18px; width: 64px; height: 100px; }
 .sj-stabel .sj-img { position: absolute; width: 60px; right: 0; filter: drop-shadow(0 3px 5px rgba(0,0,0,.5)); }
 .sj-stabel .s0 { bottom: 0; } .sj-stabel .s1 { bottom: 9px; right: 3px; } .sj-stabel .s2 { bottom: 18px; right: 1px; } .sj-stabel .s3 { bottom: 27px; right: 4px; } .sj-stabel .s4 { bottom: 36px; right: 2px; }
@@ -1648,7 +1648,7 @@ ul.fv-resort li:first-child { border-top: 0; }
 .sj-fmynt { width: 30px; flex: none; }
 .sj-frad > div { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .sj-frad b { font-weight: 600; font-size: .95rem; }
-.sj-frad > div > span { font-size: .82rem; color: var(--dempet); }
+.sj-frad > div > span { font-size: .83rem; color: var(--dempet); }
 .sj-frad em { font-style: normal; font-weight: 700; font-variant-numeric: tabular-nums; }
 .sj-frad.ugyldig { opacity: .5; } .sj-frad.ugyldig em { text-decoration: line-through; }
 .sj-utbet, .sj-fot { margin: 4px 4px 12px; }
@@ -1659,7 +1659,7 @@ ul.fv-resort li:first-child { border-top: 0; }
 .sj-person { display: flex; flex-direction: column; gap: 2px; margin-bottom: 0; }
 .sj-pnavn { font-size: .85rem; font-weight: 650; color: var(--dempet); }
 .sj-person b { font-size: 1.7rem; font-weight: 760; letter-spacing: -.03em; font-variant-numeric: tabular-nums; }
-.sj-person > span:last-child { font-size: .82rem; color: var(--dempet); }
+.sj-person > span:last-child { font-size: .83rem; color: var(--dempet); }
 .sj-irad { display: flex; gap: 12px; padding: 8px 0; border-top: .5px solid var(--linje); }
 .sj-irad:first-child { border-top: 0; }
 .sj-irad > i { width: 12px; height: 12px; border-radius: 50%; margin-top: 5px; flex: none; background: var(--linje); }
@@ -1720,8 +1720,8 @@ ul.fv-resort li:first-child { border-top: 0; }
 
 /* v55: lange tekster (huskelista, notater) og praktisk info på ideer */
 .lang-avs { font-size: .94rem; line-height: 1.5; margin: 0 0 10px; }
-.lang-eti { display: block; font-size: .74rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--gronn); margin: 2px 0 2px; }
-.lang-dato { display: inline-block; font-size: .76rem; font-weight: 600; color: var(--dempet); background: var(--flate2, rgba(0,0,0,.05)); border-radius: 99px; padding: 2px 9px; margin: 0 0 8px; }
+.lang-eti { display: block; font-size: .83rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--gronn); margin: 2px 0 2px; }
+.lang-dato { display: inline-block; font-size: .83rem; font-weight: 600; color: var(--dempet); background: var(--flate2, rgba(0,0,0,.05)); border-radius: 99px; padding: 2px 9px; margin: 0 0 8px; }
 .lang-pkt { margin: 0 0 10px; padding-left: 20px; } .lang-pkt li { margin: 0 0 4px; line-height: 1.45; }
 details.lang-hist { margin: 14px 0 4px; border-top: .5px solid var(--linje); padding-top: 12px; }
 details.lang-hist > summary, details.ide-info > summary { list-style: none; cursor: pointer; display: flex; align-items: center; gap: 6px; font-weight: 600; -webkit-tap-highlight-color: transparent; }
@@ -1735,7 +1735,7 @@ details.lang-hist > summary + .lang-post { border-top: 0; padding-top: 4px; }
 .lang-post .lang-avs { color: var(--dempet); font-size: .9rem; }
 details.ide-info { margin-top: 8px; border: .5px solid var(--linje); border-radius: 10px; padding: 8px 12px; background: var(--bg); }
 details.ide-info > summary { color: var(--aksent); font-size: .9rem; min-height: 28px; white-space: nowrap; }
-details.ide-info > summary span { color: var(--dempet); font-weight: 400; font-size: .8rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
+details.ide-info > summary span { color: var(--dempet); font-weight: 400; font-size: .83rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; }
 details.ide-info[open] > summary span { visibility: hidden; }
 dl.info-rader { margin-top: 8px; font-size: .9rem; grid-template-columns: minmax(74px, 26%) 1fr; }
 dl.info-rader dd { line-height: 1.45; }
@@ -1744,14 +1744,14 @@ dl.info-rader dd { line-height: 1.45; }
 .tr[data-idet]:not(.aktiv) > .inn > .merk { display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* v56: sluttid under starttiden i tidslinja + tid på dagen i skjemaet */
-.kl .kl-til { display: block; font-size: .72rem; font-weight: 600; color: var(--dempet); margin-top: 1px; white-space: nowrap; }
+.kl .kl-til { display: block; font-size: .83rem; font-weight: 600; color: var(--dempet); margin-top: 1px; white-space: nowrap; }
 .kl .kl-til sup { font-size: .6rem; margin-left: 1px; }
 .tr.ferdig > .kl .kl-til { color: var(--dempet); }
 .tidvalg { display: flex; align-items: center; gap: 8px; }
 .tidvalg > input[type="time"] { flex: 1 1 0; min-width: 0; max-width: 160px; }
 .tidvalg > span { color: #555; font-size: .9rem; }
 .af select.tiddel { margin-top: 8px; font-size: .95rem; min-height: 44px; }
-.tr > .kl.kl-ord, li > .kl.kl-ord { font-size: .78rem; hyphens: manual; -webkit-hyphens: manual; overflow-wrap: normal; padding-top: 6px; }
+.tr > .kl.kl-ord, li > .kl.kl-ord { font-size: .83rem; hyphens: manual; -webkit-hyphens: manual; overflow-wrap: normal; padding-top: 6px; }
 
 /* ---------- v57: kortet fra stedssiden i detaljarket + navigasjon ---------- */
 .tr.harkort > .inn > .tt::after { content: none; }
@@ -1760,7 +1760,7 @@ dl.info-rader dd { line-height: 1.45; }
 .ark-topp .arktilbake { position: absolute; top: 4px; left: 0; min-height: 38px; padding: 0 14px 0 8px; display: inline-flex; align-items: center; gap: 2px; background: var(--flate2); color: var(--tekst); border: 0; border-radius: 99px; font: inherit; font-weight: 600; }
 .ark-topp .arktilbake svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2.2; stroke-linecap: round; stroke-linejoin: round; }
 .arkkort { margin-top: 16px; }
-.arkkort-fra { display: flex; align-items: center; gap: 6px; font-size: .78rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin: 0 0 6px; }
+.arkkort-fra { display: flex; align-items: center; gap: 6px; font-size: .83rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin: 0 0 6px; }
 .arkkort-fra svg { width: 15px; height: 15px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
 .arkkort > .kort, .ark-flate > .kort { margin-bottom: 0; }
 .arkkort > .hotell { background: var(--flate); border: .5px solid var(--linje); border-radius: var(--r); padding: 14px 16px; }
@@ -1798,7 +1798,7 @@ a.intern[href^="#/bekr/"]::before { content: ""; width: 15px; height: 15px; flex
 .ak-lesknapp.spiller .hb2 { animation: akBolge 1s ease-in-out .25s infinite; }
 @keyframes akPuls { 0% { box-shadow: 0 0 0 0 rgba(21,101,192,.5); } 100% { box-shadow: 0 0 0 12px rgba(21,101,192,0); } }
 @keyframes akBolge { 0%, 100% { opacity: 1; } 50% { opacity: .25; } }
-.ak-leshjelp { margin: 0 2px 14px; font-size: .8rem; color: #666; }
+.ak-leshjelp { margin: 0 2px 14px; font-size: .83rem; color: #666; }
 .ak .leses { background: #fff3c4; box-shadow: 0 0 0 6px #fff3c4; border-radius: 6px; }
 .ak [data-les] { transition: background .25s, box-shadow .25s; }
 .ak-fliser { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin: 8px 0 10px; }
@@ -1839,7 +1839,7 @@ a.intern[href^="#/bekr/"]::before { content: ""; width: 15px; height: 15px; flex
 .sj-kal .igjen { background: transparent; border: 1.5px dashed #c8952e; color: #c8952e; }
 .sj-kal .to { overflow: visible; }
 .sj-kal .to .sj-x2 { right: -3px; top: -3px; }
-.sj-forkl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 0; font-size: .78rem; color: var(--dempet); }
+.sj-forkl { display: flex; flex-wrap: wrap; align-items: center; gap: 6px; margin: 10px 0 0; font-size: .83rem; color: var(--dempet); }
 .sj-forkl .sj-kal { display: inline-grid; grid-template-columns: 22px; margin: 0; }
 .sj-forkl .sj-kal > span { width: 22px; font-size: .7rem; }
 .sj-irad div > span + span { display: block; }
@@ -1848,7 +1848,7 @@ a.intern[href^="#/bekr/"]::before { content: ""; width: 15px; height: 15px; flex
 .fbilde { position: relative; overflow: hidden; background: var(--flate2); border: 0; padding: 0; display: block; cursor: zoom-in; }
 .fbilde img { width: 100%; height: 100%; object-fit: cover; display: block; opacity: 0; transition: opacity .35s ease; }
 .fbilde img.klar { opacity: 1; }
-.fbilde.feil::after { content: "Bildet er ikke lastet ned ennå"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .8rem; color: var(--dempet); text-align: center; padding: 8px; }
+.fbilde.feil::after { content: "Bildet er ikke lastet ned ennå"; position: absolute; inset: 0; display: grid; place-items: center; font-size: .83rem; color: var(--dempet); text-align: center; padding: 8px; }
 /* stedssiden: stort bilde med tittelen oppå */
 .fhero { margin: 4px -16px 12px; aspect-ratio: 4 / 3; border-radius: 0; }
 @media (min-width: 560px) { .fhero { margin: 6px 0 14px; border-radius: var(--r); aspect-ratio: 16 / 9; } }
@@ -1883,7 +1883,7 @@ html.fg-aapen, html.fg-aapen body { overflow: hidden; }
 .fg-bilde { flex: 1; display: grid; place-items: center; min-height: 0; }
 .fg-bilde img { max-width: 100%; max-height: 100%; object-fit: contain; opacity: 0; transition: opacity .3s; }
 .fg-bilde img.klar { opacity: 1; }
-.fg-side figcaption { padding: 10px 16px calc(env(safe-area-inset-bottom) + 14px); font-size: .78rem; color: rgba(255,255,255,.72); line-height: 1.35; }
+.fg-side figcaption { padding: 10px 16px calc(env(safe-area-inset-bottom) + 14px); font-size: .83rem; color: rgba(255,255,255,.72); line-height: 1.35; }
 .fg-side figcaption b { display: block; color: #fff; font-size: .95rem; margin-bottom: 2px; }
 .fg-side figcaption a { color: rgba(255,255,255,.85); }
 
@@ -1910,3 +1910,7 @@ html.fg-aapen, html.fg-aapen body { overflow: hidden; }
 .ark h2 .bord, .overlay h2 .bord { vertical-align: 3px; }
 .ide.ikkebest { border-left: 3px dashed color-mix(in srgb, var(--gul) 65%, transparent); padding-left: 10px; }
 .ide .idest { display: inline-block; margin: 0 0 4px; }
+
+/* ---------- v67: minste tekst 14 px (unntak: kart, kalender-, bingo- og seteruter og fanelinja) ---------- */
+.ref { font-size: max(.9em, .83rem); }
+.dittsete small { font-size: .83rem; }
