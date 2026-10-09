@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 67, tid: "2026-10-10 kl. 09:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 68, tid: "2026-10-10 kl. 10:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -572,7 +572,7 @@
   }
   function klokkeMini() {
     const v = klokkeData(TZ), n = klokkeData("Europe/Oslo");
-    return `<div class="klokkemini" aria-label="Klokke"><span data-sone="${TZ}" class="km${v.natt ? " natt" : ""}"><b class="ktid">${esc(v.tid)}</b> Vietnam</span><span class="km-skille">·</span><span data-sone="Europe/Oslo" class="km${n.natt ? " natt" : ""}"><b class="ktid">${esc(n.tid)}</b> Norge${n.natt ? " (natt)" : ""}</span></div>`;
+    return `<div class="klokkemini" aria-label="Klokke"><span data-sone="${TZ}" class="km${v.natt ? " natt" : ""}"><b class="ktid">${esc(v.tid)}</b> Vietnam</span><span class="km-skille">·</span><span data-sone="Europe/Oslo" class="km${n.natt ? " natt" : ""}"><b class="ktid">${esc(n.tid)}</b> Norge${n.natt ? `<i class="km-natt"> (natt)</i>` : ""}</span></div>`;
   }
   // Været som én linje; trykk for hele værkortet
   function vaerKompakt(d) {
@@ -895,10 +895,9 @@
     if (idag > s1) h += `<p class="hei">${navn ? `Hei, ${esc(navn)}!` : "Hei!"}</p>` + klokkeHtml();
     h += `<div class="dagnav">
       ${idag < s0 && d <= s0 ? `<button class="pilknapp fv-hjemknapp" data-hjemme aria-label="Tilbake til forsiden">${ikon("venstre", "")}<span>Hjemme</span></button>` : `<button class="pilknapp" data-dag="-1" aria-label="Forrige dag" ${d <= s0 ? "disabled" : ""}>${ikon("venstre", "")}</button>`}
-      <div class="dagtittel"><b>${esc(pen(d))}</b><span>${erIdag ? "I dag" : `Dag ${mellom(s0, d) + 1} av ${mellom(s0, s1) + 1}`}</span>
+      <div class="dagtittel"><b>${esc(pen(d))}</b><span>${erIdag ? "I dag" : `Dag ${mellom(s0, d) + 1} av ${mellom(s0, s1) + 1}`}</span>${reise ? klokkeMini() : ""}
         ${!erIdag && idag >= s0 && idag <= s1 ? `<br><button class="idagknapp" data-dag="0">Gå til i dag</button>` : ""}</div>
       <button class="pilknapp" data-dag="1" aria-label="Neste dag" ${d >= s1 ? "disabled" : ""}>${ikon("hoyre", "")}</button></div>`;
-    if (reise) h += klokkeMini();
     if (reise && erIdag) h += tzVarsel(d);
 
     const sted = stedForDato(d), natt = overnatting(d), sc = dagStedChip(d);
@@ -942,7 +941,8 @@
 
     if (d === s0 && idag >= s0) h += fvIgjenLinje();
     const betal = betalIdag(d, hend, utH, natt);
-    if (betal.length) h += `<div class="betaldag">${ikon("penger")}<div><b>Betale i dag</b>${betal.map((l) => `<div>${md(l)}</div>`).join("")}</div></div>`;
+    const betalTid = (l) => (String(l).match(/kl\.\s?(\d{1,2}:\d{2})/) || [])[1] || "";
+    if (betal.length) h += `<div class="betaldag">${ikon("penger")}<div><b>Betale i dag</b>${betal.map((l) => `<div class="betallinje"${betalTid(l) ? ` data-betaltid="${betalTid(l)}"` : ""}>${md(l)}</div>`).join("")}</div></div>`;
 
     if (fri) h += `<section class="kort fridag2"><h2>Fri dag – ingenting bestilt</h2><p class="krolle">Forslag – ikke bestilt:</p><div class="knapper">
       ${antIde ? `<button class="kb" data-ideark>${ikon("ideer", "")}Ideer (${ideAntall(d)})</button>` : ""}
@@ -1019,7 +1019,8 @@
         <div class="netikett">Neste · i morgen</div><div class="tt">${neste.egen ? esc(neste.tittel) : md(hendTittel(neste))}${statusPille(stM, neste)}</div>${neste.merk ? `<div class="merk">${neste.egen ? esc(neste.merk) : md(neste.merk)}</div>` : ""}${kn ? `<div class="knapper">${kn}</div>` : ""}</div></div></div>`;
     }
     const tom = !liste.length && !fri ? `<p class="tom">Ingenting bestilt denne dagen.</p>` : "";
-    h += `<section class="kort dag">${tl ? `<div class="tl">${tl}</div>` : tom}${nattHtml}${imorgen}
+    h = h.replace(/ data-betaltid="(\d{1,2}:\d{2})"/g, (m, t) => { const id = Object.keys(IDET).find((k) => IDET[k] && IDET[k].t === t && !IDET[k].oppgave && IDET[k].d === d); return id ? ` data-idet="${id}" role="button" tabindex="0"` : ""; });
+    h += `<section class="kort dag">${nattHtml}${tl ? `<div class="tl">${tl}</div>` : tom}${imorgen}
       <button class="pny avtny" data-avtny="dag">${ikon("pluss", "")}Legg til avtale eller møtested</button></section>`;
 
     // Resortets program er mulige aktiviteter – ikke noe som er bestemt. Egen lukket seksjon, sortert på klokkeslett (v45).
@@ -3870,6 +3871,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    68: "I dag: kortere topp, og kveldens hotell med «Vis til sjåføren» øverst i dagen",
     67: "Større tekst der den var liten – lettere å lese i sola",
     66: "Det som ikke er bestilt ennå, har gul stiplet kant og merket «Ikke bestilt» – overalt",
     65: "Beløp med prikket strek under kan trykkes for å regne om – og større knapper øverst",

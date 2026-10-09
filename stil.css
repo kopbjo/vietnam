@@ -1914,3 +1914,26 @@ html.fg-aapen, html.fg-aapen body { overflow: hidden; }
 /* ---------- v67: minste tekst 14 px (unntak: kart, kalender-, bingo- og seteruter og fanelinja) ---------- */
 .ref { font-size: max(.9em, .83rem); }
 .dittsete small { font-size: .83rem; }
+
+/* ---------- v68: I dag – kortere topp, kveldens hotell øverst i dagen ---------- */
+.dagtittel .klokkemini { margin: 2px 0 0; font-size: .86rem; flex-wrap: wrap; gap: 2px 6px; }
+.dagtittel > span + .klokkemini::before { content: none; }
+.dchips { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; margin: -4px -16px 12px; padding: 0 16px 2px; }
+.dchips::-webkit-scrollbar { display: none; }
+.dchips > :first-child { margin-left: auto; } .dchips > :last-child { margin-right: auto; }
+.dchip { flex: none; white-space: nowrap; }
+.betaldag { padding: 9px 12px; }
+.betallinje[data-idet] { cursor: pointer; }
+.betallinje[data-idet]::after { content: " ›"; color: var(--gul); font-weight: 700; }
+.kort.dag > .islutt:first-child { border-top: 0; margin: 0 0 10px; padding: 0 0 12px; border-bottom: .5px solid var(--linje); display: grid; grid-template-columns: 1fr auto; column-gap: 10px; align-items: center; }
+.kort.dag > .islutt:first-child > .inatt-etikett, .kort.dag > .islutt:first-child > .inatt-navn, .kort.dag > .islutt:first-child > .merk { grid-column: 1; }
+.kort.dag > .islutt:first-child > .knapper { grid-column: 2; grid-row: 1 / span 2; margin: 0; }
+.kort.dag > .islutt:first-child > :not(.inatt-etikett):not(.inatt-navn):not(.merk):not(.knapper) { grid-column: 1 / -1; }
+.dagtittel .klokkemini span { font-size: inherit; color: inherit; }
+.dagtittel .klokkemini .km b { display: inline; font-size: 1em; font-weight: 700; letter-spacing: 0; color: var(--tekst); }
+.dagtittel .klokkemini .km.natt b { color: var(--dempet); }
+.betallinje[data-idet] { position: relative; padding-right: 18px; }
+.betallinje[data-idet]::after { position: absolute; right: 0; top: 0; }
+.klokkemini .km-natt { font-style: normal; }
+.dagtittel .klokkemini { flex-wrap: nowrap; white-space: nowrap; }
+.dagtittel .km-natt { display: none; }
