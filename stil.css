@@ -272,9 +272,19 @@ ul.program li:first-child { border-top: 0; }
 .stedkort .netter svg { width: 18px; height: 18px; fill: none; stroke: var(--dempet); stroke-width: 2.2; stroke-linecap: round; }
 .stedkort.naa { border-color: var(--aksent); box-shadow: 0 0 0 1.5px var(--aksent); }
 .naa-merke { color: var(--aksent); font-weight: 700; }
-.snarveier { display: flex; gap: 8px; overflow-x: auto; margin: 0 -16px 14px; padding: 2px 16px 4px; scrollbar-width: none; }
-.snarveier::-webkit-scrollbar { display: none; }
-.snarveier .kb { flex: none; background: var(--flate); border: .5px solid var(--linje); box-shadow: var(--skygge); }
+/* Hopp til et kort (snarveier, søk) havner under topplinja, ikke bak den */
+html { scroll-padding-top: calc(var(--topp-h) + env(safe-area-inset-top) + 8px); }
+.snarveier { display: grid; grid-template-columns: repeat(var(--n, 4), minmax(0, 1fr)); gap: 8px; margin: 0 0 14px; }
+.sv {
+  display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; min-height: 66px; padding: 10px 2px 8px;
+  border-radius: 14px; background: var(--flate); color: var(--tekst); border: .5px solid var(--linje); box-shadow: var(--skygge);
+  font: inherit; font-size: .8rem; font-weight: 600; line-height: 1.15; text-decoration: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+}
+.sv:active { background: var(--flate2); }
+.sv-ik { position: relative; display: inline-flex; color: var(--aksent); }
+.sv-ik svg { width: 23px; height: 23px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.sv-n { position: absolute; top: -7px; left: calc(100% - 7px); min-width: 18px; height: 18px; padding: 0 5px; border-radius: 9px; background: var(--aksent); color: var(--aksent-tekst); font-size: .68rem; font-weight: 700; line-height: 18px; text-align: center; }
+.sv-t { max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding: 0 2px; }
 .navnedre { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 18px; }
 .navnedre a { text-decoration: none; background: var(--flate); border: .5px solid var(--linje); border-radius: 14px; padding: 10px 14px; font-size: .85rem; color: var(--dempet); min-height: 56px; }
 .navnedre a b { display: block; color: var(--aksent); font-size: 1rem; }

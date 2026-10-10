@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 73, tid: "2026-10-10 kl. 00:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 74, tid: "2026-10-10 kl. 11:45" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1573,15 +1573,16 @@
     const underT = `${esc(s.dato)}${s.netter ? " · " + s.netter + (s.netter === 1 ? " natt" : " netter") : ""}`;
     const hero = fotoHero(s, underT);
     let h = hero ? hero + (s.ingress ? `<p class="ingress fingress">${md(s.ingress)}</p>` : "") : tittel(s.navn, underT, s.ingress);
+    // Snarveier som faste ruter (ikon over tekst) – alt synes uten sidescroll. Sykehus nås via SOS (åpner dette stedet).
     const sn = [];
+    const sv = (attr, ik, navn, n) => { const tag = attr.startsWith("href") ? "a" : "button"; return `<${tag} class="sv" ${attr} aria-label="${esc(navn)}${n ? ` (${n})` : ""}"><span class="sv-ik">${ikon(ik, "")}${n ? `<b class="sv-n">${n}</b>` : ""}</span><span class="sv-t">${esc(navn)}</span></${tag}>`; };
     const harKart = !!(D.kart && D.kart.steder[s.id]);
-    if (harKart) sn.push(`<button class="kb" data-rull="kartkort">${ikon("kartark", "")}Kart</button>`);
+    if (harKart) sn.push(sv('data-rull="kartkort"', "kartark", "Kart"));
     const antK = D.kontakter.filter((k) => k.sted === s.id).length;
-    if (antRest) sn.push(`<a class="kb" href="#/mat/${esc(s.id)}">${ikon("mat", "")}Mat (${antRest})</a>`);
-    if (antK) sn.push(`<button class="kb" data-rull="kontakterher">${ikon("kontakt", "")}Kontakter (${antK})</button>`);
-    if (D.ideer[s.id]) sn.push(`<button class="kb" data-rull="ideerher">${ikon("ideer", "")}Ideer</button>`);
-    if (D.sykehus[s.id]) sn.push(`<button class="kb" data-rull="sykehus">${ikon("sykehus", "")}Sykehus</button>`);
-    if (sn.length) h += `<div class="snarveier">${sn.join("")}</div>`;
+    if (antRest) sn.push(sv(`href="#/mat/${esc(s.id)}"`, "mat", "Mat", antRest));
+    if (D.ideer[s.id]) sn.push(sv('data-rull="ideerher"', "ideer", "Ideer", D.ideer[s.id].length));
+    if (antK) sn.push(sv('data-rull="kontakterher"', "kontakt", "Kontakter", antK));
+    if (sn.length) h += `<div class="snarveier" style="--n:${sn.length}">${sn.join("")}</div>`;
 
     const oppg = D.hendelser.filter((e) => e.oppgave && e.sted === s.id).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : minutter(a.t) - minutter(b.t)));
     if (oppg.length) {
@@ -3773,6 +3774,7 @@
   const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", dagbok: "Reisedagboka", bingo: "Reisebingo", tema: "Temaer", skatt: "Skattejakt" };
   const ruteAv = (hash) => { const [, side = "idag", arg, del] = (String(hash || "").startsWith("#/") ? hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
   const rute = () => ruteAv(location.hash);
+  document.addEventListener("click", (e) => { if (!e.target.closest || !e.target.closest("#sos")) return; const r = rute(); nodSted = r.side === "sted" && D && D.sykehus && D.sykehus[r.arg] ? r.arg : null; }, true);
   // Fanen en side hører til (markeres nederst)
   const faneAv = (side) => side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : ["sted", "fly", "hotell", "dagbok"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
   // ---------- navigasjon (v57): fanene husker hvor du var, og «‹ <dag>» tar deg tilbake til dagen ----------
@@ -4106,6 +4108,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    74: "Stedssidene: Kart, Mat, Ideer og Kontakter synes alltid øverst – sykehus finner du under SOS",
     73: "Dagens bilde: velg ditt beste bilde hver kveld – det blir reisedagboka",
     72: "Stedssidene er kortere: det viktigste først – resten ligger i felter du kan åpne",
     71: "Stedssidene: på reisen vises det viktigste først – resten ligger i felter du kan åpne",
