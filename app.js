@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 75, tid: "2026-10-10 kl. 13:45" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 76, tid: "2026-10-10 kl. 14:40" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1806,6 +1806,7 @@
     let h = tittel("Kontantplan", esc(K.under || ""), K.ingress || "");
     h += `<div class="kp-tall">${K.tall.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div>`;
     h += `<section class="kort"><h2>${ikon("penger")}Kortene – hva brukes til hva</h2><div class="kp-roller">${K.kortrolle.map(([k, n, t]) => `<div>${kpKort(k, n)}<span>${md(t)}</span></div>`).join("")}</div></section>`;
+    if (K.fordeling) h += `<section class="kort"><h2>${ikon("info")}Fordel kortene</h2><dl class="rader">${K.fordeling.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${md(v)}</dd>`).join("")}</dl>${K.fordelingMerk ? `<p class="kp-merk">${md(K.fordelingMerk)}</p>` : ""}</section>`;
     h += `<div class="seksjonstittel">Før avreise</div><section class="kort"><ol class="kp-hjemme">${K.hjemme.map((x) => `<li><div class="kp-d">${esc(x.d)}</div><div class="kp-ht"><b>${esc(x.t)}</b>${kpKort(x.kort, x.kortTekst)}</div><p>${md(x.m)}</p></li>`).join("")}</ol></section>`;
     const maks = Math.max(1, ...K.tidslinje.map(kpSum));
     h += `<div class="seksjonstittel">I Vietnam</div><div class="kp-legende">${K.kat.map(([c, t]) => `<span><i class="kp-s-${esc(c)}"></i>${esc(t)}</span>`).join("")}</div><ol class="kp-linje">`;
@@ -1814,6 +1815,8 @@
     h += `</ol>`;
     h += `<section class="kort"><h2>${ikon("advarsel")}Hva er høyt gebyr?</h2><div class="kp-skala">${K.gebyr.map(([c, a, b]) => `<div class="kp-g kp-g-${esc(c)}"><b>${esc(b)}</b><span>${esc(a)}</span></div>`).join("")}</div><p class="kp-merk">${md(K.gebyrMerk || "")}</p>
       <h3 class="kp-h3">Bankene – best øverst</h3><ul class="kp-banker">${K.banker.map(([n, t, c]) => `<li><span class="kp-gp kp-g-${esc(c)}" aria-hidden="true"></span><b>${esc(n)}</b><span>${esc(t)}</span></li>`).join("")}</ul></section>`;
+    if (K.svikt) h += `<div class="seksjonstittel">Hvis et kort svikter eller blir borte</div>` + K.svikt.map((x) => `<details class="fold"><summary>${ikon("advarsel")}${esc(x.tittel)}</summary><div class="innhold"><ol class="steg">${x.steg.map((s) => `<li>${md(s)}</li>`).join("")}</ol></div></details>`).join("")
+      + (K.sperr ? `<section class="kort advarsel"><h2>${ikon("advarsel")}Sperr kort</h2><div class="kontaktblokk">${kontakterHtml(K.sperr)}</div></section>` : "");
     h += `<section class="kort info"><h2>${ikon("info")}Husk</h2>${K.tips.map((t) => `<p>${md(t)}</p>`).join("")}${K.reserve ? `<p>${md(K.reserve)}</p>` : ""}</section>`;
     if (K.kilder) h += `<details class="fold"><summary>${ikon("info")}Kilder</summary><div class="innhold">${K.kilder.map((t) => `<p>${md(t)}</p>`).join("")}</div></details>`;
     return h + bunn();
@@ -4149,6 +4152,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    76: "Kontantplan: alle kortene, hvem som bærer hva, og hva vi gjør hvis et kort svikter eller blir borte",
     75: "Penger: ny kontantplan for de voksne – fire uttak, hvilket kort og hva som er høyt gebyr",
     74: "Stedssidene: Kart, Mat, Ideer og Kontakter synes alltid øverst – sykehus finner du under SOS",
     73: "Dagens bilde: velg ditt beste bilde hver kveld – det blir reisedagboka",

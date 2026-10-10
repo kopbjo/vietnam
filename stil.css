@@ -2050,7 +2050,11 @@ details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px 
 .kp-kort.kp-bn { background: var(--rod-bg); color: var(--rod); }
 .kp-kort.kp-usd { background: var(--gronn-bg); color: var(--gronn); }
 .kp-roller { display: grid; gap: 10px; margin-top: 10px; }
-.kp-roller > div { display: grid; grid-template-columns: 9.5em 1fr; gap: 10px; align-items: start; font-size: .92rem; }
+.kp-roller > div { display: flex; flex-direction: column; gap: 4px; align-items: flex-start; font-size: .92rem; }
+.kp-roller > div + div { border-top: .5px solid var(--linje); padding-top: 10px; }
+.kp-roller .kp-kort { white-space: normal; }
+.kp-kort.kp-dnb { background: var(--aksent-lys); color: var(--aksent); }
+.kp-kort.kp-ec { background: var(--gul-bg); color: var(--gul); }
 .kp-roller .kp-kort { justify-self: start; }
 .kp-hjemme { list-style: none; margin: 0; padding: 0; counter-reset: kph; }
 .kp-hjemme li { position: relative; padding: 0 0 12px 34px; counter-increment: kph; }
@@ -2102,4 +2106,4 @@ details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px 
 .kp-banker li:first-child { border-top: 0; }
 .kp-gp { width: 10px; height: 10px; border-radius: 50%; border: 0; padding: 0; display: inline-block; }
 .kp-gp.kp-g-bra { background: var(--gronn); } .kp-gp.kp-g-ok { background: var(--gul); } .kp-gp.kp-g-hoy { background: var(--rod); }
-@media (max-width: 360px) { .kp-tall { grid-template-columns: 1fr; } .kp-roller > div { grid-template-columns: 1fr; gap: 4px; } }
+@media (max-width: 360px) { .kp-tall { grid-template-columns: 1fr; } }
