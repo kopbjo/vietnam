@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 74, tid: "2026-10-10 kl. 11:45" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 75, tid: "2026-10-10 kl. 13:45" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1769,6 +1769,7 @@
   function sidePenger() {
     const ki = kursInfo(), kurs = ki.kurs;
     let h = tittel("Penger");
+    h += kpRad();
     h += sjRad();
     h += `<section class="kort"><h2>${ikon("penger")}Omregner</h2><div class="omregner">
       <label>Dong (₫)<input id="vnd" inputmode="numeric" placeholder="100 000"></label>
@@ -1776,6 +1777,45 @@
       <div class="kurs">1 kr = <input id="kurs" inputmode="numeric" value="${kurs}"> ₫</div><div class="kursinfo" id="kursinfo">${esc(ki.tekst)}</div></div>
       <div class="snarvei">${[20000, 50000, 100000, 200000, 500000, 1000000].map((v) => `<button data-vnd="${v}">${v.toLocaleString("nb-NO")} ₫</button>`).join("")}</div></section>`;
     h += D.penger.seksjoner.map(seksjon).join("");
+    return h + bunn();
+  }
+
+  // ---------- SIDE: Kontantplan (bare for de voksne; lenke fra Penger) ----------
+  const erVoksen = () => { const m = meg(); return !!m && !!D && voksneIds().includes(m); };
+  function kpRad() {
+    const K = D.penger && D.penger.kontantplan; if (!K || !erVoksen()) return "";
+    return `<a class="kort kp-lenke" href="#/kontant"><span class="kp-lenke-ikon">${ikon("penger", "")}</span><span class="kp-lenke-t"><b>Kontantplan</b><span>${esc(K.lenkeTekst || "")}</span></span><span class="fv-pil">${ikon("chev", "")}</span></a>`;
+  }
+  const kpKort = (k, t) => t ? `<span class="kp-kort${k ? " kp-" + esc(k) : ""}">${esc(t)}</span>` : "";
+  const kpMill = (v) => `${String(Math.round(v * 100) / 100).replace(".", ",")} mill. ₫`;
+  const kpSum = (x) => (x.dekker || []).reduce((s, y) => s + y[1], 0);
+  function kpUttak(x, maks) {
+    const sum = kpSum(x);
+    const bar = x.dekker ? `<div class="kp-bar" style="width:${Math.max(20, Math.round(sum / maks * 100))}%" role="img" aria-label="${esc(x.dekker.map((y) => y[2] + " " + kpMill(y[1])).join(", "))}">${x.dekker.map(([c, v]) => `<span class="kp-seg kp-s-${esc(c)}" style="flex:${v}"></span>`).join("")}</div>
+      <ul class="kp-dekker">${x.dekker.map(([c, v, t]) => `<li><i class="kp-s-${esc(c)}"></i><span>${esc(t)}</span><b>${esc(kpMill(v))}</b></li>`).join("")}</ul>` : "";
+    return `<li class="kp-uttak${x.valgfri ? " kp-valgfri" : ""}"><span class="kp-nr" aria-hidden="true">${esc(String(x.nr))}</span><section class="kort">
+      <div class="kp-d">Uttak ${esc(String(x.nr))} · ${esc(x.d)}${x.valgfri ? ` <span class="kp-merke">ved behov</span>` : ""}</div>
+      <div class="kp-belop">${esc(x.belop)}</div>
+      <div class="kp-sted">${esc(x.sted)}</div>
+      <div class="kp-hvordan">${kpKort(x.kort, x.kortTekst)}<span>${esc(x.hvordan || "")}</span></div>
+      ${bar}${x.regel ? `<ul class="kp-regel">${x.regel.map((r) => `<li>${md(r)}</li>`).join("")}</ul>` : ""}${x.merk ? `<p class="kp-merk">${md(x.merk)}</p>` : ""}</section></li>`;
+  }
+  function sideKontant() {
+    const K = D.penger && D.penger.kontantplan;
+    if (!K || !erVoksen()) return tittel("Kontantplan") + `<section class="kort"><p>Denne siden er bare for de voksne.</p><p><a href="#/penger">Tilbake til Penger</a></p></section>` + bunn();
+    let h = tittel("Kontantplan", esc(K.under || ""), K.ingress || "");
+    h += `<div class="kp-tall">${K.tall.map(([a, b]) => `<div><b>${esc(a)}</b><span>${esc(b)}</span></div>`).join("")}</div>`;
+    h += `<section class="kort"><h2>${ikon("penger")}Kortene – hva brukes til hva</h2><div class="kp-roller">${K.kortrolle.map(([k, n, t]) => `<div>${kpKort(k, n)}<span>${md(t)}</span></div>`).join("")}</div></section>`;
+    h += `<div class="seksjonstittel">Før avreise</div><section class="kort"><ol class="kp-hjemme">${K.hjemme.map((x) => `<li><div class="kp-d">${esc(x.d)}</div><div class="kp-ht"><b>${esc(x.t)}</b>${kpKort(x.kort, x.kortTekst)}</div><p>${md(x.m)}</p></li>`).join("")}</ol></section>`;
+    const maks = Math.max(1, ...K.tidslinje.map(kpSum));
+    h += `<div class="seksjonstittel">I Vietnam</div><div class="kp-legende">${K.kat.map(([c, t]) => `<span><i class="kp-s-${esc(c)}"></i>${esc(t)}</span>`).join("")}</div><ol class="kp-linje">`;
+    h += K.tidslinje.map((x) => x.type === "uttak" ? kpUttak(x, maks)
+      : `<li class="kp-betal"><span class="kp-prikk" aria-hidden="true"></span><div><div class="kp-d">${esc(x.d)}</div><b>${esc(x.t)}</b><span class="kp-m">${md(x.m)}</span></div></li>`).join("");
+    h += `</ol>`;
+    h += `<section class="kort"><h2>${ikon("advarsel")}Hva er høyt gebyr?</h2><div class="kp-skala">${K.gebyr.map(([c, a, b]) => `<div class="kp-g kp-g-${esc(c)}"><b>${esc(b)}</b><span>${esc(a)}</span></div>`).join("")}</div><p class="kp-merk">${md(K.gebyrMerk || "")}</p>
+      <h3 class="kp-h3">Bankene – best øverst</h3><ul class="kp-banker">${K.banker.map(([n, t, c]) => `<li><span class="kp-gp kp-g-${esc(c)}" aria-hidden="true"></span><b>${esc(n)}</b><span>${esc(t)}</span></li>`).join("")}</ul></section>`;
+    h += `<section class="kort info"><h2>${ikon("info")}Husk</h2>${K.tips.map((t) => `<p>${md(t)}</p>`).join("")}${K.reserve ? `<p>${md(K.reserve)}</p>` : ""}</section>`;
+    if (K.kilder) h += `<details class="fold"><summary>${ikon("info")}Kilder</summary><div class="innhold">${K.kilder.map((t) => `<p>${md(t)}</p>`).join("")}</div></details>`;
     return h + bunn();
   }
 
@@ -3771,12 +3811,12 @@
   }
 
   // ---------- ruting ----------
-  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", dagbok: "Reisedagboka", bingo: "Reisebingo", tema: "Temaer", skatt: "Skattejakt" };
+  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", dagbok: "Reisedagboka", bingo: "Reisebingo", tema: "Temaer", skatt: "Skattejakt", kontant: "Kontantplan" };
   const ruteAv = (hash) => { const [, side = "idag", arg, del] = (String(hash || "").startsWith("#/") ? hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
   const rute = () => ruteAv(location.hash);
   document.addEventListener("click", (e) => { if (!e.target.closest || !e.target.closest("#sos")) return; const r = rute(); nodSted = r.side === "sted" && D && D.sykehus && D.sykehus[r.arg] ? r.arg : null; }, true);
   // Fanen en side hører til (markeres nederst)
-  const faneAv = (side) => side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : ["sted", "fly", "hotell", "dagbok"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
+  const faneAv = (side) => side === "kontant" ? "penger" : side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : ["sted", "fly", "hotell", "dagbok"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
   // ---------- navigasjon (v57): fanene husker hvor du var, og «‹ <dag>» tar deg tilbake til dagen ----------
   const FANE_MINNE = {}; // fane → {hash, y, dag, dm, ark}: siste side i fanen
   let gjenopprett = null, viaFane = false, fraDag = null;
@@ -3786,7 +3826,7 @@
     if (!D) return;
     const { side, arg, del } = rute();
     const html = side === "reisen" ? sideReisen() : side === "sted" ? sideSted(arg) : side === "mat" ? sideMat(arg) : side === "kontakter" ? sideKontakter()
-      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : side === "skatt" ? sideSkatt() : side === "dagbok" ? sideDagbok(arg) : sideIdag();
+      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "kontant" ? sideKontant() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : side === "skatt" ? sideSkatt() : side === "dagbok" ? sideDagbok(arg) : sideIdag();
     $("#innhold").innerHTML = html;
     sistVistDato = idagISO();
     const fane = faneAv(side);
@@ -3798,6 +3838,7 @@
     else if (["sted", "fly", "hotell", "dagbok"].includes(side)) { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
     else if (["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
     else if (["for", "bingo", "tema"].includes(side) || (side === "skatt" && erBarn())) { tb.hidden = false; tb.href = "#/idag"; tb.querySelector("span").textContent = "I dag"; }
+    else if (side === "kontant") { tb.hidden = false; tb.href = "#/penger"; tb.querySelector("span").textContent = "Penger"; }
     else if (side === "skatt") { tb.hidden = false; tb.href = "#/penger"; tb.querySelector("span").textContent = "Penger"; }
     else if (side === "sok") { tb.hidden = false; tb.href = sokFra; tb.querySelector("span").textContent = "Tilbake"; }
     else tb.hidden = true;
@@ -4108,6 +4149,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    75: "Penger: ny kontantplan for de voksne – fire uttak, hvilket kort og hva som er høyt gebyr",
     74: "Stedssidene: Kart, Mat, Ideer og Kontakter synes alltid øverst – sykehus finner du under SOS",
     73: "Dagens bilde: velg ditt beste bilde hver kveld – det blir reisedagboka",
     72: "Stedssidene er kortere: det viktigste først – resten ligger i felter du kan åpne",
