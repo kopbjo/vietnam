@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 77, tid: "2026-10-10 kl. 15:10" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 78, tid: "2026-10-10 kl. 14:40" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -642,16 +642,18 @@
   const bestPille = (a) => `<span class="bord ${a.best ? "ja" : "nei"}">${a.best ? "✓ Bestilt" : "Ikke bestilt"}</span>`;
   // ---------- bestilt eller ikke (v66): samme merke og samme gule stiplede kant overalt ----------
   // "best" = bestilt (egen idé markert som bestilt), "ikke" = planlagt men ikke bestilt/kjøpt, "plan" = planlagt (trenger ikke bestilling), "" = fakta
-  const PLAN_PAREN = /\s*\((?:planlagt|billetter ikke kjøpt|ikke bestilt)[^)]*\)\s*$/i;
+  const PLAN_PAREN = /\s*\((?:planlagt|billetter ikke kjøpt|ikke bestilt|forespurt)[^)]*\)\s*$/i;
   function hendStatus(e) {
     if (!e || e.oppgave || e.forslag) return "";
     if (e.egen) return e.egen.ide ? (e.egen.best ? "best" : "ikke") : "";
     const t = String(e.tittel || ""), m = String(e.merk || "").trim();
-    if (/ikke (bestilt|kjøpt)/i.test(t) || /^ikke (bestilt|kjøpt)/i.test(m)) return "ikke";
-    return /\(planlagt\)\s*$/i.test(t) || (e.kort && e.kort.ide) ? "plan" : ""; // kort fra en idé = aldri bestilt
+    if (/ikke (bestilt|kjøpt|bekreftet)/i.test(t) || /^ikke (bestilt|kjøpt|bekreftet)/i.test(m)) return "ikke";
+    if (/\(planlagt\)\s*$/i.test(t)) return "plan";
+    const i = e.kort && e.kort.ide ? (D.ideer[e.kort.s] || []).find((x) => x.navn === e.kort.ide) : null; // v78: følger idéens status
+    return i && /^\s*PLANLAGT/i.test(String(i.praktisk || "")) ? "plan" : "";
   }
   const hendTittel = (e) => String((e && e.tittel) || "").replace(PLAN_PAREN, "");
-  const statusPille = (st, e) => st === "best" ? `<span class="bord ja">✓ Bestilt</span>` : st === "ikke" ? `<span class="bord nei">${/kjøpt/i.test(String((e && e.tittel) || "") + " " + String((e && e.merk) || "").slice(0, 40)) ? "Ikke kjøpt" : "Ikke bestilt"}</span>` : st === "plan" ? `<span class="bord nei">Planlagt</span>` : "";
+  const statusPille = (st, e) => st === "best" ? `<span class="bord ja">✓ Bestilt</span>` : st === "ikke" ? `<span class="bord nei">${/kjøpt/i.test(String((e && e.tittel) || "") + " " + String((e && e.merk) || "").slice(0, 40)) ? "Ikke kjøpt" : /ikke bekreftet/i.test(String((e && e.tittel) || "") + " " + String((e && e.merk) || "").slice(0, 40)) ? "Ikke bekreftet" : "Ikke bestilt"}</span>` : st === "plan" ? `<span class="bord nei">Planlagt</span>` : "";
   const ideStatus = (i) => /^\s*PLANLAGT/i.test(String(i.praktisk || "")) ? `<span class="bord nei idest">Planlagt – ikke bestilt</span>` : "";
   const restEtter = (a) => (a && a.rnavn ? D.restauranter.liste.find((r) => r.navn === a.rnavn && (!a.rsted || r.sted === a.rsted)) : null);
   // Vietnamesiske nummer lagres med landskode, så de kan ringes fra norsk SIM og brukes i WhatsApp
@@ -4152,6 +4154,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    78: "I dag: bestilte ting står ikke lenger med stiplet ramme – bare det som ikke er bestilt eller bekreftet",
     77: "Kontantplan: tydeligere farger i stolpene og på kortene",
     76: "Kontantplan: alle kortene, hvem som bærer hva, og hva vi gjør hvis et kort svikter eller blir borte",
     75: "Penger: ny kontantplan for de voksne – fire uttak, hvilket kort og hva som er høyt gebyr",
