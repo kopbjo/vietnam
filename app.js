@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 79, tid: "2026-10-11 kl. 13:42" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 80, tid: "2026-10-11 kl. 15:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -121,6 +121,8 @@
   const kartUrl = (q) => "https://www.google.com/maps/search/?api=1&query=" + encodeURIComponent(q);
   const telUrl = (n) => "tel:" + String(n).replace(/[^0-9+]/g, "");
   const waUrl = (n) => "https://wa.me/" + String(n).replace(/\D/g, "");
+  // v80: diskret lenke fra kortene vi viser til vietnamesere – samtalen fortsetter i Google Translate (vietnamesisk ↔ norsk)
+  const gtLenke = () => `<a class="gtlenke" href="https://translate.google.com/?sl=vi&amp;tl=no&amp;op=translate" target="_blank" rel="noopener noreferrer">${ikon("oversett", "")}Fortsett i Google Translate (vi ↔ no)</a>`;
   // ---------- lange tekster (v55): avsnitt, etiketter, punkter, lenker og historikk ----------
   // Huskelista og notater er ofte én lang streng. Her deles den opp så den er lett å lese på telefonen.
   const LANG_URL = /(?<![\(\w\/])https:\/\/[^\s<>()\]]+[^\s<>()\].,;:!?»"']/g;
@@ -240,6 +242,8 @@
     dok: '<path d="M7 3h7l4 4v14H7z"/><path d="M14 3v4h4M10 12.5h5M10 16.5h5"/>',
     bilde: '<rect x="3" y="5" width="18" height="14" rx="2"/><circle cx="9" cy="10" r="1.8"/><path d="m21 16-5-5-8 8"/>',
     kamera: '<path d="M4 8h3l1.5-2.5h7L17 8h3v11H4z"/><circle cx="12" cy="13" r="3.6"/>',
+    oversett: '<path d="M3.5 5.5h9M8 3.5v2M5.5 5.5c.6 3 2.6 5.6 5.5 7.2M10.5 5.5c-.8 3.6-3.1 6.6-6.5 8.5"/><path d="M12.5 20.5l4-9 4 9M13.9 17.5h5.2"/>',
+    vask: '<rect x="4.5" y="3" width="15" height="18" rx="2.5"/><circle cx="12" cy="13" r="4.5"/><path d="M7.5 6.2h.01M10.5 6.2h.01"/>',
     venstre: '<path d="M15 5l-7 7 7 7"/>', hoyre: '<path d="M9 5l7 7-7 7"/>', chev: '<path d="M9 6l6 6-6 6"/>',
   };
   const ikon = (t, cls = "ikon") => `<svg class="${cls}" viewBox="0 0 24 24" aria-hidden="true">${P[t] || P.info}</svg>`;
@@ -509,9 +513,11 @@
   }
 
   function seksjon(s) {
-    let h = `<section class="kort ${esc(s.type || "")}"><h2>${ikon(s.type)}${esc(s.tittel)}</h2>${fotoRekke(s.foto, s.tittel.replace(/\s*\(.*\)$/, ""))}`;
+    let h = `<section class="kort ${esc(s.type || "")}${s.vask ? " vaskkort" : ""}"><h2>${ikon(s.ikon || s.type)}${esc(s.tittel)}</h2>${fotoRekke(s.foto, s.tittel.replace(/\s*\(.*\)$/, ""))}`;
     if (s.steg) h += `<ol class="steg">${s.steg.map((x) => `<li>${md(x)}</li>`).join("")}</ol>`;
     if (s.rader && s.rader.length) h += `<dl class="rader">${s.rader.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${md(v)}</dd>`).join("")}</dl>`;
+    if (s.vask) h += vaskBlokk(s.vask); // v80: levert klesvask + knappene mellom forslaget og detaljene
+    if (s.rader2 && s.rader2.length) h += `<dl class="rader">${s.rader2.map(([k, v]) => `<dt>${esc(k)}</dt><dd>${md(v)}</dd>`).join("")}</dl>`;
     if (s.tekst) h += s.tekst.map((t) => `<p>${md(t)}</p>`).join("");
     if (s.bilder) h += `<div class="bilder">${s.bilder.map((b, i) => D.bilder[b] ? `<figure><img src="${D.bilder[b]}" alt="${esc((s.bildetekst || [])[i] || "")}" data-stort="${esc(b)}"><figcaption>${esc((s.bildetekst || [])[i] || "")}</figcaption></figure>` : "").join("")}</div>`;
     if (s.kontakter) h += `<div class="kontaktblokk">${kontakterHtml(s.kontakter)}</div>`;
@@ -629,7 +635,7 @@
   const avtLes = () => Object.values(synkLes().p).filter((p) => p.k === "a" && !p.slettet);
   const avtDag = (d) => avtLes().filter((a) => a.type !== "opph" && a.d === d);
   const avtOpph = (id) => avtLes().filter((a) => a.type === "opph" && a.opph === id).sort((a, b) => (a.c || 0) - (b.c || 0));
-  const avtSomHend = (a) => ({ d: a.d, t: a.tid || "", slutt: a.til || "", tittel: a.tekst, merk: [a.rest ? (a.bord ? "Bord reservert" : "Bord ikke reservert") : a.ide ? (a.best ? "Bestilt" : "Ikke bestilt") : "", a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "), egen: a });
+  const avtSomHend = (a) => ({ d: a.d, t: a.tid || "", slutt: a.til || "", tittel: a.tekst, merk: a.vask ? vaskMerk(a) : [a.rest ? (a.bord ? "Bord reservert" : "Bord ikke reservert") : a.ide ? (a.best ? "Bestilt" : "Ikke bestilt") : "", a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "), egen: a });
   // Restauranter fra restaurantlista for en dag: stedet dere er på, og stedet dere reiser fra på flyttedager
   const restSteder = (d) => D.steder.filter((s) => s.fra <= d && d <= s.til && D.restauranter.liste.some((r) => r.sted === s.id)).sort((a, b) => (a.fra < b.fra ? 1 : -1));
   const restForDag = (d) => { const ids = restSteder(d).map((s) => s.id); return D.restauranter.liste.filter((r) => ids.includes(r.sted)).sort((a, b) => ids.indexOf(a.sted) - ids.indexOf(b.sted) || a.prio - b.prio); };
@@ -659,6 +665,7 @@
   // Vietnamesiske nummer lagres med landskode, så de kan ringes fra norsk SIM og brukes i WhatsApp
   const tlfNorm = (n) => { let x = String(n || "").replace(/[^\d+]/g, ""); if (!x) return ""; if (x.startsWith("00")) return "+" + x.slice(2); if (x.startsWith("0")) return "+84" + x.slice(1); return x.startsWith("+") ? x : "+" + x; };
   function avtKnapper(a, medEndre = true) {
+    if (a.vask) return vaskKnapperRad(a, medEndre);
     if (a.ide) return (a.best ? "" : `<button class="kb bordkn" data-avtbest="${esc(a.id)}">${ikon("bestilt", "")}Marker som bestilt</button>`) + (medEndre ? `<button class="kb" data-avt="${esc(a.id)}">Endre</button>` : "");
     const r = a.rest ? restEtter(a) : null;
     const bord = a.rest && !a.bord ? `<button class="kb bordkn" data-avtbord="${esc(a.id)}">${ikon("bestilt", "")}Marker som reservert</button>` : "";
@@ -681,14 +688,17 @@
     const n = avtOpph(s.id);
     return `<div class="notater">${n.map((a) => `<button class="notat" data-avt="${esc(a.id)}">${esc(a.tekst)}</button>`).join("")}<button class="notatny" data-avtny="opph" data-avtsted="${esc(s.id)}">${ikon("pluss", "")}${n.length ? "Nytt notat" : "Romnumre, Wi-Fi …"}</button></div>`;
   }
-  function romSjekkHtml(aapen) {
+  function romSjekkHtml(aapen, sId) {
     const liste = D.pakking.forlateRommet, lagret = ((pakkLes().vietnam || {}).rommet) || {};
     const igjen = liste.filter((t) => !lagret[t.navn]).length;
-    return `<details class="fold romsjekk"><summary>${ikon("bestilt")}Før vi forlater rommet <span class="antall">${igjen ? `${igjen} igjen` : "alt sjekket"}</span></summary><div class="innhold">
+    // v80: klesvask som ikke er markert som mottatt på stedet vi forlater
+    const vask = sId ? vaskAapne(sId).map((a) => `<div class="vaskstatus vaskvarsel">${ikon("vask")}<div><b>Klesvasken er ikke markert som mottatt</b><div class="merk">${esc(a.hvor || "")} · ${a.levd ? "levert " + esc(kort(a.levd)) + " · " : ""}${a.tilbake === "selv" ? "skulle hentes" : "skulle komme"} ${esc(kort(a.d))}${erKl(a.tid) ? " kl. " + esc(a.tid) : ""}</div><div class="knapper">${vaskKnapperRad(a, false)}</div></div></div>`).join("") : "";
+    return `<details class="fold romsjekk"${vask ? " open" : ""}><summary>${ikon("bestilt")}Før vi forlater rommet <span class="antall">${igjen ? `${igjen} igjen` : "alt sjekket"}</span></summary><div class="innhold">${vask}
       ${liste.map((t) => `<label class="pakkrad ${lagret[t.navn] ? "ok" : ""}"><input type="checkbox" data-pakk="${esc(t.navn)}" data-pakkrunde-id="vietnam" data-pakkliste-id="rommet" ${lagret[t.navn] ? "checked" : ""}><span><span class="pnavn">${esc(t.navn)}</span></span></label>`).join("")}
       <p class="krolle romhjelp">Kryssene vises på alle telefonene og nullstilles av seg selv etter et døgn.</p></div></details>`;
   }
   let AV = null; // skjemaet som er åpent
+  const AVT_IKON = { dag: "kalender", rest: "mat", ide: "ideer", opph: "hotell", mote: "kart", vask: "vask" }; // v80: valgene som fliser med ikon
   function visAvtSkjema(init) {
     AV = { tid: "", til: "", tekst: "", adr: "", tlf: "", notat: "", ...init };
     const a = AV, ny = !a.id, o = $("#overlay");
@@ -704,7 +714,7 @@
     const stay = a.opph ? stedEtterId(a.opph) : overnatting(a.d);
     if (a.type === "opph" && !stay) a.type = "dag";
     if (a.type === "opph") a.opph = stay.id;
-    const typer = [["dag", "Denne dagen"], ["rest", "Restaurant"], ...(iSteder.length ? [["ide", "Idé"]] : []), ...(stay ? [["opph", "Hele oppholdet"]] : []), ["mote", "Møtested"]];
+    const typer = [["dag", "Denne dagen"], ["rest", "Restaurant"], ...(iSteder.length ? [["ide", "Idé"]] : []), ...(stay ? [["opph", "Hele oppholdet"]] : []), ["mote", "Møtested"], ...(a.d && vaskOpphFor(a.d) ? [["vask", "Klesvask"]] : [])];
     const hvor = a.type === "ide" && a.dagvalg ? "Velg idé og dag" : a.type === "ide" ? pen(a.d) + " · fra ideene – ikke bestilt" : a.type === "opph" ? `Vises alle dager på ${stay.hotell.navn} (${stay.dato})` : a.type === "mote" ? `${pen(a.d)} · hvis vi blir borte fra hverandre` : pen(a.d);
     const felt = (lbl, inp) => `<label class="af"><span>${lbl}</span>${inp}</label>`;
     // Starter + ferdig, eller bare tid på dagen (v56)
@@ -751,7 +761,7 @@
     o.className = "overlay skjema";
     o.innerHTML = `<button class="lukk">Lukk</button><div class="avtskjema">
       <h2>${ny ? (a.fast ? "Legg i planen" : "Legg til") : a.type === "opph" ? "Endre notat" : a.type === "mote" ? "Endre møtested" : a.type === "rest" ? "Endre restaurant" : a.type === "ide" ? "Endre idé i planen" : "Endre avtale"}</h2>
-      ${ny && !a.fast ? `<div class="avttyper${typer.length > 4 ? " fem" : typer.length > 3 ? " fire" : ""}">${typer.map(([k, t]) => `<button data-avttype="${k}" class="${k === a.type ? "valgt" : ""}">${t}</button>`).join("")}</div>` : ""}
+      ${ny && !a.fast ? `<div class="avtfliser${typer.length === 4 ? " to" : ""}" role="group" aria-label="Hva vil du legge til?">${typer.map(([k, t]) => `<button data-avttype="${k}"${k === "vask" ? ` data-avtd="${esc(a.d)}"` : ""} class="${k === a.type ? "valgt" : ""}" aria-pressed="${k === a.type}">${ikon(AVT_IKON[k] || "kalender", "")}<span>${t}</span></button>`).join("")}</div>` : ""}
       <p class="avthvor">${esc(hvor)}</p>${f}
       <button class="knapp knapp-full avtlagre" data-avtlagre>Lagre</button>
       ${ny ? "" : `<button class="knapp knapp-full knapp-lys avtslett" data-avtslett>${a.type === "ide" ? "Fjern fra planen" : "Slett"}</button>`}
@@ -811,7 +821,8 @@
       synkSett({ ...a, best: 1 });
       return avtEtterTegning(() => toastAngre("Markert som bestilt – vises på alle telefonene", () => { synkSett({ ...a, best: 0 }); avtEtterTegning(); }));
     }
-    if (t.dataset.avt) { const a = avtLes().find((x) => x.id === t.dataset.avt); if (a) visAvtSkjema({ ...a }); return; }
+    if (t.dataset.avt) { const a = avtLes().find((x) => x.id === t.dataset.avt); if (a) { if (a.vask) visVaskSkjema({ ...a }); else visAvtSkjema({ ...a }); } return; }
+    if (t.dataset.avttype === "vask") { avtFelt(); const vs = vaskOpphFor(AV.d); lukkOverlay(); AV = null; if (vs) visVaskSkjema({ vsted: vs.id, levd: dagerI(vs).includes(t.dataset.avtd || "") ? t.dataset.avtd : undefined }); return; }
     if (t.dataset.avttype) { avtFelt(); AV.type = t.dataset.avttype; if (AV.type !== "opph") delete AV.opph; return visAvtSkjema(AV); }
     if (t.dataset.avtbordvalg) { AV.bord = Number(t.dataset.avtbordvalg); t.parentNode.querySelectorAll("button").forEach((b) => b.classList.toggle("valgt", b === t)); return; }
     if (t.dataset.avtbord) {
@@ -823,6 +834,187 @@
     if (t.hasAttribute("data-avtlagre")) return avtLagre();
     if (t.hasAttribute("data-avtslett")) return avtSlett();
   }
+
+  // ---------- klesvask (v80): forslag per sted, «Vis til vaskeriet» og påminnelse om henting ----------
+  // Påminnelsen er en egen avtale (synk {k:"a", type:"dag", vask:1, d/tid = når den er ferdig, levd, vsted, hvor, tilbake, mottatt …}),
+  // så eldre appversjoner viser den som en vanlig avtale. Tipsene i I dag er forslag – de forsvinner når noe er levert på stedet.
+  const kvSted = (id) => (D && D.klesvask && D.klesvask.steder && D.klesvask.steder[id]) || null;
+  const vaskAlle = () => avtLes().filter((a) => a.vask);
+  const vaskAapne = (sId) => vaskAlle().filter((a) => a.vsted === sId && !a.mottatt).sort((a, b) => (a.d + (a.tid || "")).localeCompare(b.d + (b.tid || "")));
+  const vaskLevertHer = (sId) => vaskAlle().some((a) => a.vsted === sId);
+  const vaskOpphFor = (d) => { const s = overnatting(d) || stedForDato(d); return s && kvSted(s.id) ? s : null; };
+  const vaskTilbakeTekst = (a) => a.tilbake === "selv" ? "Vi henter selv" : "Leveres på hotellet";
+  const vaskMerk = (a) => [vaskTilbakeTekst(a), a.levd ? "levert " + kort(a.levd) : "", a.notat || ""].filter(Boolean).join(" · ");
+  const VASK_SYM = {
+    vask: '<path d="M2.5 7.5l2.2 11a1.8 1.8 0 0 0 1.8 1.5h11a1.8 1.8 0 0 0 1.8-1.5l2.2-11"/><path d="M2.5 7.5c1.6 1.4 3.2 1.4 4.8 0s3.2-1.4 4.7 0 3.2 1.4 4.7 0 3.2-1.4 4.8 0"/>',
+    tork: '<rect x="3.5" y="3.5" width="17" height="17" rx="1"/><circle cx="12" cy="12" r="5.5"/>',
+    brett: '<path d="M3.5 9l8.5-4.5L20.5 9 12 13.5z"/><path d="M3.5 13l8.5 4.5 8.5-4.5"/><path d="M3.5 17l8.5 4.5 8.5-4.5"/>',
+    stryk: '<path d="M3 18h18l-1.6-7.2A3.5 3.5 0 0 0 16 8H9.5A6.5 6.5 0 0 0 3 14.5z"/><path d="M9 8V6h7"/><path d="M10 13h.01M13 13h.01"/>',
+    ikkestryk: '<path d="M3 18h18l-1.6-7.2A3.5 3.5 0 0 0 16 8H9.5A6.5 6.5 0 0 0 3 14.5z"/><path d="M9 8V6h7"/><path d="M3 3l18 18" class="kryss"/>',
+  };
+  const vaskSym = (k) => `<svg viewBox="0 0 24 24" aria-hidden="true">${VASK_SYM[k]}</svg>`;
+  function vaskKnapperRad(a, medEndre = true) {
+    if (a.mottatt) return medEndre ? `<button class="kb" data-avt="${esc(a.id)}">Endre</button>` : "";
+    return `<button class="kb vaskok" data-vaskok="${esc(a.id)}">${ikon("bestilt", "")}Vi har fått den</button>` +
+      (a.tlf ? (a.wa ? knapp("wa", a.tlf, "WhatsApp") : knapp("tel", a.tlf, "Ring")) : "") +
+      (medEndre ? `<button class="kb" data-avt="${esc(a.id)}">Endre</button>` : "");
+  }
+  // Kortet «Klesvask» under «Praktisk i <sted>»: det som er levert, knappene og (fra seksjonen) detaljene
+  function vaskBlokk(sId) {
+    const k = kvSted(sId); if (!k) return "";
+    const inne = vaskAapne(sId).map((a) => `<div class="vaskstatus">${ikon("vask")}<div><b>${a.tilbake === "selv" ? "Hentes" : "Kommer tilbake"} ${esc(kort(a.d))}${erKl(a.tid) ? " kl. " + esc(a.tid) : ""}</b> · ${esc(a.hvor || "")}
+      <div class="merk">${esc(vaskMerk(a))}</div><div class="knapper">${vaskKnapperRad(a)}</div></div></div>`).join("");
+    const forst = (k.vaskerier || []).find((v) => v.wa || v.tel);
+    return inne + `<div class="knapper vaskknapper">${forst ? knapp(forst.wa ? "wa" : "tel", forst.wa || forst.tel, `${forst.wa ? "WhatsApp" : "Ring"} ${forst.navn}`) : ""}
+      <button class="kb" data-vaskvis>${vaskSym("vask").replace("<svg", '<svg class="vsym"')}Vis til vaskeriet</button>
+      <button class="kb" data-vaskny="${esc(sId)}">${ikon("pluss", "")}Vi har levert</button></div>`;
+  }
+  // Tips i tidslinja (forslag, ingen avkrysning)
+  function vaskTips(d) {
+    const s = vaskOpphFor(d), k = s && kvSted(s.id); if (!k || vaskLevertHer(s.id)) return [];
+    return (k.tips || []).filter((x) => x.d === d).map((x) => ({ d, t: x.t || "", tittel: "Tips: i dag kan være en fin dag å levere klesvask", merk: x.tekst || "", vtips: s.id, sortMin: minutter(x.t || "") }));
+  }
+  const vaskTipsHtml = (e) => `<div class="tr vtips">${klHtml(e.t)}<span class="pr">${ikon("vask", "")}</span><div class="inn"><div class="tipsboks">
+    <div class="tt">${esc(e.tittel)}</div>${e.merk ? `<div class="merk">${md(e.merk)}</div>` : ""}
+    <div class="knapper"><a class="kb intern" href="#/sted/${esc(e.vtips)}" data-finn="Klesvask">Se mulighetene ›</a><button class="kb" data-vaskny="${esc(e.vtips)}">Vi har levert</button></div></div></div></div>`;
+
+  // «Vis til vaskeriet»: med eller uten stryking (huskes på telefonen)
+  function visVask(stryk) {
+    const F = D.klesvask && D.klesvask.frase; if (!F) return;
+    if (stryk === undefined) stryk = lagre.get("vn.vaskStryk") === "1"; else lagre.set("vn.vaskStryk", stryk ? "1" : "0");
+    const x = stryk ? F.med : F.uten;
+    const p = (sym, t, ja) => `<div class="vpikto${ja ? "" : " nei"}"><span class="vmerke" aria-hidden="true">${ja ? "✓" : "✕"}</span>${vaskSym(sym)}<span>${t}</span></div>`;
+    const o = $("#overlay");
+    o.className = "overlay sjofor";
+    o.innerHTML = `<button class="lukk">Lukk</button><div class="sjofor-stor frase-stor vaskvis">
+      <div class="strykvalg" role="group" aria-label="Stryking"><button class="${stryk ? "" : "valgt"}" data-vaskstryk="0" aria-pressed="${!stryk}">${vaskSym("ikkestryk")}Uten stryking</button><button class="${stryk ? "valgt" : ""}" data-vaskstryk="1" aria-pressed="${stryk}">${vaskSym("stryk")}Med stryking</button></div>
+      <div class="vpiktorad">${p("vask", "Vask", 1)}${p("tork", "Tørk", 1)}${p("brett", "Brett", 1)}${p(stryk ? "stryk" : "ikkestryk", stryk ? "Stryk" : "Ikke stryk", stryk)}</div>
+      <div class="snavn" lang="vi" data-les>${esc(x.vi)}</div>
+      <p class="fstor-no">${esc(x.no)}</p>${akLesKnapp()}
+      ${F.tips ? `<p class="sno">${esc(F.tips)}</p>` : ""}
+      <p class="sno">Snu telefonen mot den du snakker med.</p>${gtLenke()}</div>`;
+    o.hidden = false; o.scrollTop = 0;
+  }
+
+  // Skjemaet «Klesvask levert» → påminnelse i I dag (og i kalenderen hvis ønsket)
+  let VS = null;
+  const vaskISO = (d, t) => `${d}T${erKl(t) ? t.padStart(5, "0") : "18:00"}`;
+  const vaskMin = (iso) => { const [d, t] = iso.split("T"); return mellom("2026-01-01", d) * 1440 + minutter(t); };
+  function vaskFerdigValg(levd) {
+    const iDag = levd === idagISO(), m = pluss(levd, 1), o = pluss(levd, 2);
+    return [[levd, "18:00", iDag ? "I kveld 18:00" : `${kort(levd)} 18:00`], [m, "10:00", iDag ? "I morgen 10:00" : `${kort(m)} 10:00`],
+      [m, "18:00", iDag ? "I morgen 18:00" : `${kort(m)} 18:00`], [o, "18:00", `${kort(o)} 18:00`]];
+  }
+  function visVaskSkjema(init) {
+    const s = stedEtterId(init.vsted) || vaskOpphFor(init.levd || init.d || idagISO()); const k = s && kvSted(s.id); if (!k) return;
+    const dager = dagerI(s).filter((x) => x < s.til || x === s.fra);
+    VS = { fritt: false, kal: lagre.get("vn.vaskKal") !== "0", ...init, vsted: s.id };
+    const v = VS;
+    if (!v.levd) v.levd = dager.includes(idagISO()) ? idagISO() : s.fra;
+    if (!v.hvor) { const f = k.vaskerier[0]; Object.assign(v, { hvor: f.navn, tilbake: f.tilbake || "hotell" }); }
+    if (!v.d) { const [d, t] = vaskFerdigValg(v.levd)[2]; v.d = d; v.tid = t; }
+    vaskSkjemaTegn();
+  }
+  function vaskSkjemaTegn() {
+    const v = VS, s = stedEtterId(v.vsted), k = kvSted(v.vsted), o = $("#overlay"), ny = !v.id;
+    const kjent = k.vaskerier.some((x) => x.navn === v.hvor), annet = !kjent || v.annet;
+    const valg = vaskFerdigValg(v.levd), iValg = valg.some(([d, t]) => d === v.d && t === v.tid) && !v.fritt;
+    const ferdigDager = []; for (let x = v.levd; x <= s.til && ferdigDager.length < 8; x = pluss(x, 1)) ferdigDager.push(x);
+    const diff = vaskMin(k.avreise) - vaskMin(vaskISO(v.d, v.tid)), avr = k.avreise.split("T");
+    const margin = diff <= 0 ? `<div class="vmargin rod">${ikon("advarsel", "")}<span><b>Etter at vi reiser!</b> Vi drar ${esc(kort(avr[0]))} kl. ${esc(avr[1])}. Velg et tidligere tidspunkt – eller be om ekspress.</span></div>`
+      : diff < 12 * 60 ? `<div class="vmargin gul">${ikon("advarsel", "")}<span><b>Knapt</b> – bare ${Math.max(1, Math.round(diff / 60))} t før vi drar ${esc(kort(avr[0]))} kl. ${esc(avr[1])}.</span></div>`
+      : `<div class="vmargin ok">${ikon("bestilt", "")}<span>${esc(kort(v.d))} kl. ${esc(v.tid)} – god margin før vi drar ${esc(kort(avr[0]))} kl. ${esc(avr[1])}.</span></div>`;
+    o.className = "overlay skjema";
+    o.innerHTML = `<button class="lukk">Lukk</button><div class="avtskjema vaskskjema">
+      <h2 tabindex="-1">${ikon("vask")}${ny ? "Klesvask levert" : "Endre klesvask"}</h2>
+      <p class="avthvor">${esc(s.navn)} · påminnelse om når den er ferdig</p>
+      <div class="af"><span>Hvor</span><div class="vchips">${k.vaskerier.map((x) => `<button type="button" data-vaskhvor="${esc(x.navn)}" class="${!annet && v.hvor === x.navn ? "valgt" : ""}">${esc(x.navn)}</button>`).join("")}<button type="button" data-vaskhvor="" class="${annet ? "valgt" : ""}">Annet</button></div>
+        ${annet ? `<input id="vaskAnnet" value="${esc(kjent ? "" : v.hvor)}" placeholder="Navn på vaskeriet" autocomplete="off" enterkeyhint="done">` : ""}</div>
+      <label class="af"><span>Levert</span><select id="vaskLevd">${dagerI(s).map((x) => `<option value="${x}"${x === v.levd ? " selected" : ""}>${esc(pen(x))}${x === idagISO() ? " (i dag)" : ""}</option>`).join("")}</select></label>
+      <div class="af"><span>Ferdig</span><div class="vchips">${valg.map(([d, t, l], i) => `<button type="button" data-vaskferdig="${i}" class="${iValg && d === v.d && t === v.tid ? "valgt" : ""}">${esc(l)}</button>`).join("")}<button type="button" data-vaskferdig="fritt" class="${iValg ? "" : "valgt"}">Velg dag og tid …</button></div>
+        ${iValg ? "" : `<div class="tidvalg vfritt"><select id="vaskD">${ferdigDager.map((x) => `<option value="${x}"${x === v.d ? " selected" : ""}>${esc(kort(x))}</option>`).join("")}</select><input type="time" id="vaskTid" value="${esc(v.tid)}" aria-label="Klokkeslett"></div>`}</div>
+      ${margin}
+      <div class="af"><span>Tilbake</span><div class="bordvalg vtilbake"><button type="button" data-vasktilbake="hotell" class="${v.tilbake !== "selv" ? "valgt" : ""}">Leveres på hotellet</button><button type="button" data-vasktilbake="selv" class="${v.tilbake === "selv" ? "valgt" : ""}">Vi henter selv</button></div></div>
+      <label class="af"><span>Notat (valgfritt)</span><input id="vaskNotat" value="${esc(v.notat || "")}" placeholder="F.eks. 2 poser, 31 plagg – bilde av lappen" autocomplete="off" enterkeyhint="done"></label>
+      <label class="vkal"><input type="checkbox" id="vaskKal"${v.kal ? " checked" : ""}><span>Legg også i telefonens kalender – med varsel når den er ferdig</span></label>
+      <button class="knapp knapp-full avtlagre" data-vasklagre>${ny ? "Lagre påminnelse" : "Lagre"}</button>
+      ${ny ? "" : `<button class="knapp knapp-full knapp-lys avtslett" data-vaskslett>Slett</button>`}
+      <p class="sno">Vises i «I dag» på alle telefonene. Lagres her først og deles når dere har nett.</p></div>`;
+    o.hidden = false;
+  }
+  function vaskFelt() {
+    const v = VS, g = (id) => document.getElementById(id);
+    if (g("vaskAnnet")) v.hvor = g("vaskAnnet").value;
+    if (g("vaskLevd")) v.levd = g("vaskLevd").value;
+    if (g("vaskD")) v.d = g("vaskD").value;
+    if (g("vaskTid") && erKl(g("vaskTid").value)) v.tid = g("vaskTid").value;
+    if (g("vaskNotat")) v.notat = g("vaskNotat").value;
+    if (g("vaskKal")) v.kal = g("vaskKal").checked;
+  }
+  function vaskKalender(p) {
+    const s = (x) => String(x || "").replace(/[\;,]/g, (c) => "\\" + c).replace(/\n/g, "\\n");
+    const dt = (d, t) => d.replace(/-/g, "") + "T" + t.replace(":", "") + "00";
+    const t = erKl(p.tid) ? p.tid : "18:00", naa = new Date().toISOString().replace(/[-:]/g, "").slice(0, 15) + "Z";
+    const ics = ["BEGIN:VCALENDAR", "VERSION:2.0", "PRODID:-//reise//klesvask//NO", "CALSCALE:GREGORIAN", "BEGIN:VEVENT", `UID:${p.id}@reise`, `DTSTAMP:${naa}`,
+      `DTSTART:${dt(p.d, t)}`, "DURATION:PT30M", `SUMMARY:${s(p.tekst)}`, `DESCRIPTION:${s(vaskMerk(p))}`,
+      "BEGIN:VALARM", "ACTION:DISPLAY", `DESCRIPTION:${s(p.tekst)}`, "TRIGGER:PT0M", "END:VALARM", "END:VEVENT", "END:VCALENDAR"].join("\r\n");
+    try {
+      const url = URL.createObjectURL(new Blob([ics], { type: "text/calendar;charset=utf-8" }));
+      const a = document.createElement("a"); a.href = url; a.download = "klesvask.ics"; document.body.appendChild(a); a.click(); a.remove();
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch { toast("Fikk ikke lagt den i kalenderen – påminnelsen ligger i I dag", 3200, "info"); }
+  }
+  function vaskLagre() {
+    vaskFelt(); const v = VS, k = kvSted(v.vsted), hvor = String(v.hvor || "").trim();
+    if (!hvor) { toast("Skriv hvor dere leverte klesvasken", 2200, "info"); return; }
+    if (!erKl(v.tid)) { toast("Velg når den er ferdig", 2200, "info"); return; }
+    const x = k.vaskerier.find((y) => y.navn === hvor) || {};
+    const navn = hvor === "Hotellet" ? "hotellet" : hvor;
+    const p = { k: "a", id: v.id || tilfeldigHex(6), type: "dag", vask: 1, d: v.d, tid: v.tid.padStart(5, "0"), levd: v.levd, vsted: v.vsted, hvor, tilbake: v.tilbake === "selv" ? "selv" : "hotell",
+      tekst: v.tilbake === "selv" ? `Hent klesvasken – ${navn}` : `Klesvasken kommer tilbake – ${navn}`, notat: String(v.notat || "").trim(),
+      tlf: x.wa || x.tel ? tlfNorm(x.wa || x.tel) : "", wa: x.wa ? 1 : 0, adr: "", mottatt: v.mottatt ? 1 : 0, hvem: v.id ? v.hvem || "" : meg() || "", c: v.c || Date.now() };
+    lagre.set("vn.vaskKal", v.kal ? "1" : "0");
+    synkSett(p); lukkOverlay(); VS = null;
+    if (v.kal) vaskKalender(p);
+    avtEtterTegning(() => toast(`Påminnelse ${kort(p.d)} kl. ${p.tid} – vises på alle telefonene`, 2600));
+  }
+  function vaskKlikk(t) {
+    if (t.hasAttribute("data-vaskvis")) { uttaleStopp(); return visVask(); }
+    if (t.dataset.vaskstryk) { uttaleStopp(); return visVask(t.dataset.vaskstryk === "1"); }
+    if (t.dataset.vaskny !== undefined) { lukkOverlay(); return visVaskSkjema({ vsted: t.dataset.vaskny }); }
+    if (t.dataset.vaskok) {
+      const a = avtLes().find((x) => x.id === t.dataset.vaskok); if (!a) return;
+      if (t.closest("#overlay")) lukkOverlay();
+      synkSett({ ...a, mottatt: 1 });
+      return avtEtterTegning(() => toastAngre("Markert som mottatt – vises på alle telefonene", () => { synkSett({ ...a, mottatt: 0 }); avtEtterTegning(); }));
+    }
+    if (!VS) return;
+    if (t.dataset.vaskhvor !== undefined) {
+      vaskFelt(); const k = kvSted(VS.vsted), x = k.vaskerier.find((y) => y.navn === t.dataset.vaskhvor);
+      if (x) Object.assign(VS, { hvor: x.navn, tilbake: x.tilbake || VS.tilbake, annet: false }); else Object.assign(VS, { hvor: "", annet: true });
+      vaskSkjemaTegn(); if (!x) { const i = document.getElementById("vaskAnnet"); if (i) i.focus(); } return;
+    }
+    if (t.dataset.vaskferdig) {
+      vaskFelt();
+      if (t.dataset.vaskferdig === "fritt") VS.fritt = true;
+      else { const [d, tid] = vaskFerdigValg(VS.levd)[Number(t.dataset.vaskferdig)]; Object.assign(VS, { d, tid, fritt: false }); }
+      return vaskSkjemaTegn();
+    }
+    if (t.dataset.vasktilbake) { vaskFelt(); VS.tilbake = t.dataset.vasktilbake; return vaskSkjemaTegn(); }
+    if (t.hasAttribute("data-vasklagre")) return vaskLagre();
+    if (t.hasAttribute("data-vaskslett")) {
+      const gammel = avtLes().find((x) => x.id === VS.id); lukkOverlay(); VS = null; if (!gammel) return;
+      synkSett({ ...gammel, slettet: 1 });
+      return avtEtterTegning(() => toastAngre("Slettet", () => { synkSett({ ...gammel, slettet: 0 }); avtEtterTegning(); }));
+    }
+  }
+  // Endring i levert-dag, ferdig-dag eller klokkeslett: tegn margin-sjekken på nytt
+  document.addEventListener("change", (e) => {
+    if (!VS || !e.target.closest(".vaskskjema")) return;
+    const id = e.target.id;
+    if (id === "vaskLevd") { vaskFelt(); if (!VS.fritt) { const [d, t] = vaskFerdigValg(VS.levd)[2]; VS.d = d; VS.tid = t; } else if (VS.d < VS.levd) VS.d = VS.levd; vaskSkjemaTegn(); }
+    else if (id === "vaskD" || id === "vaskTid") { vaskFelt(); vaskSkjemaTegn(); }
+  });
 
   // ---------- SIDE: I dag ----------
   let valgtDag = null;
@@ -836,7 +1028,7 @@
   const sluttMin = (e) => { const s = sluttTid(e); if (!s) return null; const [kl, pl] = s.split(" "); let m = minutter(kl); if (pl) m += 1440; else if (erKl(e.t) && m < minutter(e.t)) m += 1440; return m; };
   const klHtml = (t, s) => `<span class="kl${DAGSDEL[t] || !t ? " kl-ord" : ""}">${esc(tidVis(t)).replace("middag", "\u00ADmiddag")}${s ? `<small class="kl-til">–${esc(s.replace(" +1", ""))}${/\+1$/.test(s) ? "<sup>+1</sup>" : ""}</small>` : ""}</span>`;
   function radIkon(e) {
-    if (e.egen) return e.egen.rest ? "mat" : e.egen.ide ? "ideer" : e.egen.type === "mote" ? "kart" : "kalender";
+    if (e.egen) return e.egen.vask ? "vask" : e.egen.rest ? "mat" : e.egen.ide ? "ideer" : e.egen.type === "mote" ? "kart" : "kalender";
     if (e.forslag) return "ideer";
     if (flyForHend(e)) return "reise";
     if (e.avledet || /innsjekk|utsjekk|sjekk ut/i.test(e.tittel)) return "hotell";
@@ -920,7 +1112,7 @@
       utRad = { d, t: grense ? "før " + grense : "", sortMin: grense ? minutter(grense) - 1 : -1, tittel: "Sjekk ut av " + utH.hotell.navn, avledet: "ut", sted: utH };
     }
     const vedUt = utRad ? hend.filter((e) => e.oppgave && !e.t && /utsjekk/i.test(e.tittel)) : [];
-    const rader = [...hend.filter((e) => !vedUt.includes(e)), ...egne.map(avtSomHend), ...(utRad && utRad.avledet ? [utRad] : [])]
+    const rader = [...hend.filter((e) => !vedUt.includes(e)), ...egne.map(avtSomHend), ...(utRad && utRad.avledet ? [utRad] : []), ...vaskTips(d)]
       .sort((a, b) => sortMin(a) - sortMin(b));
 
     // Neste: første bestilte punkt fra nå (i dag), ellers det første i morgen
@@ -929,7 +1121,7 @@
     const nm = naaMin();
     if (erIdag) {
       const kand = (dag) => [...D.hendelser.filter((e) => e.d === dag), ...avtDag(dag).map(avtSomHend)]
-        .filter((e) => erKl(e.t) && !e.oppgave && !(e.egen && e.egen.type === "mote")).sort((a, b) => minutter(a.t) - minutter(b.t));
+        .filter((e) => erKl(e.t) && !e.oppgave && !(e.egen && (e.egen.type === "mote" || e.egen.mottatt))).sort((a, b) => minutter(a.t) - minutter(b.t));
       // Bare i dag og i morgen – ellers blir det samme punktet stående i flere dager
       neste = kand(d).find((e) => minutter(e.t) >= nm - 15 || (sluttMin(e) != null && sluttMin(e) > nm)) || kand(pluss(d, 1))[0] || null;
     }
@@ -963,17 +1155,19 @@
         const gjort = !!huskLes()[oppgNokkel(e)];
         return `<div class="tr oppg${gjort ? " gjort" : ""}">${klHtml(e.t)}<span class="pr">${ikon("bestilt", "")}</span><div class="inn">${huskRad(e, "div")}</div></div>`;
       }
+      if (e.vtips) return vaskTipsHtml(e);
       if (e.forslag) {
         const ferdig = erIdag && (e.sluttMin != null ? e.sluttMin <= nm : e.sortMin >= 0 && e.sortMin < nm - 60);
         return `<div class="tr forslag${ferdig ? " ferdig" : ""}">${klHtml(e.t)}<span class="pr">${ikon("ideer", "")}</span><div class="inn"><div class="tt">${esc(e.tittel)}</div><div class="merk">På resortet</div></div></div>`;
       }
       const f = flyForHend(e), k = e.kontakt ? kontaktEtterId(e.kontakt) : null, aktiv = erNeste(e);
-      const sm = sluttMin(e), ferdig = erIdag && !aktiv && (sm != null ? sm <= nm : DAGSDEL[e.t] ? DAGSDEL[e.t][1] * 60 <= nm : sortMin(e) >= 0 && sortMin(e) < nm - 15);
+      const sm = sluttMin(e), ferdig = (e.egen && e.egen.vask && e.egen.mottatt) || erIdag && !aktiv && (sm != null ? sm <= nm : DAGSDEL[e.t] ? DAGSDEL[e.t][1] * 60 <= nm : sortMin(e) >= 0 && sortMin(e) < nm - 15);
       const a = e.egen, mote = a && a.type === "mote";
       const st = hendStatus(e), ikkeBest = st === "ikke" || st === "plan";
-      const bord = a && a.rest ? `<span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span>` : statusPille(st, e);
+      const bord = a && a.vask ? (a.mottatt ? `<span class="bord ja">✓ Mottatt</span>` : "") : a && a.rest ? `<span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span>` : statusPille(st, e);
       let under = "";
-      if (a) { const x = [a.notat, a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "); if (x) under += `<div class="merk">${esc(x)}</div>`; }
+      if (a && a.vask) { under += `<div class="merk">${esc(vaskMerk(a))}</div>`; if (!aktiv && !a.mottatt) under += `<div class="knapper">${vaskKnapperRad(a, false)}</div>`; }
+      else if (a) { const x = [a.notat, a.adr ? a.adr.replace(/\s*\n\s*/g, ", ") : ""].filter(Boolean).join(" · "); if (x) under += `<div class="merk">${esc(x)}</div>`; }
       else if (e.merk) under += `<div class="merk">${md(e.merk)}</div>`;
       if (aktiv) {
         if (k && !(e.merk || "").includes(k.navn)) under += `<div class="merk">${esc(k.navn)}</div>`;
@@ -987,7 +1181,7 @@
       if (merInfo) under += `<div class="tr-mer">Mer info<span aria-hidden="true">\u00a0›</span></div>`;
       if (e === utRad) {
         under += vedUt.map((o) => `<div class="tr-under">${huskRad(o, "div")}</div>`).join("");
-        if (flytt && romOk) under += romSjekkHtml(false);
+        if (flytt && romOk) under += romSjekkHtml(false, utH && utH.id);
       }
       if (ikkeBest) harIkkeBest = true;
       return `<div class="tr${aktiv ? " aktiv" : ""}${ferdig ? " ferdig" : ""}${a ? " egen" : ""}${merInfo ? " harkort" : ""}${ikkeBest ? " ikkebest" : ""}" data-idet="${id}" role="button" tabindex="0">${klHtml(e.t, sluttTid(e))}<span class="pr">${ikon(radIkon(e), "")}</span><div class="inn">
@@ -1013,7 +1207,7 @@
         ${nytt && hn.inn && !innEvent ? `<div class="merk">Innsjekk ${esc(hn.inn)}</div>` : ""}
         ${notatHtml(natt)}
         ${hn.sjofor !== false ? `<div class="knapper"><button class="kb" data-sjofor="${esc(natt.id)}">${ikon("kart", "")}Vis til sjåføren</button></div>` : ""}
-        ${kveldFor && !flytt && romOk ? romSjekkHtml(false) : ""}</div>`;
+        ${kveldFor && !flytt && romOk ? romSjekkHtml(false, natt.id) : ""}</div>`;
     }
     let imorgen = "";
     if (neste && neste.d !== d) {
@@ -1285,8 +1479,8 @@
     else if (x.hotellSted) { const s = x.hotellSted; inn = `<div class="ark-etikett">Overnatting · ${esc(s.dato)}</div><div class="hotell">${hotellInnhold(s, false)}${notatHtml(s)}</div>`; }
     else if (x.egen) {
       const a = x.egen, hvem = personNavn(a.hvem), iv = a.ide ? ideEtter(a) : null;
-      inn = `<div class="ark-etikett">${a.type === "mote" ? "Møtested" : a.rest ? "Restaurant" : a.ide ? "Idé i planen" : "Egen avtale"}${a.tid ? " · " + esc(tidKl(a.tid)) + (a.til ? "–" + esc(a.til) : "") : ""} · ${esc(pen(x.d))}</div><h2>${esc(a.tekst)}</h2>
-        ${a.rest ? `<p><span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span></p>` : ""}${a.ide ? `<p>${bestPille(a)}</p>` : ""}${iv ? `<p>${esc(iv.tekst)}</p>${iv.praktisk ? `<p class="krolle">${md(iv.praktisk)}</p>` : ""}${infoRader(iv.info)}` : ""}${a.notat ? `<p>${esc(a.notat)}</p>` : ""}${a.adr ? `<p class="krolle">${esc(a.adr.replace(/\s*\n\s*/g, ", "))}</p>` : ""}
+      inn = `<div class="ark-etikett">${a.vask ? "Klesvask" : a.type === "mote" ? "Møtested" : a.rest ? "Restaurant" : a.ide ? "Idé i planen" : "Egen avtale"}${a.tid ? " · " + esc(tidKl(a.tid)) + (a.til ? "–" + esc(a.til) : "") : ""} · ${esc(pen(x.d))}</div><h2>${esc(a.tekst)}</h2>
+        ${a.rest ? `<p><span class="bord ${a.bord ? "ja" : "nei"}">${a.bord ? "Bord reservert" : "Ikke reservert"}</span></p>` : ""}${a.ide ? `<p>${bestPille(a)}</p>` : ""}${a.vask ? `<p>${a.mottatt ? `<span class="bord ja" style="margin-left:0">✓ Mottatt</span> ` : ""}${esc([vaskTilbakeTekst(a), a.levd ? `levert ${kort(a.levd)}${a.hvor ? " – " + a.hvor : ""}` : ""].filter(Boolean).join(" · "))}</p>` : ""}${iv ? `<p>${esc(iv.tekst)}</p>${iv.praktisk ? `<p class="krolle">${md(iv.praktisk)}</p>` : ""}${infoRader(iv.info)}` : ""}${a.notat ? `<p>${esc(a.notat)}</p>` : ""}${a.adr ? `<p class="krolle">${esc(a.adr.replace(/\s*\n\s*/g, ", "))}</p>` : ""}
         <p class="krolle">${a.type === "mote" ? "Hvis vi blir borte fra hverandre · " : ""}Lagt til${hvem ? " av " + esc(hvem) : ""}</p><div class="knapper">${avtKnapper(a, true)}</div>`;
     } else {
       const f = flyForHend(x), k = x.kontakt ? kontaktEtterId(x.kontakt) : null, s = x.sted, kf = kortFinn(x.kort);
@@ -2360,7 +2554,7 @@
       <p class="fstor-no">${esc(x.no)}</p>${x.merk ? `<p class="sno">${esc(x.merk)}</p>` : ""}
       ${UTTALE ? `<div class="uttale-stor"><button class="uttale-hor" data-uttale="${i}">${HOYTTALER}<span>Hør uttalen</span></button><button class="uttale-sakte" data-uttale="${i}" data-sakte="1" aria-label="Hør uttalen sakte">Sakte</button></div>` : ""}
       <p class="sno">Snu telefonen mot den du snakker med.</p>
-      <div class="knapper">${i > 0 ? `<button class="kb" data-frase="${i - 1}">‹ Forrige</button>` : ""}${i < F.length - 1 ? `<button class="kb" data-frase="${i + 1}">Neste ›</button>` : ""}</div></div>`;
+      ${gtLenke()}<div class="knapper">${i > 0 ? `<button class="kb" data-frase="${i - 1}">‹ Forrige</button>` : ""}${i < F.length - 1 ? `<button class="kb" data-frase="${i + 1}">Neste ›</button>` : ""}</div></div>`;
     o.hidden = false; o.scrollTop = 0;
   }
 
@@ -4170,6 +4364,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    80: "Klesvask: tips om gode dager, «Vis til vaskeriet» og påminnelse om henting · «Fortsett i Google Translate» på kortene vi viser til vietnamesere · «Legg til» med ikoner",
     79: "Penger: markøren står klar i Dong-feltet, så du kan skrive beløpet med en gang",
     78: "I dag: bestilte ting står ikke lenger med stiplet ramme – bare det som ikke er bestilt eller bekreftet",
     77: "Kontantplan: tydeligere farger i stolpene og på kortene",
@@ -4394,7 +4589,7 @@
           ${s ? `<div class="ak-resultat ${s.type}"><b>${esc(s.svarVi)}</b><span>${esc(s.no)}</span></div>` : ""}</div>
         <p class="ak-usikker" data-les>${esc(r.usikker)}</p>
         <p class="ak-takk" data-les>${esc(r.takk)}</p></div>
-        <details class="ak-en"><summary>English</summary><p>${esc(r.en[v])}</p></details>`;
+        <details class="ak-en"><summary>English</summary><p>${esc(r.en[v])}</p></details>${gtLenke()}`;
     } else {
       const t = tpLes();
       h += `<div class="ak ak-nod">
@@ -4896,7 +5091,7 @@
       ${x.tlf ? `<p class="snr"><span lang="vi">${esc(x.tlfVi)}</span> / ${esc(x.tlfEn)}<b>${esc(x.tlf)}</b></p>` : ""}
       <p class="sno">Norsk: «Vennligst kjør oss til denne adressen.» Snu telefonen mot sjåføren.</p>
       <div class="knapper"><button class="kb" data-kopier="${esc(hel)}">Kopier adressen (til Grab)</button>${knapp("kart", x.kartq || hel, "Vis i kart")}${x.fri ? `<button class="kb" data-sjofor="fri">Ny adresse</button>` : ""}</div>
-    </div>`;
+      ${gtLenke()}</div>`;
     o.hidden = false; o.scrollTop = 0;
   }
   function visSjoforFri() {
@@ -4979,6 +5174,8 @@
     }
     const oc = e.target.closest("[data-oppdkopier],[data-oppdfeilkopier],[data-oppdlim],[data-oppdles],[data-oppdavbryt],[data-oppdlegg],[data-oppdav]");
     if (oc) { e.preventDefault(); oppdKlikk(oc); return; }
+    const vk = e.target.closest("[data-vaskvis],[data-vaskstryk],[data-vaskny],[data-vaskok],[data-vaskhvor],[data-vaskferdig],[data-vasktilbake],[data-vasklagre],[data-vaskslett]");
+    if (vk) { e.preventDefault(); vaskKlikk(vk); return; }
     const av = e.target.closest("[data-avtny],[data-avt],[data-avttype],[data-avtlagre],[data-avtslett],[data-avtbord],[data-avtbordvalg],[data-ideark],[data-ideplan],[data-avtbest],[data-avtbestvalg]");
     if (av) { e.preventDefault(); avtKlikk(av); return; }
     const ut = e.target.closest("[data-uttale]");

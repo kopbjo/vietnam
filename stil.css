@@ -2109,3 +2109,62 @@ details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px 
 .kp-gp.kp-g-ok { color: var(--gul); } .kp-gp.kp-g-ok::before { content: "○"; }
 .kp-gp.kp-g-hoy { color: var(--rod); } .kp-gp.kp-g-hoy::before { content: "✕"; }
 @media (max-width: 360px) { .kp-tall { grid-template-columns: 1fr; } }
+
+/* ---------- v80: klesvask ---------- */
+.vaskkort .vaskknapper { margin: 4px 0 12px; }
+.kb .vsym { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.vaskstatus { display: flex; gap: 10px; align-items: flex-start; background: var(--gul-bg); border: 1.5px solid var(--gul-linje); border-radius: 14px; padding: 10px 12px; margin: 8px 0 12px; color: var(--tekst); }
+.vaskstatus > .ikon { width: 22px; height: 22px; flex: none; margin-top: 1px; stroke: var(--gul); }
+.vaskstatus .merk { color: var(--dempet); margin-top: 2px; }
+.vaskstatus .knapper { margin-top: 8px; }
+.vaskstatus.vaskvarsel { margin: 4px 0 10px; }
+.kb.vaskok { background: var(--aksent); color: var(--aksent-tekst); }
+.kb.vaskok .ikon { stroke: currentColor; }
+.tr.vtips .inn { padding-bottom: 2px; }
+.tipsboks { border: 1.5px dashed var(--gronn); background: var(--gronn-bg); border-radius: 14px; padding: 10px 12px; }
+.tipsboks .tt { color: var(--gronn); font-weight: 600; }
+.tipsboks .merk { color: var(--dempet); margin-top: 4px; }
+.tipsboks .knapper { margin-top: 8px; }
+.tipsboks .kb { background: var(--flate); color: var(--gronn); box-shadow: inset 0 0 0 1px var(--linje); text-decoration: none; }
+/* «Vis til vaskeriet» (overlayet er alltid hvitt) */
+.vaskvis .strykvalg { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin: 52px 0 14px; }
+.vaskvis .strykvalg button { display: flex; align-items: center; justify-content: center; gap: 8px; min-height: 52px; border-radius: 14px; border: 1.5px solid #d6d1c7; background: #fff; color: #222; font: inherit; font-size: 1rem; font-weight: 600; cursor: pointer; }
+.vaskvis .strykvalg button svg { width: 28px; height: 28px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+.vaskvis .strykvalg button.valgt { background: #1f5f4a; border-color: #1f5f4a; color: #fff; }
+.vpiktorad { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin: 0 0 18px; }
+.vpikto { position: relative; display: flex; flex-direction: column; align-items: center; gap: 6px; padding: 12px 4px 10px; border-radius: 14px; background: #f3f1ec; color: #1c1c1c; font-size: .85rem; font-weight: 600; text-align: center; }
+.vpikto svg { width: 44px; height: 44px; fill: none; stroke: #1c1c1c; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.vpikto .vmerke { position: absolute; top: 4px; right: 7px; font-size: .95rem; color: #1f6b3a; }
+.vpikto.nei svg { stroke: #b3261e; }
+.vpikto.nei .vmerke { color: #b3261e; }
+.vpikto svg .kryss { stroke-width: 2.4; }
+.vaskvis .snavn { font-size: 2.2rem; }
+/* skjemaet «Klesvask levert» */
+.vaskskjema h2 { display: flex; align-items: center; gap: 8px; }
+.vaskskjema h2 .ikon { width: 26px; height: 26px; fill: none; stroke: currentColor; stroke-width: 1.8; }
+.vchips { display: flex; flex-wrap: wrap; gap: 8px; }
+.vchips button { min-height: 44px; padding: 8px 14px; border-radius: 22px; border: 1.5px solid #cfcfcf; background: #fff; color: #333; font: inherit; font-size: .95rem; cursor: pointer; }
+.vchips button.valgt { background: #1f5f4a; border-color: #1f5f4a; color: #fff; font-weight: 600; }
+.vaskskjema #vaskAnnet, .vaskskjema .vfritt { margin-top: 8px; }
+.vaskskjema .vfritt { display: flex; gap: 8px; }
+.vaskskjema .vfritt select, .vaskskjema .vfritt input { flex: 1; }
+.vtilbake button.valgt { background: #e2f1e9; border-color: #1f5f4a; color: #1f5f4a; }
+.vmargin { display: flex; gap: 8px; align-items: flex-start; border-radius: 12px; padding: 10px 12px; margin: 2px 0 14px; font-size: .95rem; }
+.vmargin svg { width: 18px; height: 18px; flex: none; margin-top: 2px; fill: none; stroke: currentColor; stroke-width: 2; }
+.vmargin.ok { background: #e2f1e9; color: #1f5f4a; }
+.vmargin.gul { background: #fdf3d6; color: #6f5000; }
+.vmargin.rod { background: #fbe7e4; color: #9c1f17; }
+.vkal { display: flex; gap: 10px; align-items: center; margin: 4px 0 16px; font-size: .95rem; color: #333; }
+.vkal input { width: 24px; height: 24px; flex: none; accent-color: #1f5f4a; }
+.avttyper.fem.seks button:nth-child(n) { grid-column: span 2; }
+.vaskstatus > .ikon, .tr .vaskstatus > .ikon { fill: none; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+/* v80: «Legg til» – valgene som fliser med ikon (erstatter den smale fanelinja når det er mange valg) */
+.avtfliser { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 14px; }
+.avtfliser.to { grid-template-columns: 1fr 1fr; }
+.avtfliser button { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; min-height: 68px; padding: 8px 4px; border-radius: 14px; border: 1.5px solid #dcdcdc; background: #fff; color: #444; font: inherit; font-size: .88rem; font-weight: 600; line-height: 1.2; text-align: center; cursor: pointer; }
+.avtfliser button svg { width: 24px; height: 24px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
+.avtfliser button.valgt { border-color: #1f5f4a; background: #e2f1e9; color: #1f5f4a; box-shadow: inset 0 0 0 1px #1f5f4a; }
+/* v80: diskret lenke til Google Translate på kortene vi viser til vietnamesere (overlayet er alltid hvitt) */
+.gtlenke { display: inline-flex; align-items: center; gap: 7px; margin: 18px 0 6px; padding: 6px 2px; color: #4a5a55; font-size: .9rem; text-decoration: underline; text-underline-offset: 3px; }
+.gtlenke svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
+.hk-stor .gtlenke { display: flex; margin: 14px 16px 8px; }
