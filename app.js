@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 78, tid: "2026-10-10 kl. 14:40" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 79, tid: "2026-10-11 kl. 13:42" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -2986,6 +2986,7 @@
     if (fane) {
       const f = fane.dataset.fane, naa = faneAv(rute().side), m = FANE_MINNE[f];
       if (!$("#overlay").hidden) lukkOverlay();
+      if (f === "penger" && (f === naa || !m || ruteAv(m.hash).side === "penger")) vndKlar();
       viaFane = true;
       if (f === naa) {
         delete FANE_MINNE[f];
@@ -3911,6 +3912,21 @@
       $("#kursinfo").textContent = kursInfo().tekst; fraVnd();
     });
     $$("[data-vnd]").forEach((b) => b.addEventListener("click", () => { vnd.value = Number(b.dataset.vnd).toLocaleString("nb-NO"); fraVnd(); }));
+    // Markøren klar i Dong-feltet (v79). Tastaturet ble åpnet av vndKlar() i trykket på fanen.
+    try { vnd.focus({ preventScroll: true }); } catch {}
+    const t = $("#vndKlar"); if (t) t.remove();
+  }
+  // iPhone åpner bare tastaturet når et felt får fokus i selve trykket. Siden bygges etterpå,
+  // så et usynlig felt tar fokus straks og gir det videre til Dong-feltet når siden er klar.
+  function vndKlar() {
+    const v = $("#vnd"); if (v && rute().side === "penger") { try { v.focus({ preventScroll: true }); } catch {} return; }
+    if ($("#vndKlar")) return;
+    const t = document.createElement("input");
+    t.id = "vndKlar"; t.setAttribute("inputmode", "numeric"); t.setAttribute("aria-hidden", "true"); t.tabIndex = -1;
+    t.style.cssText = "position:fixed;top:0;left:0;width:1px;height:1px;opacity:0;font-size:16px;border:0;padding:0";
+    document.body.appendChild(t);
+    try { t.focus({ preventScroll: true }); } catch {}
+    setTimeout(() => { if (t.isConnected) { t.blur(); t.remove(); } }, 2000);
   }
   function koblSok() {
     const inp = $("#sok");
@@ -4154,6 +4170,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    79: "Penger: markøren står klar i Dong-feltet, så du kan skrive beløpet med en gang",
     78: "I dag: bestilte ting står ikke lenger med stiplet ramme – bare det som ikke er bestilt eller bekreftet",
     77: "Kontantplan: tydeligere farger i stolpene og på kortene",
     76: "Kontantplan: alle kortene, hvem som bærer hva, og hva vi gjør hvis et kort svikter eller blir borte",
