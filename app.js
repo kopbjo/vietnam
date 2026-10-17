@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 80, tid: "2026-10-11 kl. 15:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 81, tid: "2026-10-17 kl. 23:05" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -624,12 +624,91 @@
     const hvem = g ? (D.personer.find((p) => p.id === g.hvem) || {}).navn : "";
     const naar = g ? new Date(g.t).toLocaleString("nb-NO", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }) : "";
     const tid = [medDato ? kort(e.d) : "", huskTid(e)].filter(Boolean).join(" ");
-    const inn = `<label class="huskrad${g ? " gjort" : ""}"><input type="checkbox" data-husk="${esc(n)}" ${g ? "checked" : ""}><span><span class="htittel">${md(e.tittel)}</span>
-      ${e.merk ? `<span class="merk">${md(e.merk)}</span>` : ""}${g ? `<span class="huskav">Gjort${hvem ? " av " + esc(hvem) : ""} · ${esc(naar)}</span>` : ""}</span></label>`;
+    // v81: boksen krysser av, resten av raden åpner oppgavearket («Slik gjør du det»); hovedknappen ligger på raden
+    OPPG[n] = e;
+    const inn = `<div class="huskrad${g ? " gjort" : ""}" data-oppg="${esc(n)}" role="button" tabindex="0"><label class="huskboks" aria-label="Marker som gjort"><input type="checkbox" data-husk="${esc(n)}" ${g ? "checked" : ""}></label><span class="htekst"><span class="htittel">${md(e.tittel)}</span>
+      ${e.merk ? `<span class="merk">${md(e.merk)}</span>` : ""}${g ? `<span class="huskav">Gjort${hvem ? " av " + esc(hvem) : ""} · ${esc(naar)}</span>${g.nt ? `<span class="husknt">${esc(g.nt)}</span>` : ""}` : ""}</span><span class="hpil" aria-hidden="true">${ikon("chev", "")}</span></div>`;
     const f = e.fly ? flyEtterId(e.fly) : null;
-    const kn = f && f.innsjekk && !g ? `<div class="knapper husk-kn">${knapp("web", f.innsjekk.url, "Sjekk inn nå")}<button class="ref" data-kopier="${esc(f.ref)}">Ref. ${esc(f.ref)}</button></div>` : "";
+    const hk = !g && e.gjor && e.gjor.knapper && e.gjor.knapper[0] ? oppgKnapp(e, e.gjor.knapper[0], true) : "";
+    const kn = f && f.innsjekk && !g ? `<div class="knapper husk-kn">${knapp("web", f.innsjekk.url, "Sjekk inn nå").replace('class="kb"', 'class="kb kb-hoved"')}<button class="ref" data-kopier="${esc(f.ref)}">Ref. ${esc(f.ref)}</button></div>`
+      : hk ? `<div class="knapper husk-kn">${hk}</div>` : "";
     return tag === "li" ? `<li class="oppg${g ? " gjort" : ""}"><span class="kl">${esc(tidVis(e.t))}</span><div>${inn}${kn}</div></li>` : `<div class="husk-l${g ? " gjort" : ""}">${tid ? `<span class="husk-tid">${esc(tid)}</span>` : ""}${inn}${kn}</div>`;
   }
+
+  // ---------- oppgavearket (v81): hvorfor · knapper · meldingen · steg · ferdig når · hvis ikke · gjort + notat ----------
+  const OPPG = {}; // nøkkel → oppgave (fylles når radene tegnes)
+  const oppgEtter = (n) => OPPG[n] || (D.hendelser || []).find((e) => e.oppgave && oppgNokkel(e) === n) || null;
+  const oppgMailUrl = (adr, g) => `mailto:${adr}?subject=${encodeURIComponent(g.emne || "")}&body=${encodeURIComponent(g.melding || "")}`;
+  function oppgKnapp(e, [t, v, et], hoved) {
+    const g = e.gjor || {}, n = esc(oppgNokkel(e)), kl = hoved ? " kb-hoved" : "";
+    if (t === "wa") return `<a class="kb wa" href="${waUrl(v)}${g.melding ? "?text=" + encodeURIComponent(g.melding) : ""}" target="_blank" rel="noopener noreferrer">${WA_SVG}${esc(et || "WhatsApp")}</a>`;
+    if (t === "mail") return `<a class="kb${kl}" href="${esc(oppgMailUrl(v, g))}">${ikon("mail", "")}${esc(et || "E-post")}</a>`;
+    if (t === "vis") return `<button class="kb${kl}" data-oppgvis="${n}">${ikon("kontakt", "")}${esc(et || "Vis til resepsjonen")}</button>`;
+    if (t === "kopier") return `<button class="kb${kl}" data-kopier="${esc(g.melding || v)}">${ikon("dok", "")}${esc(et || "Kopier meldingen")}</button>`;
+    if (t === "rute") return `<a class="kb${kl}" href="${esc(v)}">${esc(et)}${ikon("chev", "")}</a>`;
+    if (t === "bekr") return D.bekr && D.bekr[v] ? `<button class="kb bekrknapp" data-bekr="${esc(v)}">${ikon("dok", "")}${esc(et || "Vis bekreftelsen")}</button>` : "";
+    const h = knapp(t, v, et);
+    return hoved ? h.replace('class="kb"', 'class="kb kb-hoved"') : h;
+  }
+  function visOppgArk(n) {
+    const e = oppgEtter(n); if (!e) return;
+    const g = e.gjor || {}, gj = huskLes()[n], f = e.fly ? flyEtterId(e.fly) : null;
+    const k = e.kontakt ? kontaktEtterId(e.kontakt) : null;
+    const hvem = gj ? personNavn(gj.hvem) : "";
+    const blokk = (t, inn, kl = "") => `<div class="oppg-blokk${kl}"><h3>${t}</h3>${inn}</div>`;
+    let h = `<div class="ark-etikett">Oppgave · ${esc(huskTid(e) ? tidKl(e.t) + " · " : "")}${esc(pen(e.d))}</div><h2>${md(e.tittel)}</h2>`;
+    if (gj) h += `<p class="oppg-gjort">${ikon("bestilt", "")}Gjort${hvem ? " av " + esc(hvem) : ""} · ${esc(new Date(gj.t).toLocaleString("nb-NO", { day: "numeric", month: "numeric", hour: "2-digit", minute: "2-digit" }))}</p>`;
+    if (g.hvorfor) h += `<p class="oppg-hvorfor">${md(g.hvorfor)}</p>`;
+    if (e.merk) h += `<p class="merk">${md(e.merk)}</p>`;
+    const kn = [];
+    if (f && f.innsjekk) kn.push(knapp("web", f.innsjekk.url, "Sjekk inn nå").replace('class="kb"', 'class="kb kb-hoved"'), `<button class="kb ref" data-kopier="${esc(f.ref)}">Ref. ${esc(f.ref)}</button>`);
+    (g.knapper || []).forEach((b, i) => kn.push(oppgKnapp(e, b, i === 0 && !(f && f.innsjekk))));
+    if (kn.length) h += `<div class="knapper oppg-kn">${kn.join("")}</div>`;
+    if (g.melding) h += blokk("Meldingen", `${g.emne ? `<p class="oppg-emne"><b>Emne:</b> ${esc(g.emne)}</p>` : ""}<p class="oppg-melding" lang="en" data-ingen-valuta>${esc(g.melding)}</p>`);
+    if (g.steg && g.steg.length) h += blokk("Slik gjør du det", `<ol class="oppg-steg">${g.steg.map((s) => `<li>${md(s)}</li>`).join("")}</ol>`);
+    if (g.ferdig) h += blokk("Ferdig når", `<p>${md(g.ferdig)}</p>`, " ferdig");
+    if (g.ellers) h += blokk("Hvis ikke", `<p>${md(g.ellers)}</p>`, " ellers");
+    if (k) h += `<div class="kort arkkontakt">${kontaktHtml(kontaktPaDag(k, e.d))}</div>`;
+    h += `<div class="oppg-bunn"><label class="oppg-ntlabel" for="oppgNt">Notat til familien <span>(valgfritt)</span></label><textarea id="oppgNt" rows="2" placeholder="${esc(g.notat || "F.eks. svaret vi fikk")}">${esc(gj && gj.nt ? gj.nt : "")}</textarea>
+      <div class="knapper">${gj ? `<button class="kb kb-hoved" data-oppggjort="${esc(n)}" data-oppgbare="1">Lagre notatet</button><button class="kb" data-oppgikke="${esc(n)}">Ikke gjort likevel</button>` : `<button class="kb kb-hoved oppg-ferdig" data-oppggjort="${esc(n)}">${ikon("bestilt", "")}Marker som gjort</button>`}</div></div>`;
+    ARK = []; arkApne(`<div class="oppgark">${h}</div>`);
+  }
+  // «Vis til resepsjonen»: meldingen i stor skrift (som «Vis til sjåføren»)
+  function visOppgTekst(n) {
+    const e = oppgEtter(n); if (!e || !e.gjor || !e.gjor.melding) return;
+    if (arkAapent()) ARK.push({ html: $("#overlay").innerHTML, y: arkFlate().scrollTop });
+    const o = $("#overlay");
+    o.className = "overlay sjofor";
+    o.innerHTML = `<button class="lukk" data-oppgtilbake>Lukk</button><div class="sjofor-stor oppg-vis"><p class="oppg-vistekst" lang="en" data-ingen-valuta>${esc(e.gjor.melding)}</p><p class="sno">Snu telefonen mot den du snakker med.</p></div>`;
+    o.hidden = false; o.scrollTop = 0;
+  }
+  function oppgSett(n, v, nt) {
+    const y = window.scrollY, p = { k: "x", r: "husk", l: "felles", n, v: v ? 1 : 0, hvem: meg() || "" };
+    if (v && nt) p.nt = nt;
+    synkSett(p); lukkOverlay(); vis(); window.scrollTo(0, y);
+  }
+  document.addEventListener("click", (e) => {
+    if (!D || !e.target.closest) return;
+    const tb = e.target.closest("[data-oppgtilbake]");
+    if (tb && ARK.length) { e.preventDefault(); e.stopPropagation(); arkTilbake(); return; }
+    const vt = e.target.closest("[data-oppgvis]");
+    if (vt) { e.preventDefault(); visOppgTekst(vt.dataset.oppgvis); return; }
+    const gb = e.target.closest("[data-oppggjort]");
+    if (gb) {
+      e.preventDefault(); const n = gb.dataset.oppggjort, ta = $("#oppgNt"), nt = ta ? ta.value.trim().slice(0, 300) : "";
+      const bare = !!gb.dataset.oppgbare, fr = huskLes()[n];
+      oppgSett(n, 1, nt);
+      if (bare) toast("Notatet er lagret");
+      else toastAngre("Gjort – vises for hele familien", () => { if (fr) synkSett(fr); else oppgSett(n, 0); vis(); });
+      return;
+    }
+    const ib = e.target.closest("[data-oppgikke]");
+    if (ib) { e.preventDefault(); oppgSett(ib.dataset.oppgikke, 0); toast("Merket som ikke gjort"); return; }
+    const r = e.target.closest("[data-oppg]");
+    if (!r || r.closest("#overlay") || e.target.closest("a,label,input,button")) return;
+    e.preventDefault(); visOppgArk(r.dataset.oppg);
+  }, true);
+  document.addEventListener("keydown", (e) => { if ((e.key === "Enter" || e.key === " ") && e.target.matches && e.target.matches("[data-oppg]")) { e.preventDefault(); visOppgArk(e.target.dataset.oppg); } });
 
   // ---------- egne avtaler og notater (deles med familien via synk, post {k:"a", …}) ----------
   const avtLes = () => Object.values(synkLes().p).filter((p) => p.k === "a" && !p.slettet);
@@ -2370,11 +2449,11 @@
   const BRUK_KLIKK = [["a[href^='tel:']", "ring"], ["a[href*='wa.me']", "whatsapp"], ["a[href*='google.com/maps']", "kart"], ["#sos", "sos"], ["#sokknapp", "sok"],
     ["[data-kortskjerm='nod']", "hknod"], ["[data-hk]", "hk"], ["[data-tpnaa]", "tp"], [".valuta", "valuta"], ["[data-uttale]", "uttale"], ["[data-akles]", "akles"], ["[data-frase]", "frase"],
     ["[data-sjofor],[data-sjoforvis]", "sjofor"], ["details.vaerfold > summary,[data-ivaer]", "vaer"], ["[data-iluft]", "luft"], ["[data-isjo]", "sjo"], ["[data-oppdater]", "hent"], ["[data-oppdlegg]", "claude"],
-    ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-bekr]", "bekr"], ["[data-dag]", "dag"], ["[data-setekart]", "setekart"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["[data-sjmynt]", "skatt"], ["[data-sjhintja]", "skatthint"], ["a[target='_blank']", "lenke"]];
+    ["[data-ideark]", "ideark"], ["[data-ideplan]", "ideplan"], ["[data-avtlagre]", "avtale"], ["[data-kopier]", "kopier"], ["[data-stort]", "bilde"], ["[data-bekr]", "bekr"], ["[data-dag]", "dag"], ["[data-setekart]", "setekart"], ["[data-oppgvis]", "oppgvis"], ["[data-oppggjort]", "oppggjort"], ["[data-oppg] .htekst,[data-oppg] .hpil", "oppgark"], ["[data-idet]", "detalj"], ["[data-hvem]", "hvem"], ["[data-sjmynt]", "skatt"], ["[data-sjhintja]", "skatthint"], ["a[target='_blank']", "lenke"]];
   const HANDLINGER = { ring: "Ringte", whatsapp: "Åpnet WhatsApp", kart: "Åpnet kart", sos: "Trykket SOS", sok: "Åpnet søk", hk: "Åpnet ⟦k1⟧", hknod: "Nødskjermen på ⟦k1⟧",
     tp: "Registrerte klokkeslett", valuta: "Regnet om beløp", uttale: "Hørte uttale", frase: "Viste frase i stort", sjofor: "Viste til sjåføren", vaer: "Åpnet været", luft: "Åpnet luftkvaliteten", sjo: "Åpnet bølger og vind",
     hent: "Hent nyeste versjon", claude: "La inn endring fra Claude", avtale: "Lagret egen avtale", kopier: "Kopierte", bilde: "Viste bilde", akles: "Leste opp kortet", bekr: "Viste bekreftelse", dag: "Byttet dag",
-    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", setekart: "Åpnet setekart", detalj: "Åpnet detaljer i I dag", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen", skatt: "Fant gullmynt", skatthint: "Brukte hint i skattejakten" };
+    lenke: "Åpnet lenke", pakk: "Krysset av i pakkelista", husk: "Krysset av oppgave", setekart: "Åpnet setekart", detalj: "Åpnet detaljer i I dag", oppgark: "Åpnet en oppgave", oppgvis: "Viste melding til resepsjonen", oppggjort: "Markerte oppgave som gjort", ideark: "Åpnet ideene i I dag", ideplan: "Valgte idé til planen", hvem: "Valgte hvem som bruker telefonen", skatt: "Fant gullmynt", skatthint: "Brukte hint i skattejakten" };
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest) return;
     const bn = e.target.closest(".bunn");
@@ -5205,7 +5284,7 @@
       o.innerHTML = `<button class="lukk">Lukk</button><img src="${D.bilder[t.dataset.stort]}" alt="">`; o.hidden = false;
     } else if (t.dataset.kopier) {
       e.preventDefault();
-      try { await navigator.clipboard.writeText(t.dataset.kopier); toast("Kopiert: " + t.dataset.kopier); } catch { toast(t.dataset.kopier); }
+      try { await navigator.clipboard.writeText(t.dataset.kopier); toast(t.dataset.kopier.length > 60 ? "Kopiert" : "Kopiert: " + t.dataset.kopier); } catch { toast(t.dataset.kopier.length > 60 ? "Kunne ikke kopiere – hold fingeren i teksten" : t.dataset.kopier); }
     } else if (t.dataset.matsted) { location.hash = "#/mat/" + t.dataset.matsted; }
     else if (t.dataset.maal) { matMaal = t.dataset.maal; vis(); }
     else if (t.dataset.sort) { matSort = t.dataset.sort; vis(); }

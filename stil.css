@@ -2168,3 +2168,34 @@ details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px 
 .gtlenke { display: inline-flex; align-items: center; gap: 7px; margin: 18px 0 6px; padding: 6px 2px; color: #4a5a55; font-size: .9rem; text-decoration: underline; text-underline-offset: 3px; }
 .gtlenke svg { width: 20px; height: 20px; flex: none; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; }
 .hk-stor .gtlenke { display: flex; margin: 14px 16px 8px; }
+
+/* ---------- v81: oppgaver – egen avkrysningsboks, raden åpner oppgavearket ---------- */
+.huskrad { gap: 2px; }
+.huskrad:focus-visible { outline: 2px solid var(--aksent); outline-offset: 2px; border-radius: 8px; }
+.huskboks { flex: none; display: grid; place-items: center; width: 44px; height: 44px; margin: -10px 0 -10px -10px; cursor: pointer; }
+.huskboks input { margin: 0; }
+.huskrad > .htekst { flex: 1; }
+.huskrad > .hpil { flex: none; align-self: center; display: flex; color: var(--dempet); margin-left: 6px; }
+.huskrad > .hpil svg { width: 18px; height: 18px; fill: none; stroke: currentColor; stroke-width: 2; stroke-linecap: round; stroke-linejoin: round; }
+.huskrad .husknt { color: var(--tekst); font-size: .9rem; font-style: italic; }
+.husk-kn .kb { min-height: 40px; }
+.oppgark h2 { margin: 6px 0 8px; }
+.oppgark .oppg-gjort { display: flex; align-items: center; gap: 6px; color: var(--gronn); font-weight: 700; font-size: .9rem; margin: 0 0 8px; }
+.oppgark .oppg-gjort svg { width: 18px; height: 18px; }
+.oppgark .oppg-hvorfor { margin: 0 0 6px; }
+.oppgark > .merk, .oppgark p.merk { color: var(--dempet); font-size: .92rem; margin: 0; }
+.oppg-kn { margin-top: 14px; }
+.oppg-blokk { margin-top: 16px; padding-top: 12px; border-top: .5px solid var(--linje); }
+.oppg-blokk h3 { font-size: .83rem; font-weight: 700; letter-spacing: .05em; text-transform: uppercase; color: var(--dempet); margin: 0 0 6px; }
+.oppg-blokk p { margin: 0; }
+.oppg-blokk.ferdig h3 { color: var(--gronn); }
+.oppg-blokk.ellers h3 { color: var(--gul); }
+.oppg-melding { background: var(--flate2); padding: 12px 14px; border-radius: 12px; font-size: .95rem; line-height: 1.45; }
+.oppg-emne { font-size: .9rem; margin: 0 0 6px !important; }
+.oppg-steg { margin: 0; padding-left: 1.3em; display: grid; gap: 4px; }
+.oppg-bunn { margin-top: 18px; padding-top: 14px; border-top: .5px solid var(--linje); }
+.oppg-ntlabel { display: block; font-weight: 700; font-size: .92rem; margin-bottom: 6px; }
+.oppg-ntlabel span { font-weight: 400; color: var(--dempet); }
+.oppg-bunn textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 1rem; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--linje); background: var(--flate); color: var(--tekst); resize: vertical; }
+.oppg-ferdig { flex: 1; justify-content: center; }
+.oppg-vis .oppg-vistekst { font-size: 1.75rem; line-height: 1.35; font-weight: 600; color: #111; margin: 34px 0 18px; }
