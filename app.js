@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 82, tid: "2026-10-18 kl. 19:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 83, tid: "2026-10-18 kl. 19:45" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3163,14 +3163,15 @@
   function sideFor() {
     const L = fvOppg(); FV = L;
     const T = fvTall(L), idag = idagISO(), m = meg(), barn = erBarn();
-    const vis2 = lagre.get(LS.forVis) === "veien" ? "veien" : "liste";
+    const vis2 = rute().arg === "apper" ? "apper" : ["veien", "apper"].includes(lagre.get(LS.forVis)) ? lagre.get(LS.forVis) : "liste";
     const tell = (f) => { const x = fvFilter; fvFilter = f; const n = L.filter((o) => !fvGjort(o) && fvMatch(o)).length; fvFilter = x; return n; };
     const chips = [["alle", "Alle"]];
     if (m && D.personer.some((p) => p.id === m)) chips.push(["meg", `Mine (${tell("meg")})`]);
     if (!barn) { for (const id of voksneIds()) if (id !== m) chips.push([id, `${personNavn(id)} (${tell(id)})`]); if (barnIds().length) chips.push(["barn", `Jentene (${tell("barn")})`]); }
     if (!chips.some((c) => c[0] === fvFilter)) fvFilter = "alle";
     let h = tittel("Før vi drar", `<b>${T.gjort}</b> av ${T.total} gjort · <b>${T.apne}</b> igjen`);
-    h += `<div class="fv-seg" role="tablist"><button data-fvvis="liste" class="${vis2 === "liste" ? "p" : ""}" aria-selected="${vis2 === "liste"}">Liste</button><button data-fvvis="veien" class="${vis2 === "veien" ? "p" : ""}" aria-selected="${vis2 === "veien"}">Veien til Vietnam</button></div>`;
+    h += `<div class="fv-seg" role="tablist"><button data-fvvis="liste" class="${vis2 === "liste" ? "p" : ""}" aria-selected="${vis2 === "liste"}">Liste</button><button data-fvvis="veien" class="${vis2 === "veien" ? "p" : ""}" aria-selected="${vis2 === "veien"}">Veien til Vietnam</button><button data-fvvis="apper" class="${vis2 === "apper" ? "p" : ""}" aria-selected="${vis2 === "apper"}">Apper</button></div>`;
+    if (vis2 === "apper") return h + fvApper() + bunn();
     h += `<div class="fv-chips">${chips.map(([k, t]) => `<button data-fvfilter="${esc(k)}" class="${fvFilter === k ? "p" : ""}">${esc(t)}</button>`).join("")}</div>`;
     const V = L.map((o, i) => ({ o, i })).filter((x) => fvMatch(x.o));
     const apne = V.filter((x) => !fvGjort(x.o)), gjorte = V.filter((x) => fvGjort(x.o));
@@ -3276,7 +3277,7 @@
     const t = e.target.closest("[data-fvvis],[data-fvfilter],[data-fvmnd],[data-fvgjort]");
     if (t) {
       e.preventDefault();
-      if (t.dataset.fvvis) { lagre.set(LS.forVis, t.dataset.fvvis); vis(); }
+      if (t.dataset.fvvis) { lagre.set(LS.forVis, t.dataset.fvvis); if (rute().arg === "apper" && t.dataset.fvvis !== "apper") location.hash = "#/for"; else vis(); }
       else if (t.dataset.fvfilter) { fvFilter = t.dataset.fvfilter; const y = window.scrollY; vis(); window.scrollTo(0, y); }
       else if (t.dataset.fvmnd) { fvApne[t.dataset.fvmnd] = 1; const y = window.scrollY; vis(); window.scrollTo(0, y); }
       else if (t.dataset.fvgjort) {
@@ -4075,9 +4076,8 @@
   function sideMobil(arg) {
     const M = D.mobil; if (!M) return tittel("Mobil i Vietnam") + `<p class="tom">Veiledningen mangler.</p>` + bunn();
     const del = mbDel(arg), S = mbLes();
-    let h = tittel("Mobil i Vietnam", "eSIM og apper før vi drar");
+    let h = tittel("Mobil i Vietnam", "Vietnam-SIM steg for steg");
     h += `<nav class="mb-faner" role="tablist">${M.deler.map((d) => `<a role="tab" href="#/mobil/${d.id}" aria-selected="${d.id === del}" class="${d.id === del ? "p" : ""}">${esc(d.navn)}<small>${esc(d.under)}</small></a>`).join("")}</nav>`;
-    if (del === "apper") return h + mbApper(M, S) + bunn();
     const I = M.intro[del] || {};
     h += `<section class="kort mb-kort">${del === "hjemme" ? `<div class="mb-sim" aria-hidden="true"><span>NO</span><span>VN</span></div>` : ""}<h2>${esc(I.tittel || "")}</h2><p class="mb-lead">${md(I.tekst || "")}</p>${I.tid ? `<div class="mb-tid"><b>${esc(I.tid)}</b>${esc(I.tidTekst || "")}</div>` : ""}</section>`;
     if (del === "hjemme") h += `<section class="kort mb-kort"><h2>${esc(M.slik.tittel)}</h2><ol class="mb-slik">${M.slik.steg.map((t, i) => `<li><span class="mb-nr">${i + 1}</span><span>${md(t)}</span></li>`).join("")}</ol><div class="mb-tid"><b>${esc(M.slik.tid)}</b>${esc(M.slik.tidTekst)}</div></section>`;
@@ -4100,17 +4100,6 @@
       ${s.tip ? `<p class="mb-tips">${md(s.tip)}</p>` : ""}</div>
       <div class="mb-knapper"><button data-mbgaa="-1" class="mb-tilb"${i === 0 ? " disabled" : ""}>Tilbake</button><button data-mbgaa="1" class="mb-neste${i === n - 1 ? " siste" : ""}">${i === n - 1 ? "Ferdig ✓" : "Gjort – neste"}</button></div></section>`;
   }
-  function mbApper(M, S) {
-    const A = M.apper, I = M.intro.apper || {};
-    let h = `<section class="kort mb-kort"><h2>${esc(I.tittel || "")}</h2><p class="mb-lead">${md(I.tekst || "")}</p></section>`;
-    const barn = erBarn();
-    A.groups.filter((g) => !barn || ["alle", "jente"].includes(g.id)).forEach((g) => {
-      h += `<div class="seksjonstittel">${esc(g.h)}${g.s ? ` <small>· ${esc(g.s)}</small>` : ""}</div>`;
-      h += g.apps.map((a, j) => { const id = g.id + "-" + j; return `<label class="mb-app"><input type="checkbox" data-mbapp="${esc(id)}"${S.app[id] ? " checked" : ""}><span><b>${esc(a.n)}</b><span class="mb-d">${md(a.d)}</span>${a.do ? `<span class="mb-gjor">${md(a.do)}</span>` : ""}</span></label>`; }).join("");
-    });
-    if (A.ikke) h += `<section class="kort mb-kort"><h2>Trenger vi ikke</h2><p class="mb-lead">${md(A.ikke)}</p></section>`;
-    return h;
-  }
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest || rute().side !== "mobil") return;
     const b = e.target.closest("[data-mbv],[data-mbgaa],[data-mbstart]"); if (!b) return;
@@ -4121,9 +4110,35 @@
     mbSkriv(S); const y = window.scrollY; vis(); window.scrollTo(0, y);
     if (b.dataset.mbgaa) { const k = $("#mbstokk") || $(".mb-stokk"); if (k && k.getBoundingClientRect().top < 60) k.scrollIntoView({ block: "start" }); }
   });
-  document.addEventListener("change", (e) => {
-    const c = e.target; if (!c || !c.dataset || !c.dataset.mbapp) return;
-    const S = mbLes(); S.app[c.dataset.mbapp] = c.checked; mbSkriv(S);
+  // ---------- Apper før vi drar (v83) – tredje visning i «Før vi drar»; kryssene deles i familien {k:"x", r:"app", l:<person>, n:<app>} ----------
+  const appKryss = (pid, k) => { const p = synkLes().p[postNokkel({ k: "x", r: "app", l: pid, n: k })]; return !!(p && p.v); };
+  function fvApper() {
+    const A = D.mobil && D.mobil.apper; if (!A) return `<p class="tom">App-lista mangler.</p>`;
+    const m = meg(), barn = erBarn(), alle = D.personer.map((p) => p.id);
+    const grupper = A.grupper.filter((g) => barn ? g.hvem.includes(m) : true);
+    let h = `<section class="kort mb-kort"><p class="mb-lead">${md(A.tekst)}</p></section>`;
+    if (!barn) { // oversikt per person for de voksne
+      h += `<div class="ap-oversikt">${alle.map((pid) => { const L = A.grupper.filter((g) => g.hvem.includes(pid)).flatMap((g) => g.apps); const n = L.filter((a) => appKryss(pid, a.k)).length;
+        return `<div class="ap-pers${n === L.length ? " ferdig" : ""}"><b>${esc(personNavn(pid))}</b><span>${n} av ${L.length}</span></div>`; }).join("")}</div>`;
+    }
+    for (const g of grupper) {
+      h += `<div class="seksjonstittel">${esc(g.h)}${g.s ? ` <small>· ${esc(g.s)}</small>` : ""}</div>`;
+      h += g.apps.map((a) => {
+        const hvem = barn ? [m] : g.hvem;
+        const kr = hvem.map((pid) => { const v = appKryss(pid, a.k); return `<button class="ap-kryss${v ? " p" : ""}" data-appkryss="${esc(pid + "|" + a.k)}" aria-pressed="${v}">${v ? ikon("bestilt", "") : ""}<span>${barn ? (v ? "Klar" : "Kryss av") : esc(personNavn(pid))}</span></button>`; }).join("");
+        return `<div class="ap-app"><div class="ap-topp"><b>${esc(a.n)}</b>${a.as ? `<a class="ap-store" href="https://apps.apple.com/no/app/id${a.as}" target="_blank" rel="noopener noreferrer">App Store ↗</a>` : ""}</div>
+          <span class="mb-d">${md(a.d)}</span>${a.do ? `<span class="mb-gjor">${md(a.do)}</span>` : ""}<div class="ap-kryssrad">${kr}</div></div>`;
+      }).join("");
+    }
+    if (A.ikke) h += `<section class="kort mb-kort"><h2>Trenger vi ikke</h2><p class="mb-lead">${md(A.ikke)}</p></section>`;
+    return h;
+  }
+  document.addEventListener("click", (e) => {
+    const b = e.target.closest && e.target.closest("[data-appkryss]"); if (!b || !D) return;
+    e.preventDefault();
+    const [pid, k] = b.dataset.appkryss.split("|"), v = !appKryss(pid, k);
+    synkSett({ k: "x", r: "app", l: pid, n: k, v: v ? 1 : 0, hvem: meg() || "" });
+    const y = window.scrollY; vis(); window.scrollTo(0, y);
   });
   try { matchMedia("(prefers-color-scheme: dark)").addEventListener("change", () => { if (D && rute().side === "mobil") vis(); }); } catch {}
   // Last alle bildene til veiledningen inn i lageret (én gang per bildesett) – da virker den i Vietnam før nettet er på
@@ -4149,7 +4164,7 @@
       ${erBarn() ? `<a href="#/tema"><span class="lik">${ikon("ideer", "")}</span><span class="ltekst">Hva liker du?<small>Temaer for faktaene på forsiden</small></span><span class="pil"></span></a>` : ""}
     </div><div class="seksjonstittel">Hjelp</div><div class="liste">
       <a href="#/kontakter"><span class="lik">${ikon("kontakt", "")}</span><span class="ltekst">Kontakter<small>Alle hoteller, sjåfører og guider – søkbar</small></span><span class="pil"></span></a>
-      <a href="#/mobil"><span class="lik">${ikon("info", "")}</span><span class="ltekst">Mobil i Vietnam<small>Vietnam-SIM steg for steg · apper før vi drar</small></span><span class="pil"></span></a>
+      <a href="#/mobil"><span class="lik">${ikon("info", "")}</span><span class="ltekst">Mobil i Vietnam<small>Vietnam-SIM steg for steg – hjemme, i Vietnam og hjem igjen</small></span><span class="pil"></span></a>
       <a href="#/parlor"><span class="lik">${ikon("mat", "")}</span><span class="ltekst">Fraser, tips og priser<small>Si det på vietnamesisk · drikkepenger · vanlige priser</small></span><span class="pil"></span></a>
       <a href="#/nod"><span class="lik rod">${ikon("sykehus", "")}</span><span class="ltekst">Nød og helse<small>Nødnumre, sykehus, forsikring og ⟦k3⟧</small></span><span class="pil"></span></a>
     </div>`;
@@ -4327,7 +4342,8 @@
       legg("reise", s.navn, `${s.dato}${s.netter ? " · " + s.netter + (s.netter === 1 ? " natt" : " netter") : ""}`, [s.ingress], { hash: "#/sted/" + s.id });
       (s.seksjoner || []).forEach((x) => legg("reise", x.tittel, s.navn, seksjonTekst(x), { hash: "#/sted/" + s.id, sel: "section.kort > h2", tekst: x.tittel }));
     });
-    if (D.mobil) legg("reise", "Mobil i Vietnam", "eSIM steg for steg · apper før vi drar", ["eSIM", "SIM", "Vietnam-SIM", "internett", "mobildata", "dataroaming", "roaming", "QR-kode", "Nomad", "apper", "WhatsApp", "Grab", "Google Oversetter"], { hash: "#/mobil" });
+    if (D.mobil) legg("reise", "Mobil i Vietnam", "eSIM steg for steg · apper før vi drar", ["eSIM", "SIM", "Vietnam-SIM", "internett", "mobildata", "dataroaming", "roaming", "QR-kode", "Nomad"], { hash: "#/mobil" });
+    if (D.mobil && D.mobil.apper) legg("reise", "Apper før vi drar", "Før vi drar · App Store-lenker", ["apper", "App Store", "installere", ...D.mobil.apper.grupper.flatMap((g) => g.apps.map((a) => a.n))], { hash: "#/for/apper" });
     const R = D.restauranter;
     R.liste.forEach((r) => legg("mat", r.navn, `${stedNavn(r.sted)} · ${r.kjokken}`, [r.omrade, r.adresse, r.s2, r.tips, r.apent],
       { hash: "#/mat/" + r.sted, sel: ".rest .rnavn", tekst: r.navn, for: () => { matMaal = "alle"; } }));
