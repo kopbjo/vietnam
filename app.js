@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 83, tid: "2026-10-18 kl. 19:45" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 84, tid: "2026-10-18 kl. 19:40" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -5315,6 +5315,12 @@
     lagre.set(LS.meg, b.dataset.hvem); lukkOverlay(); vis(); toast(`Hei, ${personNavn(b.dataset.hvem)}!`); sjIntroSjekk();
   });
   const lukkOverlay = () => { uttaleStopp(); ARK = []; $("#overlay").hidden = true; $("#overlay").innerHTML = ""; };
+  // v84: lenke til en annen side i appen fra et ark («Se app-lista», «Åpne veiledningen» …) lukker arket og går til siden
+  document.addEventListener("click", (e) => {
+    if (!D || e.defaultPrevented || !e.target.closest) return;
+    const a = e.target.closest('#overlay a[href^="#/"]'); if (!a || $("#overlay").hidden) return;
+    arkHusk(); lukkOverlay();
+  });
 
   // ---------- klikk ----------
   document.addEventListener("click", async (e) => {
