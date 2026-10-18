@@ -2199,3 +2199,70 @@ details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px 
 .oppg-bunn textarea { width: 100%; box-sizing: border-box; font: inherit; font-size: 1rem; padding: 10px 12px; border-radius: 10px; border: 1px solid var(--linje); background: var(--flate); color: var(--tekst); resize: vertical; }
 .oppg-ferdig { flex: 1; justify-content: center; }
 .oppg-vis .oppg-vistekst { font-size: 1.75rem; line-height: 1.35; font-weight: 600; color: #111; margin: 34px 0 18px; }
+
+/* ---------- Mobil i Vietnam (v82) – oransje = «trykk her», som i skjermbildene ---------- */
+:root { --mb-tap: #c85c00; --mb-tap-bg: #fdebd9; }
+@media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) { --mb-tap: #ff9a3d; --mb-tap-bg: #3a2814; } }
+:root[data-theme="dark"] { --mb-tap: #ff9a3d; --mb-tap-bg: #3a2814; }
+.mb-faner { display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px; background: var(--flate); border: 1px solid var(--linje); border-radius: 14px; padding: 4px; margin: 0 0 12px; }
+.mb-faner a { text-align: center; text-decoration: none; color: var(--dempet); font-weight: 700; font-size: .83rem; line-height: 1.15; padding: 9px 2px; border-radius: 10px; }
+.mb-faner a small { display: block; font-weight: 500; font-size: .83rem; margin-top: 2px; }
+.mb-faner a.p { background: var(--tekst); color: var(--bg); }
+.mb-kort { display: flex; flex-direction: column; gap: 10px; }
+.mb-kort h2, .mb-stokk h2 { margin: 0; font-size: 1.2rem; line-height: 1.2; }
+.mb-lead { margin: 0; color: var(--dempet); }
+.mb-sim { display: flex; gap: 6px; }
+.mb-sim span { width: 32px; height: 42px; border-radius: 5px 11px 5px 5px; display: flex; align-items: flex-end; justify-content: center; padding-bottom: 4px; font-size: .83rem; font-weight: 800; color: #fff; background: #3b5ba8; }
+.mb-sim span + span { background: #c8102e; }
+.mb-tid { display: flex; gap: 10px; align-items: center; font-weight: 700; font-size: .9rem; }
+.mb-tid b { white-space: nowrap; background: var(--mb-tap-bg); color: var(--mb-tap); border-radius: 9px; padding: 3px 9px; font-size: .83rem; }
+.mb-slik { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 12px; }
+.mb-slik li { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; }
+.mb-nr { width: 32px; height: 32px; border-radius: 50%; background: var(--mb-tap-bg); color: var(--mb-tap); font-weight: 800; display: flex; align-items: center; justify-content: center; }
+.mb-tlf { display: flex; flex-direction: column; gap: 8px; }
+.mb-tlf button { display: flex; flex-direction: column; padding: 0; overflow: hidden; border: 2px solid var(--linje); border-radius: 14px; background: var(--flate); color: var(--tekst); font: inherit; text-align: left; cursor: pointer; }
+.mb-tlf img { display: block; width: 100%; aspect-ratio: 390 / 125; }
+.mb-tlf button > span { display: flex; justify-content: space-between; align-items: center; padding: 10px 14px; }
+.mb-tlf em { font-style: normal; font-weight: 700; font-size: .83rem; color: var(--dempet); }
+.mb-tlf button.p { border-color: var(--mb-tap); }
+.mb-tlf button.p > span { background: var(--mb-tap-bg); }
+.mb-tlf button.p em { color: var(--mb-tap); }
+.mb-stopp { background: var(--rod-bg); border-radius: var(--r); padding: 12px 14px; margin: 0 0 12px; }
+.mb-stopp summary { display: flex; gap: 10px; align-items: center; font-weight: 800; color: var(--rod); cursor: pointer; list-style: none; }
+.mb-stopp summary::-webkit-details-marker { display: none; }
+.mb-stopp summary::after { content: "Vis"; margin-left: auto; font-size: .83rem; border: 1.5px solid var(--rod); border-radius: 8px; padding: 1px 8px; }
+.mb-stopp[open] summary::after { content: "Skjul"; }
+.mb-stopp ul { margin: 10px 0 0; padding-left: 20px; }
+.mb-stopp li { margin: 6px 0; }
+.mb-utrop { flex: none; width: 24px; height: 24px; border-radius: 50%; background: var(--rod); color: var(--rod-tekst); display: flex; align-items: center; justify-content: center; font-size: .9rem; }
+.mb-stokk { padding: 0; overflow: hidden; scroll-margin-top: calc(var(--topp-h) + 16px); }
+.mb-prog { display: flex; gap: 4px; padding: 14px 16px 0; }
+.mb-prog i { flex: 1; height: 6px; border-radius: 3px; background: var(--linje); }
+.mb-prog i.g { background: var(--gronn); }
+.mb-prog i.n { background: var(--mb-tap); }
+.mb-steg { padding: 12px 16px 14px; display: flex; flex-direction: column; gap: 12px; }
+.mb-hode { display: flex; gap: 12px; align-items: flex-start; }
+.mb-tall { flex: none; width: 38px; height: 38px; border-radius: 50%; background: var(--mb-tap); color: #fff; font-weight: 800; font-size: 1.1rem; display: flex; align-items: center; justify-content: center; }
+.mb-tall.g { background: var(--gronn); }
+.mb-av { font-size: .83rem; font-weight: 800; letter-spacing: .06em; text-transform: uppercase; color: var(--dempet); }
+.mb-tekst { margin: 0; font-size: 1.05rem; }
+.mb-skjerm { display: block; width: 100%; max-width: 320px; height: auto; margin: 0 auto; border-radius: 20px; border: 1px solid var(--linje); background: var(--flate2); }
+.mb-tips { margin: 0; background: var(--flate2); border-radius: 12px; padding: 10px 12px; font-size: .92rem; color: var(--dempet); }
+.mb-knapper { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; padding: 0 16px 16px; }
+.mb-knapper button { font: inherit; font-weight: 800; font-size: 1.02rem; border: 0; border-radius: 14px; padding: 14px 10px; cursor: pointer; }
+.mb-tilb { background: var(--flate2); color: var(--tekst); }
+.mb-neste { background: var(--tekst); color: var(--bg); }
+.mb-neste.siste { background: var(--gronn); color: var(--gronn-bg); }
+.mb-knapper button:disabled { opacity: .35; }
+.mb-ferdig { margin: 14px 16px 16px; background: var(--gronn-bg); border-radius: 14px; padding: 18px; text-align: center; display: flex; flex-direction: column; gap: 6px; align-items: center; }
+.mb-ferdig b { font-size: 1.4rem; color: var(--gronn); }
+.mb-ferdig p { margin: 0; }
+.mb-ferdig button { font: inherit; font-weight: 800; font-size: .85rem; background: none; border: 1.5px solid var(--gronn); color: var(--gronn); border-radius: 10px; padding: 5px 12px; cursor: pointer; }
+.mb-voksne ol { margin: 8px 0; padding-left: 20px; }
+.mb-voksne li { margin: 8px 0; font-size: .95rem; }
+.mb-app { display: grid; grid-template-columns: auto 1fr; gap: 12px; align-items: start; background: var(--flate); border: 1px solid var(--linje); border-radius: 14px; padding: 12px 14px; margin: 0 0 8px; cursor: pointer; }
+.mb-app input { width: 24px; height: 24px; margin: 2px 0 0; accent-color: var(--gronn); }
+.mb-app > span { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.mb-d { color: var(--dempet); font-size: .92rem; }
+.mb-gjor { font-size: .85rem; background: var(--mb-tap-bg); border-radius: 8px; padding: 5px 8px; margin-top: 3px; }
+.seksjonstittel small { font-weight: 500; }

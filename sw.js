@@ -1,12 +1,12 @@
 // Offline-støtte og rask oppstart: lagret kopi vises med én gang, og ny versjon hentes i bakgrunnen.
 // Er en fil endret, får appen beskjed (melding «ny»). Nettleserens HTTP-mellomlager omgås («no-cache»/«reload»),
 // ellers kan en ny cache-versjon fylles med gamle filer.
-const CACHE = "vn-reise-v81";
-const BEKR = "vn-bekr", FOTO = "vn-foto", DBILDE = "vn-dbilde"; // v60: bekreftelsene har eget lager som appen selv fyller – overlever nye versjoner
+const CACHE = "vn-reise-v82";
+const BEKR = "vn-bekr", FOTO = "vn-foto", DBILDE = "vn-dbilde", MOBIL = "vn-mobil"; // v60: bekreftelsene har eget lager som appen selv fyller – overlever nye versjoner
 const FILER = ["./", "index.html", "stil.css", "app.js", "data.enc", "manifest.webmanifest", "ikon.svg", "ikon-180.png", "ikon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILER.map((f) => new Request(f, { cache: "reload" })))).then(() => self.skipWaiting())); });
 self.addEventListener("activate", (e) => {
-  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE && k !== BEKR && k !== FOTO && k !== DBILDE).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
+  e.waitUntil(caches.keys().then((ks) => Promise.all(ks.filter((k) => k !== CACHE && k !== BEKR && k !== FOTO && k !== DBILDE && k !== MOBIL).map((k) => caches.delete(k)))).then(() => self.clients.claim()));
 });
 // Én oppføring per fil: ?v=… og lignende tas bort, så en gammel kopi aldri blir liggende ved siden av en ny.
 const nokkel = (url) => { const u = new URL(url); u.search = ""; u.hash = ""; return u.href; };
@@ -25,6 +25,12 @@ self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
   if (/\/[bf]\/[0-9a-f]+\.enc$/.test(new URL(req.url).pathname)) return; // bekreftelsene: appen henter og lagrer selv
+  // v82: bildene til «Mobil i Vietnam» – fra eget lager først (filnavnet endres når bildet endres)
+  if (/\/m\/[\w.-]+\.webp$/.test(new URL(req.url).pathname)) {
+    const km = nokkel(req.url);
+    e.respondWith(caches.open(MOBIL).then(async (c) => (await c.match(km)) || fetch(req).then((r) => { if (r.ok && !r.redirected) c.put(km, r.clone()); return r; })));
+    return;
+  }
   const k = nokkel(req.url);
   // «Hent nyeste versjon» i appen: rett fra nett, lagres før svaret gis. Feiler det, får appen vite det (og beholder alt).
   if (req.headers.get("x-vn-hent")) {
