@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 84, tid: "2026-10-18 kl. 19:40" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 85, tid: "2026-10-25 kl. 11:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -274,7 +274,7 @@
     if (type === "tel") return `<a class="kb tel" href="${telUrl(verdi)}">${ikon("kontakt", "")}${esc(etikett || verdi)}</a>`;
     if (type === "mail") return `<a class="kb" href="mailto:${esc(verdi)}">${ikon("mail", "")}${esc(etikett || "E-post")}</a>`;
     if (type === "web") return `<a class="kb" href="${esc(verdi)}" target="_blank" rel="noopener noreferrer">${ikon("web", "")}${esc(etikett || "Nettside")}</a>`;
-    if (type === "kart") return `<a class="kb" href="${kartUrl(verdi)}" target="_blank" rel="noopener noreferrer">${ikon("kart", "")}${esc(etikett || "Kart")}</a>`;
+    if (type === "kart") return `<a class="kb" href="${/^https:\/\//.test(verdi) ? esc(verdi) : kartUrl(verdi)}" target="_blank" rel="noopener noreferrer">${ikon("kart", "")}${esc(etikett || "Kart")}</a>`;
     return "";
   }
   function kontaktHtml(k) {
