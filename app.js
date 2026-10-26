@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 85, tid: "2026-10-25 kl. 11:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 86, tid: "2026-10-26 kl. 23:15" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1827,7 +1827,7 @@
       if (t === "advarsel" || t === "reise") { synlig.push(seksjon(x)); continue; }
       const plan = /planlagt/i.test(x.tittel), best = t === "bestilt" || /\bbestilt\b/i.test(x.tittel) && !/ikke bestilt/i.test(x.tittel);
       if (best) bestilt.push(fold(x, `<span class="bord ja">✓ Bestilt</span>`));
-      else if (plan) bestilt.push(fold(x, `<span class="bord nei">Ikke bestilt</span>`));
+      else if (plan) bestilt.push(fold(x, /ikke (bestilt|kjøpt|bekreftet)/i.test(x.tittel) ? `<span class="bord nei">Ikke bestilt</span>` : `<span class="bord nei">Planlagt</span>`)); // v86: samme regel som tidslinja
       else praktisk.push({ fold: fold(x), html: seksjon(x) }); // flere praktiske kort: åpne inne i ett felt (ett trykk)
     }
     h += synlig.join("");
