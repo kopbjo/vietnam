@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 87, tid: "2026-10-27 kl. 20:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 88, tid: "2026-10-27 kl. 20:10" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -2115,7 +2115,7 @@
       ${sh.length > 1 ? `<details class="fold innfelt"><summary>Flere sykehus her <span class="antall">(${sh.length - 1})</span></summary><div class="innhold">${sykehusHtml(sh.slice(1))}</div></details>` : ""}</section>`;
     h += seksjon({ tittel: D.nod.hnT || "⟦k4⟧", type: "advarsel", tekst: D.nod.hn });
     h += `<div class="seksjonstittel">Ikke akutt</div>`;
-    h += `<details class="fold"><summary>${ikon("kontakt")}Forsikring <span class="antall">(${(D.nod.forsikring || []).length})</span></summary><div class="innhold">${(D.nod.vcf || []).length ? `<button class="knapp knapp-full knapp-lys" data-vcf>Lagre SOS-kontaktene på telefonen (${D.nod.vcf.length})</button><p class="sno">Åpner en kontaktfil – trykk «Legg til alle» / «Opprett nye kontakter». Søk «SOS» i Kontakter for å finne dem.</p>` : ""}${kontakterHtml(D.nod.forsikring)}</div></details>`;
+    h += `<details class="fold"><summary>${ikon("kontakt")}Forsikring <span class="antall">(${(D.nod.forsikring || []).length})</span></summary><div class="innhold">${(D.nod.vcf || []).length ? `<p class="sno">Lagre som kontakter på telefonen – trykk én om gangen, og «Opprett ny kontakt». Søk «SOS» i Kontakter for å finne dem.</p>${D.nod.vcf.map((k, i) => `<button class="knapp knapp-full knapp-lys" data-vcf="${i}">Lagre «${esc(k.navn)}»</button>`).join("")}` : ""}${kontakterHtml(D.nod.forsikring)}</div></details>`;
     h += `<details class="fold"><summary>${ikon("info")}Helseråd</summary><div class="innhold">${(D.nod.helse || []).map((t) => `<p>${md(t)}</p>`).join("")}</div></details>`;
     h += `<details class="fold"><summary>${ikon("info")}Ambassade og UD</summary><div class="innhold">${kontakterHtml(D.nod.myndigheter)}</div></details>`;
     if (D.nod.hjemme) h += `<details class="fold"><summary>${ikon("kontakt")}Lege hjemme i Norge</summary><div class="innhold">${kontakterHtml(D.nod.hjemme)}</div></details>`;
@@ -2124,9 +2124,10 @@
 
 
   // Kontaktfil (vCard 3.0) med SOS-kontaktene fra D.nod.vcf – lages på telefonen, lastes ned som .vcf
-  function lagVcf() {
+  function lagVcf(nr) {
     const s = (x) => String(x || "").replace(/\\/g, "\\\\").replace(/[;,]/g, (c) => "\\" + c).replace(/\r?\n/g, "\\n");
-    const kort = (D.nod.vcf || []).map((k) => {
+    const k0 = (D.nod.vcf || [])[nr]; if (!k0) return;
+    const kort = [k0].map((k) => {
       const l = ["BEGIN:VCARD", "VERSION:3.0", `N:;${s(k.navn)};;;`, `FN:${s(k.navn)}`];
       (k.tel || []).forEach(([etikett, nr], i) => { l.push(`item${i + 1}.TEL;TYPE=VOICE:${nr.replace(/\s/g, "")}`, `item${i + 1}.X-ABLabel:${s(etikett)}`); });
       if (k.epost) l.push(`EMAIL;TYPE=INTERNET:${k.epost}`);
@@ -2135,7 +2136,7 @@
     }).join("\r\n") + "\r\n";
     try {
       const url = URL.createObjectURL(new Blob([kort], { type: "text/vcard;charset=utf-8" }));
-      const a = document.createElement("a"); a.href = url; a.download = "SOS-kontakter.vcf"; document.body.appendChild(a); a.click(); a.remove();
+      const a = document.createElement("a"); a.href = url; a.download = k0.navn.replace(/[^\wæøåÆØÅ]+/g, "-") + ".vcf"; document.body.appendChild(a); a.click(); a.remove();
       setTimeout(() => URL.revokeObjectURL(url), 60000);
     } catch { toast("Fikk ikke laget kontaktfila – lagre numrene for hånd", 3200, "info"); }
   }
@@ -5378,7 +5379,8 @@
     if (al) { e.preventDefault(); akLes(al); return; }
     const fr = e.target.closest("[data-frase]");
     if (fr) { e.preventDefault(); uttaleStopp(); visFrase(Number(fr.dataset.frase)); return; }
-    if (e.target.closest("[data-vcf]")) { e.preventDefault(); lagVcf(); return; }
+    const vc = e.target.closest("[data-vcf]");
+    if (vc) { e.preventDefault(); lagVcf(Number(vc.dataset.vcf)); return; }
     const t = e.target.closest("[data-pakkrunde],[data-pakkliste],[data-pakknull],[data-nodsted],[data-kortvariant],[data-dag],[data-laas],[data-hk],[data-stort],[data-kopier],[data-matsted],[data-maal],[data-sort],[data-meg],[data-oppdater],[data-rull],[data-sjofor],[data-sjoforlim],[data-sjoforvis],.lukk");
     if (!t) return;
     if (t.dataset.nodsted) { nodSted = t.dataset.nodsted; vis(); return; }
