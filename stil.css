@@ -2275,3 +2275,45 @@ details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px 
 .ap-kryss { font: inherit; font-weight: 700; font-size: .88rem; display: inline-flex; align-items: center; gap: 5px; border: 1.5px solid var(--linje); background: var(--flate2); color: var(--tekst); border-radius: 18px; padding: 6px 12px; cursor: pointer; min-height: 36px; }
 .ap-kryss svg { width: 16px; height: 16px; }
 .ap-kryss.p { background: var(--gronn); border-color: var(--gronn); color: var(--gronn-bg); }
+
+/* ---------- v89: gjestesiden (likes og hilsener fra gjestene, invitasjoner) ---------- */
+.gj-rad { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 4px; padding: 3px 8px; border: 0; border-radius: 999px; background: var(--flate2); color: var(--tekst); font: 600 .78rem/1.3 inherit; text-align: left; }
+.gj-rad .gj-hj { color: var(--rod); }
+.gj-rad b { background: var(--rod); color: var(--rod-tekst); border-radius: 999px; padding: 1px 7px; font-size: .72rem; }
+.gj-rad.ny { box-shadow: 0 0 0 1.5px var(--rod); }
+.gj-privat { background: none; padding: 3px 0; color: var(--dempet); font-weight: 500; }
+.gj-nytt { display: flex; align-items: center; gap: 12px; width: 100%; text-align: left; margin: 0 0 12px; padding: 10px 12px; border: 1.5px solid var(--rod); border-radius: var(--r); background: var(--rod-bg); color: var(--tekst); font: inherit; }
+.gj-nytt > span:nth-child(2) { flex: 1; display: flex; flex-direction: column; font-size: .86rem; }
+.gj-nytt b { font-size: .98rem; }
+.gj-nytt-i { width: 34px; height: 34px; border-radius: 50%; background: var(--rod); color: var(--rod-tekst); display: grid; place-items: center; font-size: 1.05rem; flex: none; }
+.gj-nytt svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 2; }
+.gj-valg { display: flex; gap: 12px; align-items: flex-start; margin: 14px 0 2px; padding: 10px 12px; border-radius: 12px; background: var(--flate2); cursor: pointer; }
+.gj-valg input { width: 22px; height: 22px; margin-top: 1px; accent-color: var(--aksent); flex: none; }
+.gj-valg span { display: flex; flex-direction: column; }
+.gj-valg small { color: var(--dempet); font-size: .82rem; line-height: 1.3; }
+.gj-likte { margin: 2px 0 10px; color: var(--dempet); font-size: .9rem; }
+.gj-likte b { color: var(--rod); }
+.gj-hilsener { display: flex; flex-direction: column; gap: 10px; margin-bottom: 12px; }
+.gj-h { background: var(--flate2); border-radius: 12px; padding: 9px 12px; }
+.gj-h.fam { background: var(--aksent-lys); }
+.gj-hn { display: flex; align-items: baseline; gap: 8px; }
+.gj-hn small { color: var(--dempet); font-size: .78rem; }
+.gj-h p { margin: 2px 0 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.gj-skjul { margin-left: auto; border: 0; background: none; color: var(--dempet); font: 500 .8rem inherit; text-decoration: underline; padding: 0; }
+.gj-svar textarea { width: 100%; box-sizing: border-box; border: 1px solid var(--linje); border-radius: 12px; padding: 10px 12px; font: inherit; background: var(--flate); color: var(--tekst); resize: vertical; }
+.kb.gj-paa { background: var(--rod-bg); color: var(--rod); }
+.gj-inv { white-space: pre-wrap; overflow-wrap: anywhere; background: var(--flate2); border-radius: 12px; padding: 12px; font: .86rem/1.45 ui-monospace, SFMono-Regular, Menlo, monospace; margin: 8px 0 4px; user-select: all; -webkit-user-select: all; }
+.gj-oppsett h2 { margin-top: 0; }
+.gj-oppsett summary { font-weight: 650; cursor: pointer; }
+.gj-adv { color: var(--rod); font-weight: 600; }
+.gj-steg { padding-left: 20px; margin: 8px 0 0; display: flex; flex-direction: column; gap: 12px; }
+.gj-steg a { color: var(--aksent); font-weight: 600; }
+.gj-liste { display: flex; flex-direction: column; }
+.gj-gjest { display: flex; align-items: center; gap: 8px; padding: 8px 0; border-bottom: .5px solid var(--linje); }
+.gj-gjest span { flex: 1; min-width: 0; display: flex; flex-direction: column; }
+.gj-gjest small { color: var(--dempet); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gj-fjern { color: var(--rod); min-width: 44px; justify-content: center; }
+.gj-ny-t { margin: 16px 0 8px; font-size: 1rem; }
+.gj-ny { display: flex; flex-direction: column; gap: 8px; }
+.gj-ny input { border: 1px solid var(--linje); border-radius: 12px; padding: 11px 12px; font: inherit; background: var(--flate); color: var(--tekst); }
+.gj-ny .kb { align-self: flex-start; }

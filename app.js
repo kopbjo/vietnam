@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 88, tid: "2026-10-27 kl. 20:10" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 89, tid: "2026-11-01 kl. 02:00" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -2250,12 +2250,12 @@
     try { inn = JSON.parse(lagre.get(LS.synkInn) || "null"); } catch {}
     if (inn && inn.rt) {
       const r = await fetch("https://securetoken.googleapis.com/v1/token?key=" + key, { method: "POST", headers: { "Content-Type": "application/x-www-form-urlencoded" }, body: "grant_type=refresh_token&refresh_token=" + encodeURIComponent(inn.rt) });
-      if (r.ok) { const j = await r.json(); S.tok = j.id_token; S.tokUt = Date.now() + (Number(j.expires_in || 3600) - 120) * 1000; lagre.set(LS.synkInn, JSON.stringify({ rt: j.refresh_token })); return S.tok; }
+      if (r.ok) { const j = await r.json(); S.uid = j.user_id || S.uid; S.tok = j.id_token; S.tokUt = Date.now() + (Number(j.expires_in || 3600) - 120) * 1000; lagre.set(LS.synkInn, JSON.stringify({ rt: j.refresh_token })); return S.tok; }
       if (r.status >= 500 || r.status === 429) throw new Error("token " + r.status);
     }
     const r = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + key, { method: "POST", headers: { "Content-Type": "application/json" }, body: '{"returnSecureToken":true}' });
     if (!r.ok) throw new Error("innlogging " + r.status);
-    const j = await r.json(); S.tok = j.idToken; S.tokUt = Date.now() + (Number(j.expiresIn || 3600) - 120) * 1000;
+    const j = await r.json(); S.uid = j.localId || S.uid; S.tok = j.idToken; S.tokUt = Date.now() + (Number(j.expiresIn || 3600) - 120) * 1000;
     lagre.set(LS.synkInn, JSON.stringify({ rt: j.refreshToken })); return S.tok;
   }
   const fsRot = () => `projects/${D.synk.prosjekt}/databases/(default)/documents`;
@@ -2310,6 +2310,7 @@
         await synkSend();
         await brukSend();
         dbSend();
+        gjSynk();
         synkLes().ok = Date.now(); synkLagre(); synkStatus("ok");
         if (endret) synkOppdaterVisning();
         if (B.endret) { B.endret = false; brukLagre(true); if (rute().side === "stat" && trygtAaTegne()) { const y = window.scrollY; vis(); window.scrollTo(0, y); } }
@@ -3551,7 +3552,7 @@
     }
     return ut;
   }
-  async function dbLagre(d, blob, w, h) {
+  async function dbLagre(d, blob, w, h, g = 1) {
     const m = meg(); if (!m || !D.synk) return false;
     await synkNokler();
     const id = tilfeldigHex(10), iv = crypto.getRandomValues(new Uint8Array(12));
@@ -3559,7 +3560,7 @@
     const u = new Uint8Array(12 + ct.length); u.set(iv); u.set(ct, 12);
     DB_RAW.set(id, u); DB_URL.set(id, URL.createObjectURL(blob));
     try { await (await caches.open(DB_LAGER)).put(dbCacheUrl(id), new Response(u)); } catch {}
-    const ko = dbKo(); ko[id] = { d, hvem: m, w, h, c: Date.now() }; dbKoSett(ko);
+    const ko = dbKo(); ko[id] = { d, hvem: m, w, h, g, c: Date.now() }; dbKoSett(ko);
     dbSend(); return true;
   }
   function dbFjern(d) {
@@ -3578,7 +3579,7 @@
           let u = DB_RAW.get(id);
           if (!u) { const r = await (await caches.open(DB_LAGER)).match(dbCacheUrl(id)); if (!r) { const k2 = dbKo(); delete k2[id]; dbKoSett(k2); continue; } u = new Uint8Array(await r.arrayBuffer()); }
           await fsKall(":commit", { writes: [{ update: { name: `${fsRot()}/reise/${D.synk.familie}/bilder/${id}`, fields: { c: { stringValue: tilB64(u) } } }, updateTransforms: [{ fieldPath: "s", setToServerValue: "REQUEST_TIME" }] }] });
-          synkSett({ k: "p", id: x.d + "|" + x.hvem, d: x.d, hvem: x.hvem, b: id, w: x.w, h: x.h });
+          synkSett({ k: "p", id: x.d + "|" + x.hvem, d: x.d, hvem: x.hvem, b: id, w: x.w, h: x.h, g: x.g === 0 ? 0 : 1 });
           const k2 = dbKo(); delete k2[id]; dbKoSett(k2); sendt++;
         } catch { break; } // uten nett eller feil: prøv igjen ved neste synk
       }
@@ -3593,7 +3594,7 @@
     const bilde = b ? `<button class="db-bilde fbilde" data-dbgal="${esc(d)}|${esc(p.id)}" aria-label="Se bildet til ${esc(navn)}"><img data-dbb="${esc(b.b)}" alt="">${b.venter ? `<span class="db-venter">${navigator.onLine ? "Sender …" : "Deles når dere har nett"}</span>` : ""}</button>`
       : egen ? `<button class="db-bilde db-tom egen" data-dbvelg="${esc(d)}">${ikon("kamera", "")}<span>Velg ditt bilde</span></button>`
       : `<div class="db-bilde db-tom">${DB_PERSON}<span>Ikke valgt ennå</span></div>`;
-    return `<figure class="db-flis${egen ? " meg" : ""}">${bilde}<figcaption><span class="db-navn">${esc(navn)}${egen && b ? `<button class="db-bytt" data-dbendre="${esc(d)}">Endre</button>` : ""}</span>${tekst ? `<span class="db-tekst">${esc(tekst)}</span>` : ""}</figcaption></figure>`;
+    return `<figure class="db-flis${egen ? " meg" : ""}">${bilde}<figcaption><span class="db-navn">${esc(navn)}${egen && b ? `<button class="db-bytt" data-dbendre="${esc(d)}">Endre</button>` : ""}</span>${tekst ? `<span class="db-tekst">${esc(tekst)}</span>` : ""}${b && !b.venter ? gjRad(d, p.id) : ""}</figcaption></figure>`;
   }
   // «I går» øverst i I dag om morgenen (til kl. 15)
   function igaarHtml(d) {
@@ -3634,6 +3635,7 @@
       <div class="db-forh"><img src="${src}" alt="Bildet du har valgt"></div>
       <label class="db-etikett" for="dbArkTekst">Det beste i dag var …</label>
       <input id="dbArkTekst" maxlength="200" placeholder="Skriv én linje (valgfritt)" value="${esc(min ? min.tekst : "")}">
+      ${GJ() ? `<label class="gj-valg"><input type="checkbox" id="dbGjest" ${har && !ny && har.g === 0 ? "" : "checked"}><span><b>Del også med gjestene</b><small>Vises på gjestesiden «${esc(gjTittel())}», der de kan like og skrive hilsener</small></span></label>` : ""}
       <div class="knapper db-arkknapper"><button class="kb tel" data-dbdel="${esc(d)}">${ny ? "Del med familien" : "Lagre"}</button><button class="kb" data-dbvelg="${esc(d)}">${ikon("kamera", "")}Velg et annet bilde</button></div>
       ${har && !ny ? `<button class="db-fjern" data-dbfjern="${esc(d)}">Fjern bildet mitt for denne dagen</button>` : ""}
       <p class="krolle db-arkhjelp">Bildet gjøres mindre og krypteres før det deles. Du kan bytte det når du vil.</p>`);
@@ -3649,7 +3651,9 @@
     if (t.dataset.dbdel) {
       const d = t.dataset.dbdel, nytt = dbValg && dbValg.d === d ? dbValg : null, inp = $("#dbArkTekst"), tekst = inp ? inp.value.trim() : "";
       t.disabled = true; t.textContent = "Lagrer …";
-      const ok = nytt ? await dbLagre(d, nytt.blob, nytt.w, nytt.h) : true; dbValg = null;
+      const gv = $("#dbGjest"), g = gv && !gv.checked ? 0 : 1, gml = synkLes().p[JSON.stringify(["p", d + "|" + m])];
+      const ok = nytt ? await dbLagre(d, nytt.blob, nytt.w, nytt.h, g) : true; dbValg = null;
+      if (!nytt && gv && gml && gml.b && (gml.g === 0 ? 0 : 1) !== g) { const { t: _t, ...rest } = gml; synkSett({ ...rest, g }); }
       const min = dbLes(d).find((x) => x.hvem === m);
       if (tekst !== (min ? min.tekst : "")) synkSett({ k: "d", id: d + "|" + m, d, hvem: m, tekst });
       lukkOverlay(); const y = window.scrollY; vis(); window.scrollTo(0, y);
@@ -3681,13 +3685,255 @@
     return null;
   }
 
+  // ---------- GJESTESIDEN (v89): Dagens bilde deles med inviterte gjester, som kan like og skrive hilsener ----------
+  // Gjestesiden ligger i gjest/ og har egen innlogging (e-post/passord). Gjestene ser IKKE familiens krypterte data:
+  // hver telefon laster opp en egen kopi av sine egne delte bilder til gjest/<gjest-id>/ (bilder + kort), og leser likes
+  // og hilsener derfra. Reglene (firestore.rules) slipper bare til registrerte familietelefoner og gjester på gjestelista.
+  // Kort: gjest/<g>/kort/<dato>_<person> {d, hvem, n, tekst, sted, b, w, h, x} (x = fjernet) · bilde: gjest/<g>/bilder/<b> {c: base64 jpeg}
+  // Lik: gjest/<g>/lik/<kort>~<e> {p, e, n, v} · Hilsen: gjest/<g>/hilsen/<id> {p, e, n, t, x} · e = gjestens e-post eller «familie:<person>»
+  // Gjesteliste: reise/<familie>/gjester/<e-post> {n} · inngang/<e-post> {g, n} · familietelefoner: reise/<familie>/medlem/<uid>
+  const GJ = () => (D && D.synk && D.synk.gjest ? D.synk.gjest : null);
+  const gjO = () => (D && D.synk && D.synk.gjestOppsett) || {};
+  const gjTittel = () => gjO().tittel || "Gjestesiden";
+  const GJS = { status: lagre.get("vn.gjStatus") || "", hentet: 0, gaar: null, sendGaar: null, gjester: null };
+  const gjStatus = (s) => { if (GJS.status !== s) { GJS.status = s; lagre.set("vn.gjStatus", s); } };
+  const gjData = () => { if (!GJS.data) { try { GJS.data = JSON.parse(lagre.get("vn.gjData") || "null"); } catch {} if (!GJS.data || !GJS.data.s) GJS.data = { lik: {}, hilsen: {}, s: {} }; } return GJS.data; };
+  const gjLagreData = () => lagre.set("vn.gjData", JSON.stringify(gjData()));
+  const gjSett = () => { try { return JSON.parse(lagre.get("vn.gjSett") || "{}") || {}; } catch { return {}; } };
+  const gjKortId = (d, pid) => d + "_" + pid;
+  const gjStier = () => ({ rot: fsRot(), g: `gjest/${GJ()}` });
+  const gjVerdi = (x) => (typeof x === "boolean" ? { booleanValue: x } : Number.isInteger(x) ? { integerValue: String(x) } : typeof x === "number" ? { doubleValue: x } : x == null ? { nullValue: null } : { stringValue: String(x) });
+  const gjSkriv = (sti, data, maske) => { const w = { update: { name: `${fsRot()}/${sti}`, fields: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, gjVerdi(v)])) }, updateTransforms: [{ fieldPath: "s", setToServerValue: "REQUEST_TIME" }] }; if (maske) w.updateMask = { fieldPaths: maske }; return w; };
+  const gjFra = (v) => (!v ? null : "stringValue" in v ? v.stringValue : "integerValue" in v ? Number(v.integerValue) : "doubleValue" in v ? v.doubleValue : "booleanValue" in v ? v.booleanValue : "timestampValue" in v ? tsMs(v.timestampValue) : null);
+  const gjFelt = (doc) => { const o = {}; for (const [k, v] of Object.entries((doc && doc.fields) || {})) o[k] = gjFra(v); return o; };
+  // Telefonen registrerer seg som familiemedlem (én gang per innlogging) – kreves av reglene før noe deles med gjestene
+  async function gjMedlem() {
+    await synkToken();
+    if (!S.uid) { S.tok = null; await synkToken(); }
+    if (!S.uid) throw new Error("uid");
+    if (lagre.get("vn.gjMedlem") === S.uid) return;
+    await fsKall(":commit", { writes: [gjSkriv(`reise/${D.synk.familie}/medlem/${S.uid}`, {})] });
+    lagre.set("vn.gjMedlem", S.uid);
+  }
+  // Oppsettet gjestesiden trenger (tittel, steder med koordinater, personer, datoer)
+  function gjOppsett() {
+    const o = gjO(), navn = o.navn || {}, kort = o.kort || {};
+    const st = D.steder.filter((s) => s.vaer && s.vaer.lat && !(o.utenom || []).includes(s.id)).map((s) => ({ id: s.id, navn: navn[s.id] || s.navn, kort: kort[s.id] || navn[s.id] || s.navn, fra: s.fra, til: s.til, lat: s.vaer.lat, lon: s.vaer.lon }));
+    return { tittel: gjTittel(), tz: "Asia/Ho_Chi_Minh", start: start(), slutt: slutt(), personer: D.personer.map((p) => ({ id: p.id, navn: p.navn })), steder: st };
+  }
+  // Mine egne bilder → gjestesiden. Alt annet (andres bilder) deles av deres egne telefoner.
+  async function gjSend() {
+    const m = meg(); if (!m || !GJ()) return;
+    const sendt = (() => { try { return JSON.parse(lagre.get("vn.gjSendt") || "{}") || {}; } catch { return {}; } })(), lagreSendt = () => lagre.set("vn.gjSendt", JSON.stringify(sendt));
+    await gjMedlem();
+    const opp = JSON.stringify(gjOppsett());
+    if (sendt._opp !== opp) { await fsKall(":commit", { writes: [gjSkriv(`${gjStier().g}/oppsett/reise`, { j: opp })] }); sendt._opp = opp; lagreSendt(); }
+    const til = idagISO() < slutt() ? idagISO() : slutt();
+    for (let d = start(); d <= til; d = pluss(d, 1)) {
+      const id = gjKortId(d, m), b = dbBilde(d, m);
+      if (b && b.venter) continue; // sendes når bildet er oppe hos familien
+      const p = synkLes().p[JSON.stringify(["p", d + "|" + m])], delt = !(p && p.g === 0);
+      const st = stedForDato(d), tekst = (dbLes(d).find((x) => x.hvem === m) || {}).tekst || "";
+      const vil = b && delt ? { d, hvem: m, n: personNavn(m), tekst: tekst.slice(0, 300), sted: st ? (gjO().navn || {})[st.id] || st.navn : "", b: b.b, w: b.w || 0, h: b.h || 0, x: false } : null;
+      const sig = vil ? JSON.stringify(vil) : "", gml = sendt[id];
+      if ((gml ? gml.sig : "") === sig) continue;
+      const writes = [];
+      if (vil && (!gml || gml.b !== vil.b)) {
+        await synkNokler(); const u = await dbKryptert(vil.b);
+        const klar = await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, S.aes, u.slice(12));
+        await fsKall(":commit", { writes: [gjSkriv(`${gjStier().g}/bilder/${vil.b}`, { c: tilB64(new Uint8Array(klar)) })] });
+      }
+      writes.push(gjSkriv(`${gjStier().g}/kort/${id}`, vil || { d, hvem: m, x: true }));
+      if (gml && gml.b && (!vil || gml.b !== vil.b)) writes.push({ delete: `${fsRot()}/${gjStier().g}/bilder/${gml.b}` });
+      await fsKall(":commit", { writes });
+      if (vil) sendt[id] = { sig, b: vil.b }; else delete sendt[id];
+      lagreSendt();
+    }
+  }
+  // Likes og hilsener fra gjestene (bare det som er nytt siden sist; ingenting slettes – det skjules med v = 0 / x = true)
+  async function gjHent(tving) {
+    if (!GJ() || !navigator.onLine || (!tving && Date.now() - GJS.hentet < 90e3)) return false;
+    GJS.hentet = Date.now();
+    const G = gjData(); let endret = false;
+    for (const samling of ["lik", "hilsen"]) {
+      const s = G.s[samling] || 0, q = { from: [{ collectionId: samling }] };
+      if (s) q.where = { fieldFilter: { field: { fieldPath: "s" }, op: "GREATER_THAN", value: { timestampValue: new Date(s - 120000).toISOString() } } };
+      const svar = await fsKall(`/${gjStier().g}:runQuery`, { structuredQuery: q });
+      let maks = s;
+      for (const x of svar) {
+        if (!x.document) continue;
+        const id = decodeURIComponent(x.document.name.split("/").pop()), f = gjFelt(x.document);
+        maks = Math.max(maks, f.s || 0);
+        if (!G[samling][id] || G[samling][id].s !== f.s) { G[samling][id] = f; endret = true; }
+      }
+      G.s[samling] = maks;
+    }
+    gjLagreData(); return endret;
+  }
+  async function gjSynk() {
+    if (!GJ() || GJS.sendGaar || !navigator.onLine) return;
+    if (GJS.status === "regler" && Date.now() - (GJS.forsok || 0) < 10 * 60e3) return; // reglene mangler: prøv sjeldnere
+    GJS.forsok = Date.now();
+    GJS.sendGaar = (async () => {
+      try { await gjSend(); const e = await gjHent(); gjStatus("ok"); if (e && ["idag", "dagbok"].includes(rute().side) && $("#overlay").hidden && trygtAaTegne()) { const y = window.scrollY; vis(); window.scrollTo(0, y); } }
+      catch (e) { if (/ 403$/.test(e.message)) gjStatus("regler"); }
+    })();
+    try { await GJS.sendGaar; } finally { GJS.sendGaar = null; }
+  }
+  const gjLik = (id) => Object.values(gjData().lik).filter((l) => l.p === id && l.v === 1).sort((a, b) => (a.s || 0) - (b.s || 0));
+  const gjHilsener = (id) => Object.entries(gjData().hilsen).filter(([, h]) => h.p === id && !h.x).map(([hid, h]) => ({ hid, ...h })).sort((a, b) => (a.s || 9e15) - (b.s || 9e15));
+  const gjNye = (id) => { const t = gjSett()[id] || 0, me = "familie:" + meg(); return [...gjHilsener(id), ...gjLik(id)].filter((x) => (x.s || 0) > t && x.e !== me); };
+  // Linja under bildet i Dagens beste / Reisedagboka: «♥ 3 · 2 hilsener»
+  function gjRad(d, pid) {
+    if (!GJ()) return "";
+    const p = synkLes().p[JSON.stringify(["p", d + "|" + pid])];
+    if (p && p.g === 0) return `<span class="gj-rad gj-privat">Bare familien</span>`;
+    const id = gjKortId(d, pid), l = gjLik(id).length, h = gjHilsener(id).length, ny = gjNye(id).length;
+    if (!l && !h) return "";
+    return `<button class="gj-rad${ny ? " ny" : ""}" data-gjark="${esc(d)}|${esc(pid)}">${l ? `<span class="gj-hj">♥ ${l}</span>` : ""}${h ? `<span>${h} ${h === 1 ? "hilsen" : "hilsener"}</span>` : ""}${ny ? `<b>${ny} ny${ny === 1 ? "" : "e"}</b>` : ""}</button>`;
+  }
+  // Nye hilsener samlet øverst i Dagens beste
+  function gjNyttHtml() {
+    if (!GJ()) return "";
+    const ider = [...new Set([...Object.values(gjData().hilsen), ...Object.values(gjData().lik)].map((x) => x.p))].filter((id) => gjNye(id).length);
+    if (!ider.length) return "";
+    const n = ider.reduce((s, id) => s + gjNye(id).filter((x) => "t" in x).length, 0), l = ider.reduce((s, id) => s + gjNye(id).filter((x) => !("t" in x)).length, 0);
+    const siste = ider.sort((a, b) => Math.max(...gjNye(b).map((x) => x.s || 0)) - Math.max(...gjNye(a).map((x) => x.s || 0)))[0], [d, pid] = siste.split("_");
+    return `<button class="gj-nytt" data-gjark="${esc(d)}|${esc(pid)}"><span class="gj-nytt-i">♥</span><span><b>Nytt fra gjestene</b>${[n ? `${n} ${n === 1 ? "hilsen" : "hilsener"}` : "", l ? `${l} ${l === 1 ? "hjerte" : "hjerter"}` : ""].filter(Boolean).join(" og ")}</span>${ikon("chev", "")}</button>`;
+  }
+  const gjSiden = (ms) => { if (!ms) return "sendes …"; const s = (Date.now() - ms) / 1000; return s < 90 ? "nå nettopp" : s < 3600 ? `for ${Math.round(s / 60)} min siden` : s < 86400 ? `for ${Math.round(s / 3600)} t siden` : pen(new Date(ms).toISOString().slice(0, 10), false); };
+  function gjArk(d, pid) {
+    const id = gjKortId(d, pid), m = meg(), l = gjLik(id), hs = gjHilsener(id), jeg = l.some((x) => x.e === "familie:" + m), voksen = !erBarn();
+    const st = gjSett(); st[id] = Date.now(); lagre.set("vn.gjSett", JSON.stringify(st));
+    if (["idag", "dagbok"].includes(rute().side)) { const y = window.scrollY; vis(); window.scrollTo(0, y); } // «nye» forsvinner under arket
+    arkApne(`<div class="ark-etikett">Gjestesiden · ${esc(pen(d))}</div><h2>Hilsener til ${esc(personNavn(pid))}</h2>
+      <div class="gj-likte">${l.length ? `<b>♥ ${l.length}</b> ${esc(l.map((x) => x.n).join(", "))}` : "Ingen hjerter ennå"}</div>
+      <div class="gj-hilsener">${hs.length ? hs.map((h) => `<div class="gj-h${/^familie:/.test(h.e) ? " fam" : ""}"><div class="gj-hn"><b>${esc(h.n)}</b><small>${esc(gjSiden(h.s))}</small>${voksen || h.e === "familie:" + m ? `<button class="gj-skjul" data-gjskjul="${esc(h.hid)}" data-gjkort="${esc(d)}|${esc(pid)}">Skjul</button>` : ""}</div><p>${esc(h.t)}</p></div>`).join("") : `<p class="krolle">Ingen hilsener ennå.</p>`}</div>
+      ${m ? `<div class="gj-svar"><textarea id="gjSvar" rows="2" maxlength="500" placeholder="Svar som ${esc(personNavn(m))} …"></textarea>
+      <div class="knapper"><button class="kb tel" data-gjsend="${esc(d)}|${esc(pid)}">Send svar</button><button class="kb${jeg ? " gj-paa" : ""}" data-gjlik="${esc(d)}|${esc(pid)}">${jeg ? "♥ Du liker dette" : "♡ Lik"}</button></div></div>` : ""}
+      <p class="krolle">Svarene vises på postkortet hos alle gjestene.</p>`);
+  }
+  document.addEventListener("click", async (e) => {
+    const t = D && e.target.closest && e.target.closest("[data-gjark],[data-gjsend],[data-gjlik],[data-gjskjul]"); if (!t) return;
+    e.preventDefault(); e.stopPropagation();
+    if (t.dataset.gjark) { const [d, pid] = t.dataset.gjark.split("|"); gjArk(d, pid); gjHent(true).then((x) => { if (x && !$("#overlay").hidden && $(".gj-hilsener")) gjArk(d, pid); }).catch(() => {}); return; }
+    const m = meg(); if (!m) return;
+    const [d, pid] = (t.dataset.gjsend || t.dataset.gjlik || t.dataset.gjkort || "").split("|"), id = gjKortId(d, pid), e2 = "familie:" + m;
+    try {
+      t.disabled = true; await gjMedlem();
+      if (t.dataset.gjsend) {
+        const ta = $("#gjSvar"), tx = ta ? ta.value.trim() : ""; if (!tx) { t.disabled = false; return; }
+        const hid = Array.from(crypto.getRandomValues(new Uint8Array(12)), (b) => (b % 36).toString(36)).join("") + Date.now().toString(36);
+        const ny = { p: id, e: e2, n: personNavn(m), t: tx.slice(0, 500), x: false };
+        await fsKall(":commit", { writes: [gjSkriv(`${gjStier().g}/hilsen/${hid}`, ny)] });
+        gjData().hilsen[hid] = { ...ny, s: Date.now() }; gjLagreData(); toast("Svaret er sendt til gjestene");
+      } else if (t.dataset.gjlik) {
+        const lid = id + "~" + e2, v = gjLik(id).some((x) => x.e === e2) ? 0 : 1, ny = { p: id, e: e2, n: personNavn(m), v };
+        await fsKall(":commit", { writes: [gjSkriv(`${gjStier().g}/lik/${lid}`, ny)] });
+        gjData().lik[lid] = { ...ny, s: Date.now() }; gjLagreData();
+      } else if (t.dataset.gjskjul) {
+        await fsKall(":commit", { writes: [gjSkriv(`${gjStier().g}/hilsen/${t.dataset.gjskjul}`, { x: true }, ["x"])] });
+        const h = gjData().hilsen[t.dataset.gjskjul]; if (h) h.x = true; gjLagreData(); toast("Hilsenen er skjult for alle");
+      }
+      gjArk(d, pid); gjHent(true).catch(() => {});
+    } catch (er) { t.disabled = false; toast(/ 403$/.test(er.message) ? "Gjestesiden er ikke satt opp ennå (se Mer → Gjestesiden)" : navigator.onLine ? "Fikk ikke sendt – prøv igjen" : "Uten nett – prøv igjen senere", 3500, "feil"); }
+  }, true);
+
+  // ---- Mer → Gjestesiden: inviter, se gjestelista, oppsett i Firebase ----
+  const gjAntallTekst = () => (GJS.gjester ? ` · ${GJS.gjester.length} ${GJS.gjester.length === 1 ? "gjest" : "gjester"}` : "");
+  async function gjHentGjester() {
+    await gjMedlem();
+    const svar = await fsKall(`/reise/${D.synk.familie}:runQuery`, { structuredQuery: { from: [{ collectionId: "gjester" }] } });
+    GJS.gjester = svar.filter((x) => x.document).map((x) => ({ e: decodeURIComponent(x.document.name.split("/").pop()), ...gjFelt(x.document) })).sort((a, b) => (a.n || "").localeCompare(b.n || "", "nb"));
+    return GJS.gjester;
+  }
+  const gjLenke = (e) => {
+    const j = JSON.stringify({ k: D.synk.apiKey, p: D.synk.prosjekt, t: gjTittel(), e: e || "" });
+    const b = btoa(String.fromCharCode(...new TextEncoder().encode(j))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
+    return new URL("gjest/", location.href.split("#")[0]).href + "#i=" + b;
+  };
+  const gjPassord = () => { const k = "bcdfghjkmnprstv", v = "aeiou", r = crypto.getRandomValues(new Uint8Array(12)); let s = ""; for (let i = 0; i < 12; i++) { s += i % 2 ? v[r[i] % 5] : k[r[i] % k.length]; if (i % 4 === 3 && i < 11) s += "-"; } return s; };
+  const gjInvTekst = (n, e, pw) => `Hei ${n}! 📮 Vi deler ett bilde hver dag fra reisen på en egen side bare for familie og venner. Åpne lenken og logg inn:\n${gjLenke(e)}\n\nE-post: ${e}\n${pw ? `Passord: ${pw}` : "Passord: det du har fra før (eller trykk «Glemt passord?»)"}\n\nDu kan trykke ♥ og skrive hilsener på postkortene. Klem fra ${D.personer.map((p) => p.navn).join(", ").replace(/, ([^,]*)$/, " og $1")}`;
+  function gjVisInvitasjon(n, e, pw, ny) {
+    const tekst = gjInvTekst(n, e, pw);
+    arkApne(`<div class="ark-etikett">Gjestesiden</div><h2>${ny ? `${esc(n)} er invitert` : `Invitasjon til ${esc(n)}`}</h2>
+      <p class="krolle">${pw ? "Send meldingen under til " + esc(n) + ". Passordet vises bare nå – men de kan alltid be om nytt med «Glemt passord?»." : esc(n) + " hadde konto fra før og bruker det samme passordet."}</p>
+      <pre class="gj-inv" id="gjInv">${esc(tekst)}</pre>
+      <div class="knapper">${navigator.share ? `<button class="kb tel" data-gjdel>${ikon("del", "")}Del …</button>` : ""}<a class="kb" href="sms:?&body=${encodeURIComponent(tekst)}">${ikon("kontakt", "")}SMS</a><a class="kb" href="mailto:${encodeURIComponent(e)}?subject=${encodeURIComponent("Postkort fra reisen")}&body=${encodeURIComponent(tekst)}">${ikon("mail", "")}E-post</a><button class="kb" data-gjkopier>Kopier</button></div>`);
+  }
+  function sideGjester() {
+    if (!GJ() || erBarn()) return tittel("Gjestesiden") + `<section class="kort"><p>Gjestesiden styres av de voksne.</p></section>` + bunn();
+    const G = GJS.gjester, ok = GJS.status === "ok";
+    let h = tittel("Gjestesiden", `«${gjTittel()}» – postkort fra Dagens bilde`);
+    h += `<section class="kort gj-intro"><p>Gjestene ser bildene dere deler i <b>Dagens bilde</b> som postkort, og kan trykke ♥ og skrive hilsener. Det de skriver, ser dere under bildene i Dagens beste og i Reisedagboka.</p>
+      <p class="krolle">Hver av dere velger selv: «Del også med gjestene» står på når du velger bildet, og kan slås av.</p></section>`;
+    if (!ok) h += `<section class="kort gj-oppsett"><h2>Oppsett i Firebase (én gang)</h2>${GJS.status === "regler" ? `<p class="gj-adv">Reglene i Firebase er ikke oppdatert ennå – derfor deles ingenting med gjestene.</p>` : `<p class="krolle">Gjøres én gang, fra mobil eller PC. Logg inn i Firebase-konsollen med Google-kontoen der prosjektet ligger.</p>`}
+      <ol class="gj-steg"><li><b>Slå på e-post og passord:</b> Authentication → Sign-in method → Add new provider → <i>Email/Password</i> → slå på (ikke «Email link») → Save.<br><a href="https://console.firebase.google.com/project/${esc(D.synk.prosjekt)}/authentication/providers" target="_blank" rel="noopener">Åpne Authentication ↗</a></li>
+      <li><b>Lim inn nye regler:</b> Firestore Database → Rules → slett alt → lim inn → Publish.<br><button class="kb tel" data-gjregler>Kopier reglene</button> <a href="https://console.firebase.google.com/project/${esc(D.synk.prosjekt)}/firestore/rules" target="_blank" rel="noopener">Åpne Rules ↗</a></li>
+      <li><b>Kom tilbake hit</b> og trykk <button class="kb" data-gjtest>Sjekk oppsettet</button></li></ol></section>`;
+    h += `<div class="seksjonstittel">Gjester${G ? ` (${G.length})` : ""}</div><section class="kort">`;
+    h += !G ? `<p class="krolle" id="gjListe">${navigator.onLine ? "Henter gjestelista …" : "Uten nett – gjestelista vises når dere har nett."}</p>`
+      : G.length ? `<div class="gj-liste">${G.map((g) => `<div class="gj-gjest"><span><b>${esc(g.n)}</b><small>${esc(g.e)}</small></span><button class="kb" data-gjinv="${esc(g.e)}">Invitasjon</button><button class="kb gj-fjern" data-gjfjern="${esc(g.e)}" aria-label="Fjern ${esc(g.n)}">${ikon("slett", "")}</button></div>`).join("")}</div>`
+      : `<p class="krolle">Ingen gjester ennå.</p>`;
+    if (!G && GJS.listeForsok && Date.now() - GJS.listeForsok > 3000) h = h.replace("Henter gjestelista …", GJS.status === "regler" ? "Gjestelista kan ikke vises før oppsettet over er gjort." : "Fikk ikke hentet gjestelista.");
+    h += `<h3 class="gj-ny-t">Inviter en gjest</h3><div class="gj-ny"><input id="gjNavn" maxlength="40" placeholder="Navn (vises på kortene, f.eks. Mormor)" autocomplete="off"><input id="gjEpost" type="email" inputmode="email" placeholder="E-post" autocomplete="off"><button class="kb tel" data-gjny>Inviter</button></div>
+      <p class="krolle">Gjesten får en konto med et passord som lages her. Du sender lenke, e-post og passord på SMS eller e-post.</p></section>`;
+    h += `<p class="pl-lenke">Gjestesiden: ${esc(new URL("gjest/", location.href.split("#")[0]).href)}</p>`;
+    if (ok) h += `<details class="kort gj-oppsett"><summary>Oppsett i Firebase</summary><p class="krolle">Alt er på plass. Endres reglene i appen senere, kopier dem på nytt:</p><div class="knapper"><button class="kb" data-gjregler>Kopier reglene</button><button class="kb" data-gjtest>Sjekk oppsettet</button></div></details>`;
+    if (!G && navigator.onLine && Date.now() - (GJS.listeForsok || 0) > 30e3 && (GJS.listeForsok = Date.now())) setTimeout(async () => { try { await gjHentGjester(); gjStatus("ok"); } catch (e) { if (/ 403$/.test(e.message)) gjStatus("regler"); GJS.gjester = GJS.gjester || null; } if (rute().side === "gjester" && $("#overlay").hidden) { const y = window.scrollY; vis(); window.scrollTo(0, y); } }, 0);
+    return h + bunn();
+  }
+  async function gjInviter(n, e) {
+    const pw = gjPassord(); let nyKonto = true;
+    const r = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + D.synk.apiKey, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: e, password: pw, returnSecureToken: false }) });
+    if (!r.ok) {
+      const j = await r.json().catch(() => ({})), k = (j.error && j.error.message) || "";
+      if (/EMAIL_EXISTS/.test(k)) nyKonto = false;
+      else if (/OPERATION_NOT_ALLOWED|ADMIN_ONLY/.test(k)) throw new Error("Slå på e-post/passord i Firebase først (steg 1 under).");
+      else if (/INVALID_EMAIL/.test(k)) throw new Error("Ugyldig e-postadresse.");
+      else throw new Error("Fikk ikke laget kontoen (" + (k || r.status) + ").");
+    }
+    await gjMedlem();
+    await fsKall(":commit", { writes: [gjSkriv(`reise/${D.synk.familie}/gjester/${e}`, { n }), gjSkriv(`inngang/${e}`, { g: GJ(), n })] });
+    return nyKonto ? pw : "";
+  }
+  document.addEventListener("click", async (ev) => {
+    const t = D && ev.target.closest && ev.target.closest("[data-gjny],[data-gjinv],[data-gjfjern],[data-gjregler],[data-gjtest],[data-gjdel],[data-gjkopier]"); if (!t) return;
+    ev.preventDefault();
+    const tegnPaaNytt = () => { if (rute().side === "gjester") { const y = window.scrollY; vis(); window.scrollTo(0, y); } };
+    if (t.hasAttribute("data-gjregler")) { try { await navigator.clipboard.writeText(D.synk.regler || ""); toast("Reglene er kopiert – lim dem inn i Firebase"); } catch { arkApne(`<h2>Reglene</h2><p class="krolle">Merk alt og kopier:</p><pre class="gj-inv">${esc(D.synk.regler || "")}</pre>`); } return; }
+    if (t.hasAttribute("data-gjdel")) { const tx = ($("#gjInv") || {}).textContent || ""; try { await navigator.share({ text: tx }); } catch {} return; }
+    if (t.hasAttribute("data-gjkopier")) { try { await navigator.clipboard.writeText(($("#gjInv") || {}).textContent || ""); toast("Kopiert"); } catch { toast("Fikk ikke kopiert – merk teksten og kopier", 3000, "feil"); } return; }
+    if (t.hasAttribute("data-gjtest")) {
+      t.disabled = true; lagre.set("vn.gjMedlem", "");
+      try { await gjHentGjester(); gjStatus("ok"); toast("Alt er på plass ✓"); gjSynk(); }
+      catch (e) { gjStatus(/ 403$/.test(e.message) ? "regler" : GJS.status); toast(/ 403$/.test(e.message) ? "Reglene er ikke på plass ennå – se steg 2" : "Fikk ikke sjekket – har du nett?", 4000, "feil"); }
+      tegnPaaNytt(); return;
+    }
+    if (t.dataset.gjinv) { const g = (GJS.gjester || []).find((x) => x.e === t.dataset.gjinv); if (g) gjVisInvitasjon(g.n, g.e, "", false); return; }
+    if (t.dataset.gjfjern) {
+      const e = t.dataset.gjfjern, g = (GJS.gjester || []).find((x) => x.e === e);
+      if (t.dataset.bekreft !== "1") { t.dataset.bekreft = "1"; t.textContent = "Fjern?"; setTimeout(() => { if (t.isConnected) { t.dataset.bekreft = ""; t.innerHTML = ikon("slett", ""); } }, 4000); return; }
+      try { await gjMedlem(); await fsKall(":commit", { writes: [{ delete: `${fsRot()}/reise/${D.synk.familie}/gjester/${e}` }, { delete: `${fsRot()}/inngang/${e}` }] }); GJS.gjester = (GJS.gjester || []).filter((x) => x.e !== e); toast(`${g ? g.n : e} har ikke lenger tilgang`); }
+      catch { toast("Fikk ikke fjernet – prøv igjen", 3000, "feil"); }
+      tegnPaaNytt(); return;
+    }
+    if (t.hasAttribute("data-gjny")) {
+      const n = ($("#gjNavn").value || "").trim(), e = ($("#gjEpost").value || "").trim().toLowerCase();
+      if (!n || !/^[^\s@\/]+@[^\s@\/]+\.[^\s@\/]+$/.test(e)) { toast("Skriv navn og en gyldig e-post", 3000, "feil"); return; }
+      t.disabled = true; t.textContent = "Inviterer …";
+      try { const pw = await gjInviter(n, e); gjStatus("ok"); try { await gjHentGjester(); } catch {} tegnPaaNytt(); gjVisInvitasjon(n, e, pw, true); }
+      catch (er) { t.disabled = false; t.textContent = "Inviter"; toast(/ 403$/.test(er.message) ? "Reglene i Firebase er ikke på plass ennå" : er.message, 4500, "feil"); if (/ 403$/.test(er.message)) { gjStatus("regler"); tegnPaaNytt(); } }
+    }
+  });
+
   // ---------- DAGENS BESTE (v44): én linje per person per reisedag – blir en felles reisedagbok ----------
   // Post {k:"d", id:"<dato>|<person>", d, hvem, tekst}
   const dbLes = (d) => Object.values(synkLes().p).filter((p) => p.k === "d" && p.d === d && p.tekst);
   function dagensBesteHtml(d) {
     const m = meg(), min = dbLes(d).find((x) => x.hvem === m), kveld = d === idagISO() && naaMin() >= 17 * 60 && m && !dbBilde(d, m);
     return `<section class="kort fv-db db-kort${kveld ? " db-kveld" : ""}" id="dagensbeste"><h2>${ikon("stjerne")}Dagens beste</h2>
-      <p class="krolle db-hjelp">Ett bilde og én linje fra hver av dere – det blir reisedagboka.</p>
+      <p class="krolle db-hjelp">Ett bilde og én linje fra hver av dere – det blir reisedagboka.</p>${gjNyttHtml()}
       <div class="db-rutenett">${D.personer.map((p) => dbFlis(d, p, m)).join("")}</div>
       ${m && dbBilde(d, m) ? "" : m ? `<div class="fv-dbny"><input id="dbTekst" maxlength="200" placeholder="Det beste i dag var …" value="${esc(min ? min.tekst : "")}" aria-label="Det beste i dag"><button class="kb tel" data-dblagre="${esc(d)}">Lagre</button></div>` : `<p class="krolle">Velg hvem du er under Mer for å være med.</p>`}
       <a class="db-boka" href="#/dagbok/${esc(d)}">${ikon("kalender", "")}Reisedagboka${ikon("chev", "")}</a></section>`;
@@ -3791,7 +4037,7 @@
     const ig = sjIgjenPa(n.d, m).find((g) => !sjFunnPost(g.tapt, m)), P = ig && SJ().plasser.find((p) => p.id === ig.plass);
     return P ? { d: ig.tapt, m, plass: P, gate: "", igjen: ig } : null;
   }
-  const sjFane = (side) => (["for", "bingo", "tema", "skatt"].includes(side) ? "idag" : ["sted", "fly", "hotell", "dagbok"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat", "mobil"].includes(side) ? "mer" : side);
+  const sjFane = (side) => (["for", "bingo", "tema", "skatt"].includes(side) ? "idag" : ["sted", "fly", "hotell", "dagbok"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat", "mobil", "gjester"].includes(side) ? "mer" : side);
   const sjRiktigSide = (P) => { const r = rute(); return P.dag ? r.side === "idag" && dagModus && valgtDag === P.dag : r.side === P.s && (!P.a || r.arg === P.a); };
   // ---- mynten legges inn på siden etter at den er tegnet ----
   function sjPlasser() {
@@ -4180,6 +4426,7 @@
       <a href="#/pakk"><span class="lik">${ikon("bestilt", "")}</span><span class="ltekst">Pakkeliste<small>Kryss av før avreise og mellom stedene</small></span><span class="pil"></span></a>
       <a href="#/bingo"><span class="lik">${ikon("stjerne", "")}</span><span class="ltekst">Reisebingo<small>Fire på rad – brett for hvert sted</small></span><span class="pil"></span></a>
       ${erBarn() ? `<a href="#/tema"><span class="lik">${ikon("ideer", "")}</span><span class="ltekst">Hva liker du?<small>Temaer for faktaene på forsiden</small></span><span class="pil"></span></a>` : ""}
+      ${GJ() && !erBarn() ? `<a href="#/gjester"><span class="lik">${ikon("bilde", "")}</span><span class="ltekst">Gjestesiden<small>Inviter familie og venner til å følge Dagens bilde${gjAntallTekst()}</small></span><span class="pil"></span></a>` : ""}
     </div><div class="seksjonstittel">Hjelp</div><div class="liste">
       <a href="#/kontakter"><span class="lik">${ikon("kontakt", "")}</span><span class="ltekst">Kontakter<small>Alle hoteller, sjåfører og guider – søkbar</small></span><span class="pil"></span></a>
       <a href="#/mobil"><span class="lik">${ikon("info", "")}</span><span class="ltekst">Mobil i Vietnam<small>Vietnam-SIM steg for steg – hjemme, i Vietnam og hjem igjen</small></span><span class="pil"></span></a>
@@ -4198,12 +4445,12 @@
   }
 
   // ---------- ruting ----------
-  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", dagbok: "Reisedagboka", bingo: "Reisebingo", tema: "Temaer", skatt: "Skattejakt", kontant: "Kontantplan", mobil: "Mobil i Vietnam" };
+  const TITLER = { pakk: "Pakkeliste", idag: "I dag", reisen: "Reisen", mat: "Mat", kontakter: "Kontakter", mer: "Mer", fly: "Fly", hotell: "Hotell", penger: "Penger", nod: "Nød og helse", sok: "Søk", tlogg: "Logg", parlor: "Fraser", claude: "Fra Claude", stat: "Statistikk", for: "Før vi drar", dagbok: "Reisedagboka", bingo: "Reisebingo", tema: "Temaer", skatt: "Skattejakt", kontant: "Kontantplan", mobil: "Mobil i Vietnam", gjester: "Gjestesiden" };
   const ruteAv = (hash) => { const [, side = "idag", arg, del] = (String(hash || "").startsWith("#/") ? hash : "#/idag").split("/"); return { side: side || "idag", arg, del }; };
   const rute = () => ruteAv(location.hash);
   document.addEventListener("click", (e) => { if (!e.target.closest || !e.target.closest("#sos")) return; const r = rute(); nodSted = r.side === "sted" && D && D.sykehus && D.sykehus[r.arg] ? r.arg : null; }, true);
   // Fanen en side hører til (markeres nederst)
-  const faneAv = (side) => side === "kontant" ? "penger" : side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : ["sted", "fly", "hotell", "dagbok"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
+  const faneAv = (side) => side === "kontant" ? "penger" : side === "skatt" ? (erBarn() ? "idag" : "penger") : ["for", "bingo", "tema"].includes(side) ? "idag" : ["sted", "fly", "hotell", "dagbok"].includes(side) ? "reisen" : ["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat", "gjester"].includes(side) ? "mer" : TITLER[side] ? side : "idag";
   // ---------- navigasjon (v57): fanene husker hvor du var, og «‹ <dag>» tar deg tilbake til dagen ----------
   const FANE_MINNE = {}; // fane → {hash, y, dag, dm, ark}: siste side i fanen
   let gjenopprett = null, viaFane = false, fraDag = null;
@@ -4213,7 +4460,7 @@
     if (!D) return;
     const { side, arg, del } = rute();
     const html = side === "reisen" ? sideReisen() : side === "sted" ? sideSted(arg) : side === "mat" ? sideMat(arg) : side === "kontakter" ? sideKontakter()
-      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "kontant" ? sideKontant() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : side === "skatt" ? sideSkatt() : side === "dagbok" ? sideDagbok(arg) : side === "mobil" ? sideMobil(arg) : sideIdag();
+      : side === "pakk" ? sidePakk() : side === "fly" ? sideFly() : side === "hotell" ? sideHotell() : side === "penger" ? sidePenger() : side === "kontant" ? sideKontant() : side === "nod" ? sideNod() : side === "mer" ? sideMer() : side === "sok" ? sideSok() : side === "tlogg" ? sideTlogg() : side === "parlor" ? sideParlor() : side === "claude" ? sideClaude() : side === "stat" ? sideStat() : side === "for" ? sideFor() : side === "bingo" ? sideBingo() : side === "tema" ? sideTema() : side === "skatt" ? sideSkatt() : side === "dagbok" ? sideDagbok(arg) : side === "mobil" ? sideMobil(arg) : side === "gjester" ? sideGjester() : sideIdag();
     $("#innhold").innerHTML = html;
     sistVistDato = idagISO();
     const fane = faneAv(side);
@@ -4223,7 +4470,7 @@
     delete tb.dataset.tilbakedag;
     if (fraDag && side !== "idag" && side !== "sok") { tb.hidden = false; tb.href = "#/idag"; tb.dataset.tilbakedag = "1"; tb.querySelector("span").textContent = dagEtikett(fraDag.dag); }
     else if (["sted", "fly", "hotell", "dagbok"].includes(side)) { tb.hidden = false; tb.href = "#/reisen"; tb.querySelector("span").textContent = "Reisen"; }
-    else if (["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat", "mobil"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
+    else if (["kontakter", "nod", "pakk", "tlogg", "parlor", "claude", "stat", "mobil", "gjester"].includes(side)) { tb.hidden = false; tb.href = "#/mer"; tb.querySelector("span").textContent = "Mer"; }
     else if (["for", "bingo", "tema"].includes(side) || (side === "skatt" && erBarn())) { tb.hidden = false; tb.href = "#/idag"; tb.querySelector("span").textContent = "I dag"; }
     else if (side === "kontant") { tb.hidden = false; tb.href = "#/penger"; tb.querySelector("span").textContent = "Penger"; }
     else if (side === "skatt") { tb.hidden = false; tb.href = "#/penger"; tb.querySelector("span").textContent = "Penger"; }

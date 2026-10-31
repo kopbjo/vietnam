@@ -1,7 +1,7 @@
 // Offline-støtte og rask oppstart: lagret kopi vises med én gang, og ny versjon hentes i bakgrunnen.
 // Er en fil endret, får appen beskjed (melding «ny»). Nettleserens HTTP-mellomlager omgås («no-cache»/«reload»),
 // ellers kan en ny cache-versjon fylles med gamle filer.
-const CACHE = "vn-reise-v88";
+const CACHE = "vn-reise-v89";
 const BEKR = "vn-bekr", FOTO = "vn-foto", DBILDE = "vn-dbilde", MOBIL = "vn-mobil"; // v60: bekreftelsene har eget lager som appen selv fyller – overlever nye versjoner
 const FILER = ["./", "index.html", "stil.css", "app.js", "data.enc", "manifest.webmanifest", "ikon.svg", "ikon-180.png", "ikon-512.png"];
 self.addEventListener("install", (e) => { e.waitUntil(caches.open(CACHE).then((c) => c.addAll(FILER.map((f) => new Request(f, { cache: "reload" })))).then(() => self.skipWaiting())); });
@@ -24,6 +24,7 @@ async function meld(fil) {
 self.addEventListener("fetch", (e) => {
   const req = e.request;
   if (req.method !== "GET" || new URL(req.url).origin !== location.origin) return;
+  if (new URL(req.url).pathname.includes("/gjest/")) return; // v89: gjestesiden er en egen side uten appens lager
   if (/\/[bf]\/[0-9a-f]+\.enc$/.test(new URL(req.url).pathname)) return; // bekreftelsene: appen henter og lagrer selv
   // v82: bildene til «Mobil i Vietnam» – fra eget lager først (filnavnet endres når bildet endres)
   if (/\/m\/[\w.-]+\.webp$/.test(new URL(req.url).pathname)) {
