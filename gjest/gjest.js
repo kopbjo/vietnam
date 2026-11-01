@@ -487,6 +487,7 @@
       el.classList.toggle("snudd", på);
       $(".forside", el).setAttribute("aria-hidden", på); $(".bakside", el).setAttribute("aria-hidden", !på);
       if (på && !UTKAST.get(id)) setTimeout(() => { const h = $(".hilsener", el); if (h) h.scrollTop = h.scrollHeight; }, 50);
+      if (på) hent(); // nye hilsener med en gang kortet snus
     }
     else if (t.dataset.send) send(t.dataset.send);
     else if (t.dataset.slett) slett(t.dataset.slett);
@@ -511,7 +512,7 @@
   setTimeout(() => { if (INN && INN.g) lagre.set(LS.sett, String(Date.now())); }, 8000);
   document.addEventListener("visibilitychange", () => { if (document.visibilityState === "visible") hent(); else if (INN && INN.g) lagre.set(LS.sett, String(Date.now())); });
   window.addEventListener("online", () => hent());
-  setInterval(() => { if (document.visibilityState === "visible") hent(); }, 60e3);
+  setInterval(() => { if (document.visibilityState === "visible") hent(); }, 30e3);
 
   // ---------- start ----------
   tegn();
