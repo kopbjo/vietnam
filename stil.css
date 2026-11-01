@@ -2012,7 +2012,7 @@ details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px 
 .db-forh { border-radius: 14px; overflow: hidden; background: var(--flate2); margin: 4px 0 14px; max-height: 52vh; display: grid; place-items: center; min-height: 120px; }
 .db-forh img { max-width: 100%; max-height: 52vh; object-fit: contain; display: block; }
 .db-etikett { display: block; font-weight: 650; margin-bottom: 6px; }
-#dbArkTekst, #gjTestTekst { box-sizing: border-box; width: 100%; font: inherit; padding: 12px; border-radius: 12px; border: 1px solid var(--linje); background: var(--flate); color: var(--tekst); }
+#dbArkTekst { box-sizing: border-box; width: 100%; font: inherit; padding: 12px; border-radius: 12px; border: 1px solid var(--linje); background: var(--flate); color: var(--tekst); }
 .db-arkknapper { margin-top: 12px; }
 .db-fjern { display: block; margin: 14px 0 0; border: 0; background: none; color: var(--rod); font: 600 .9rem/1.2 inherit; padding: 6px 0; }
 .db-arkhjelp { margin-top: 10px; }
@@ -2317,6 +2317,3 @@ details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px 
 .gj-ny { display: flex; flex-direction: column; gap: 8px; }
 .gj-ny input { border: 1px solid var(--linje); border-radius: 12px; padding: 11px 12px; font: inherit; background: var(--flate); color: var(--tekst); }
 .gj-ny .kb { align-self: flex-start; }
-.gj-testkort { display: grid; grid-template-columns: 120px 1fr; gap: 12px; align-items: start; margin-top: 4px; }
-.gj-testkort .db-bilde { aspect-ratio: 4 / 5; }
-.gj-testkort .krolle { margin-top: 4px; }

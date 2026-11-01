@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 93, tid: "2026-11-01 kl. 12:45" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 94, tid: "2026-11-01 kl. 12:50" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3880,7 +3880,6 @@
       <ol class="gj-steg"><li><b>Slå på e-post og passord:</b> Authentication → Sign-in method → Add new provider → <i>Email/Password</i> → slå på (ikke «Email link») → Save.<br><a href="https://console.firebase.google.com/project/${esc(D.synk.prosjekt)}/authentication/providers" target="_blank" rel="noopener">Åpne Authentication ↗</a></li>
       <li><b>Lim inn nye regler:</b> Firestore Database → Rules → slett alt → lim inn → Publish.<br><button class="kb tel" data-gjregler>Kopier reglene</button> <a href="https://console.firebase.google.com/project/${esc(D.synk.prosjekt)}/firestore/rules" target="_blank" rel="noopener">Åpne Rules ↗</a></li>
       <li><b>Kom tilbake hit</b> og trykk <button class="kb" data-gjtest>Sjekk oppsettet</button></li></ol></section>`;
-    h += gjTestHtml();
     h += `<div class="seksjonstittel">Gjester${G ? ` (${G.length})` : ""}</div><section class="kort">`;
     h += !G ? `<p class="krolle" id="gjListe">${navigator.onLine ? "Henter gjestelista …" : "Uten nett – gjestelista vises når dere har nett."}</p>`
       : G.length ? `<div class="gj-liste">${G.map((g) => `<div class="gj-gjest"><span><b>${esc(g.n)}</b><small>${esc(g.e)}</small></span><button class="kb" data-gjinv="${esc(g.e)}">Invitasjon</button><button class="kb gj-fjern" data-gjfjern="${esc(g.e)}" aria-label="Fjern ${esc(g.n)}">${ikon("slett", "")}</button></div>`).join("")}</div>`
@@ -3890,75 +3889,9 @@
       <p class="krolle">Gjesten får en konto med et passord som lages her. Du sender lenke, e-post og passord på SMS eller e-post.</p></section>`;
     h += `<p class="pl-lenke">Gjestesiden: ${esc(gjO().lenke || new URL("gjest/", location.href.split("#")[0]).href)}</p>`;
     if (ok) h += `<details class="kort gj-oppsett"><summary>Oppsett i Firebase</summary><p class="krolle">Alt er på plass. Endres reglene i appen senere, kopier dem på nytt:</p><div class="knapper"><button class="kb" data-gjregler>Kopier reglene</button><button class="kb" data-gjtest>Sjekk oppsettet</button></div></details>`;
-    if (gjTest() && navigator.onLine && Date.now() - GJS.hentet > 30e3) setTimeout(() => gjHent(true).then((x) => { if (x && rute().side === "gjester" && $("#overlay").hidden) { const y = window.scrollY; vis(); window.scrollTo(0, y); } }).catch(() => {}), 0);
     if (!G && navigator.onLine && Date.now() - (GJS.listeForsok || 0) > 30e3 && (GJS.listeForsok = Date.now())) setTimeout(async () => { try { await gjHentGjester(); gjStatus("ok"); } catch (e) { if (/ 403$/.test(e.message)) gjStatus("regler"); GJS.gjester = GJS.gjester || null; } if (rute().side === "gjester" && $("#overlay").hidden) { const y = window.scrollY; vis(); window.scrollTo(0, y); } }, 0);
     return h + bunn();
   }
-  // ---- Test før reisen: et testkort på gjestesiden (datert i dag), helt utenfor Dagens bilde og Reisedagboka ----
-  const gjTest = () => { try { return JSON.parse(lagre.get("vn.gjTest") || "null"); } catch { return null; } };
-  function gjTestHtml() {
-    const t = gjTest(), m = meg();
-    let h = `<div class="seksjonstittel">Test før reisen</div><section class="kort gj-test">`;
-    if (!t) return h + `<p>Legg ut et testkort på gjestesiden, så ser du hvordan hjerter og hilsener fra gjestene kommer tilbake hit. Testkortet kommer ikke i Reisedagboka.</p>
-      <div class="knapper"><button class="kb tel" data-gjtestny ${m && GJS.status === "ok" ? "" : "disabled"}>${ikon("kamera", "")}Prøv med et testbilde</button></div>${!m ? `<p class="krolle">Velg hvem du er under Mer først.</p>` : GJS.status !== "ok" ? `<p class="krolle">Gjør oppsettet over først.</p>` : ""}</section>`;
-    const id = gjKortId(t.d, t.hvem), l = gjLik(id), hs = gjHilsener(id), ny = gjNye(id).length;
-    h += `<div class="gj-testkort"><button class="db-bilde fbilde" data-gjark="${esc(t.d)}|${esc(t.hvem)}" aria-label="Se hilsener"><img id="gjTestImg" alt="Testbildet"></button>
-      <div><b>${esc(personNavn(t.hvem))}</b>${t.tekst ? `<p class="db-tekst">${esc(t.tekst)}</p>` : ""}${gjRad(t.d, t.hvem) || `<p class="krolle">Ingen hjerter eller hilsener ennå. Åpne gjestesiden, trykk ♥ og skriv en hilsen – den dukker opp her innen et par minutter.</p>`}</div></div>
-      <div class="knapper"><button class="kb" data-gjark="${esc(t.d)}|${esc(t.hvem)}">Se hilsener${ny ? ` (${ny} nye)` : ""}</button><button class="kb" data-gjtestoppd>${ikon("oppdater", "")}Hent nytt</button><button class="kb gj-fjern" data-gjtestfjern>Fjern testkortet</button></div></section>`;
-    setTimeout(gjTestBilde, 0);
-    return h;
-  }
-  async function gjTestBilde() {
-    const t = gjTest(), img = $("#gjTestImg"); if (!t || !img) return;
-    if (!GJS.testUrl || GJS.testB !== t.b) {
-      try {
-        const r = await fetch(`https://firestore.googleapis.com/v1/${fsRot()}/${gjStier().g}/bilder/${t.b}`, { headers: { Authorization: "Bearer " + await synkToken() } });
-        if (!r.ok) return; const u = fraB64((await r.json()).fields.c.stringValue);
-        GJS.testUrl = URL.createObjectURL(new Blob([u], { type: "image/jpeg" })); GJS.testB = t.b;
-      } catch { return; }
-    }
-    img.onload = () => img.classList.add("klar"); img.src = GJS.testUrl;
-  }
-  document.addEventListener("change", async (e) => {
-    if (!e.target || e.target.id !== "gjTestFil" || !e.target.files || !e.target.files[0]) return;
-    const fil = e.target.files[0];
-    arkApne(`<div class="ark-etikett">Gjestesiden · test</div><h2>Testkort</h2><div class="db-forh"><div class="bekrvent">Gjør klar bildet …</div></div>`);
-    try {
-      const k = await dbKomprimer(fil); GJS.testValg = k;
-      arkApne(`<div class="ark-etikett">Gjestesiden · test</div><h2>Testkort</h2><div class="db-forh"><img src="${URL.createObjectURL(k.blob)}" alt=""></div>
-        <label class="db-etikett" for="gjTestTekst">Skriv en linje til bildet</label><input id="gjTestTekst" maxlength="200" placeholder="F.eks. «Første testbilde fra hjemme!» (valgfritt)">
-        <div class="knapper db-arkknapper"><button class="kb tel" data-gjtestdel>Del med gjestene</button></div>
-        <p class="krolle db-arkhjelp">Bare gjestene ser testkortet. Det kommer ikke i Dagens beste eller Reisedagboka, og du kan fjerne det når du vil.</p>`);
-    } catch { arkApne(`<h2>Fikk ikke åpnet bildet</h2><p class="krolle">Prøv et annet bilde.</p>`); }
-  });
-  document.addEventListener("click", async (ev) => {
-    const t = D && ev.target.closest && ev.target.closest("[data-gjtestny],[data-gjtestdel],[data-gjtestfjern],[data-gjtestoppd]"); if (!t) return;
-    ev.preventDefault();
-    const tegnPaaNytt = () => { if (rute().side === "gjester") { const y = window.scrollY; vis(); window.scrollTo(0, y); } };
-    if (t.hasAttribute("data-gjtestny")) {
-      let inp = $("#gjTestFil"); if (!inp) { inp = document.createElement("input"); inp.type = "file"; inp.accept = "image/*"; inp.id = "gjTestFil"; inp.hidden = true; document.body.appendChild(inp); }
-      inp.value = ""; inp.click(); return;
-    }
-    if (t.hasAttribute("data-gjtestoppd")) { t.disabled = true; try { await gjHent(true); } catch {} tegnPaaNytt(); toast("Oppdatert"); return; }
-    const m = meg(); if (!m) return;
-    try {
-      t.disabled = true; await gjMedlem();
-      if (t.hasAttribute("data-gjtestdel")) {
-        const k = GJS.testValg; if (!k) return;
-        const d = idagISO(), b = tilfeldigHex(10), tekst = (($("#gjTestTekst") || {}).value || "").trim().slice(0, 300);
-        t.textContent = "Deler …";
-        await fsKall(":commit", { writes: [gjSkriv(`${gjStier().g}/bilder/${b}`, { c: tilB64(new Uint8Array(await k.blob.arrayBuffer())) })] });
-        await fsKall(":commit", { writes: [gjSkriv(`${gjStier().g}/kort/${gjKortId(d, m)}`, { d, hvem: m, n: personNavn(m), tekst, sted: "Testkort", b, w: k.w, h: k.h, x: false })] });
-        const gml = gjTest(); if (gml && gml.b !== b) { try { await fsKall(":commit", { writes: [{ delete: `${fsRot()}/${gjStier().g}/bilder/${gml.b}` }] }); } catch {} }
-        lagre.set("vn.gjTest", JSON.stringify({ d, hvem: m, b, tekst })); GJS.testUrl = URL.createObjectURL(k.blob); GJS.testB = b; GJS.testValg = null;
-        lukkOverlay(); tegnPaaNytt(); toast("Testkortet ligger på gjestesiden nå", 3500);
-      } else if (t.hasAttribute("data-gjtestfjern")) {
-        const x = gjTest(); if (!x) return;
-        await fsKall(":commit", { writes: [gjSkriv(`${gjStier().g}/kort/${gjKortId(x.d, x.hvem)}`, { d: x.d, hvem: x.hvem, x: true }), { delete: `${fsRot()}/${gjStier().g}/bilder/${x.b}` }] });
-        lagre.set("vn.gjTest", ""); GJS.testUrl = null; tegnPaaNytt(); toast("Testkortet er fjernet fra gjestesiden");
-      }
-    } catch (er) { t.disabled = false; toast(/ 403$/.test(er.message) ? "Ikke tilgang – sjekk oppsettet" : navigator.onLine ? "Noe gikk galt – prøv igjen" : "Uten nett", 3500, "feil"); }
-  });
   async function gjInviter(n, e) {
     const pw = gjPassord(); let nyKonto = true;
     const r = await fetch("https://identitytoolkit.googleapis.com/v1/accounts:signUp?key=" + D.synk.apiKey, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ email: e, password: pw, returnSecureToken: false }) });
