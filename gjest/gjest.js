@@ -382,7 +382,7 @@
     const inn = o.fra || ["fly", "Fly fra Norge"], hjem = o.hjem || ["fly", "Fly hjem"], A0 = P[0], Z = P[P.length - 1];
     lag += etappe({ x: 6, y: 6 }, A0, inn[0], iF >= 0);
     lag += etappe(Z, { x: K.W - 6, y: K.H - 4 }, hjem[0], d > (o.slutt || "9"));
-    for (let i = 1; i < P.length; i++) lag += etappe(P[i - 1], P[i], ((P[i].inn || [])[0]) || "bil", i <= iF);
+    for (let i = 1; i < P.length; i++) lag += etappe(P[i - 1], P[i], modusTil(P[i - 1], P[i]), i <= iF);
     // stopp med nummer og navn – etikettene spres så de ikke kolliderer (strek fra punktet hvis flyttet)
     const fs = kompakt ? 9.5 : 8.2, r = kompakt ? 6.4 : 5.6, hoyde = kompakt ? fs * 1.25 : fs * 2.05;
     const E = P.map((p, i) => { const side = p.x < 60 ? "under" : p.x < 100 ? "v" : "h"; return { p, i, side, y: side === "under" ? p.y + r + fs + 1 : p.y + fs * 0.32 }; });
@@ -410,13 +410,17 @@
       <path class="vn" d="${K.vn}"/>${lag}${merk}${flaggHer}
       </svg></div>`;
   }
+  // Hvordan vi reiser til et sted: fra oppsettet, ellers anslått ut fra avstanden (over 250 km = fly)
+  const km = (a, b) => { const R = 6371, r = Math.PI / 180, dLa = (b.lat - a.lat) * r, dLo = (b.lon - a.lon) * r; return 2 * R * Math.asin(Math.sqrt(Math.sin(dLa / 2) ** 2 + Math.cos(a.lat * r) * Math.cos(b.lat * r) * Math.sin(dLo / 2) ** 2)); };
+  const modusTil = (a, b) => (b.inn && b.inn[0]) || (km(a, b) > 250 ? "fly" : "bil");
+  const reiseTil = (a, b) => (b.inn && b.inn[1] ? b.inn : modusTil(a, b) === "fly" ? ["fly", "Fly"] : ["bil", "Bil og båt"]);
   // Tidslinja under kartet: stoppene i rekkefølge, med hvordan vi reiser mellom dem
   function tidslinjeHtml(kompakt = false) {
     const d = idag(), naa = stedFor(d), o = DATA.opp || {}, st = steder();
     const reise = (m) => m ? `<li class="tl-reise"><span class="tl-ikon">${TR[m[0]] || TR.bil}</span><span>${esc(m[1] || "")}</span></li>` : "";
     return `<ol class="tidslinje${kompakt ? " kompakt" : ""}">${kompakt ? "" : reise(o.fra)}${st.map((s, i) => {
       const K = synlig().filter((k) => (stedFor(k.d) || {}).id === s.id).sort((a, b) => (a.d < b.d ? 1 : -1)), fut = d < s.fra, her = naa && naa.id === s.id;
-      return `${i ? reise(s.inn) : ""}<li class="tl-sted${fut ? " fut" : " ferdig"}${her ? " her" : ""}"><a href="#/album/${esc(s.id)}"><span class="nr">${i + 1}</span><span class="tl-tekst"><b>${esc(s.navn)}</b><small>${esc(periode(s))}${K.length ? ` · ${K.length} kort` : ""}</small>
+      return `${i ? reise(reiseTil(st[i - 1], s)) : ""}<li class="tl-sted${fut ? " fut" : " ferdig"}${her ? " her" : ""}"><a href="#/album/${esc(s.id)}"><span class="nr">${i + 1}</span><span class="tl-tekst"><b>${esc(s.navn)}</b><small>${esc(periode(s))}${K.length ? ` · ${K.length} kort` : ""}</small>
         ${K.length && !kompakt ? `<span class="ims">${K.slice(0, 4).map((k) => `<span data-fb="${esc(k.b)}"></span>`).join("")}</span>` : ""}</span>${her ? `<span class="her-merke">${flagg("flagg")}Her er vi nå</span>` : ""}</a></li>`;
     }).join("")}${kompakt ? "" : reise(o.hjem)}</ol>`;
   }
