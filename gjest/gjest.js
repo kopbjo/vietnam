@@ -194,7 +194,7 @@
   const utenAksent = (s) => String(s).normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D");
 
   // ---------- utvalg ----------
-  const synlig = () => Object.entries(DATA.kort).filter(([, k]) => k && !k.x && k.b).map(([id, k]) => ({ id, ...k }));
+  const synlig = () => Object.entries(DATA.kort).filter(([, k]) => k && !k.x && k.b && k.d <= pluss(idag(), 1)).map(([id, k]) => ({ id, ...k })); // aldri kort fra fremtiden
   const rekkef = (a, b) => personer().findIndex((p) => p.id === a.hvem) - personer().findIndex((p) => p.id === b.hvem);
   const kortPaa = (d) => synlig().filter((k) => k.d === d).sort(rekkef);
   const dager = () => [...new Set(synlig().map((k) => k.d))].sort().reverse();
