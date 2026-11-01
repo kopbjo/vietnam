@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 91, tid: "2026-11-01 kl. 11:05" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 92, tid: "2026-11-01 kl. 11:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3718,8 +3718,8 @@
   // Oppsettet gjestesiden trenger (tittel, steder med koordinater, personer, datoer)
   function gjOppsett() {
     const o = gjO(), navn = o.navn || {}, kort = o.kort || {};
-    const st = D.steder.filter((s) => s.vaer && s.vaer.lat && !(o.utenom || []).includes(s.id)).map((s) => ({ id: s.id, navn: navn[s.id] || s.navn, kort: kort[s.id] || navn[s.id] || s.navn, fra: s.fra, til: s.til, lat: s.vaer.lat, lon: s.vaer.lon }));
-    return { tittel: gjTittel(), tz: "Asia/Ho_Chi_Minh", start: start(), slutt: slutt(), personer: D.personer.map((p) => ({ id: p.id, navn: p.navn })), steder: st };
+    const st = D.steder.filter((s) => s.vaer && s.vaer.lat && !(o.utenom || []).includes(s.id)).map((s) => ({ id: s.id, navn: navn[s.id] || s.navn, kort: kort[s.id] || navn[s.id] || s.navn, fra: s.fra, til: s.til, lat: s.vaer.lat, lon: s.vaer.lon, inn: (o.inn || {})[s.id] || null }));
+    return { tittel: gjTittel(), tz: "Asia/Ho_Chi_Minh", start: start(), slutt: slutt(), personer: D.personer.map((p) => ({ id: p.id, navn: p.navn })), steder: st, fra: o.fra || null, hjem: o.hjem || null };
   }
   // Mine egne bilder → gjestesiden. Alt annet (andres bilder) deles av deres egne telefoner.
   async function gjSend() {

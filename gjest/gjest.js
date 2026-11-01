@@ -227,7 +227,16 @@
     lykt: '<svg viewBox="0 0 100 120"><rect width="100" height="120" fill="#1d2b45"/><circle cx="20" cy="18" r="1" fill="#fff8"/><circle cx="80" cy="30" r="1.2" fill="#fff8"/><circle cx="62" cy="12" r=".8" fill="#fff8"/><path d="M50 8v14" stroke="#c3923a" stroke-width="1.5"/><ellipse cx="50" cy="56" rx="26" ry="31" fill="#e2553f"/><ellipse cx="50" cy="56" rx="17" ry="27" fill="#ff8a5c" opacity=".7"/><ellipse cx="50" cy="56" rx="7" ry="22" fill="#ffd27a" opacity=".8"/><rect x="38" y="20" width="24" height="7" rx="2" fill="#c3923a"/><rect x="38" y="85" width="24" height="7" rx="2" fill="#c3923a"/><path d="M44 92l-3 14M50 92v16M56 92l3 14" stroke="#c3923a" stroke-width="1.5"/></svg>',
     bukt: '<svg viewBox="0 0 120 100"><defs><linearGradient id="hv" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#f6d9a8"/><stop offset="1" stop-color="#e9b78a"/></linearGradient></defs><rect width="120" height="100" fill="url(#hv)"/><circle cx="88" cy="28" r="10" fill="#fff3d6"/><path d="M0 70 C8 30 18 28 22 70 Z M18 70 C26 20 40 18 44 70 Z M60 70 C64 40 72 36 78 70 Z M86 70 C90 46 100 44 104 70Z" fill="#3f6b5f"/><path d="M30 70 C34 44 44 42 50 70 Z" fill="#2e5247"/><rect y="70" width="120" height="30" fill="#5d8c88"/><path d="M48 82h26l-4 6H52Z" fill="#7a3d22"/><path d="M60 82V64l10 16" fill="#f4ecdc"/><path d="M0 78h120M10 90h40M70 94h40" stroke="#ffffff55" stroke-width="1"/></svg>',
     hatt: '<svg viewBox="0 0 100 120"><rect width="100" height="120" fill="#2e6b5a"/><path d="M0 92 Q50 70 100 92 V120 H0Z" fill="#6aa86a"/><path d="M0 100 Q50 84 100 102 V120 H0Z" fill="#8cc07a"/><path d="M14 74 L50 34 L86 74 Z" fill="#e8cf96"/><path d="M14 74 Q50 82 86 74" fill="none" stroke="#b58f4c" stroke-width="2"/><path d="M50 34 L38 74M50 34 L62 74M50 34 L26 74M50 34 L74 74" stroke="#c7a568" stroke-width="1"/></svg>',
+    flagg: '<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#f6d9a8"/><path d="M0 78 Q30 62 60 74 T100 70 V100 H0Z" fill="#6aa86a"/><path d="M0 88 Q40 76 100 86 V100 H0Z" fill="#4f8f5a"/><path d="M30 86 V18" stroke="#5b4630" stroke-width="2.5"/><path d="M31 20 C44 14 54 26 72 20 L72 50 C54 56 44 44 31 50Z" fill="#DA251D"/><polygon points="51.5,25 54.4,32.6 62.3,32.9 56.1,37.8 58.3,45.4 51.5,41 44.7,45.4 46.9,37.8 40.7,32.9 48.6,32.6" fill="#FFDD00"/></svg>',
     lotus: '<svg viewBox="0 0 100 100"><rect width="100" height="100" fill="#f3d6d0"/><path d="M50 74 C34 64 30 44 50 28 C70 44 66 64 50 74Z" fill="#e58aa0"/><path d="M50 74 C30 72 18 56 22 42 C38 46 48 58 50 74Z" fill="#d86c88"/><path d="M50 74 C70 72 82 56 78 42 C62 46 52 58 50 74Z" fill="#d86c88"/><path d="M14 80 Q50 66 86 80" fill="none" stroke="#3f7d5f" stroke-width="3"/><circle cx="50" cy="60" r="4" fill="#f2c45a"/></svg>',
+  };
+  // Vietnams flagg (rødt med gul stjerne) – med litt stoff-skygge
+  const STJERNE = (cx, cy, r) => Array.from({ length: 10 }, (_, i) => { const a = -Math.PI / 2 + (i * Math.PI) / 5, rr = i % 2 ? r * 0.382 : r; return `${(cx + rr * Math.cos(a)).toFixed(2)},${(cy + rr * Math.sin(a)).toFixed(2)}`; }).join(" ");
+  const flagg = (cls = "flagg") => `<svg class="${cls}" viewBox="0 0 30 20" role="img" aria-label="Vietnams flagg"><defs><linearGradient id="fl-sk" x1="0" x2="1"><stop offset="0" stop-color="#fff" stop-opacity="0"/><stop offset=".35" stop-color="#fff" stop-opacity=".18"/><stop offset=".55" stop-color="#000" stop-opacity=".08"/><stop offset=".8" stop-color="#fff" stop-opacity=".12"/><stop offset="1" stop-color="#000" stop-opacity=".1"/></linearGradient></defs><rect width="30" height="20" rx="1.2" fill="#DA251D"/><polygon points="${STJERNE(15, 10.4, 6)}" fill="#FFDD00"/><rect width="30" height="20" rx="1.2" fill="url(#fl-sk)"/></svg>`;
+  const TR = {
+    fly: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15.5v-2L13.5 9V4a1.5 1.5 0 0 0-3 0v5L3 13.5v2l7.5-2.3V18l-2 1.5V21l3.5-1 3.5 1v-1.5l-2-1.5v-4.8z"/></svg>',
+    bil: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 16V11l2-4.5h10L19 11v5M5 16h14M5 16v2.5M19 16v2.5M3.5 11h17"/><circle cx="8" cy="13.5" r=".9"/><circle cx="16" cy="13.5" r=".9"/></svg>',
+    bat: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 16.5 5 20h14l2-3.5zM6 16.5V11h12v5.5M9 11V7h6v4M12 4v3"/></svg>',
   };
   const tegnetFrim = (motiv, txt, v, stil) => `<div class="frim" style="${stil}" aria-hidden="true"><div class="i">${MOTIV[motiv]}<span>${esc(txt)}</span><em>${esc(v)}</em></div></div>`;
 
@@ -247,10 +256,10 @@
         ${tegnetFrim("lykt", "Việt Nam", "5000đ", "left:4%;top:34px;width:44%;height:52%;transform:rotate(-7deg)")}
         ${tegnetFrim("bukt", "Việt Nam", "3000đ", "left:50%;top:12px;width:46%;height:36%;transform:rotate(5deg)")}
         ${tegnetFrim("hatt", "Việt Nam", "4000đ", "left:44%;top:44%;width:34%;height:40%;transform:rotate(-2deg)")}
-        ${tegnetFrim("lotus", "Việt Nam", "2000đ", "left:12%;top:63%;width:28%;height:29%;transform:rotate(4deg)")}
+        ${tegnetFrim("flagg", "Việt Nam", "2000đ", "left:12%;top:63%;width:28%;height:29%;transform:rotate(4deg)")}
         ${stempel("Post fra reisen", "★", "var(--lakk)", "left:56%;top:76%;transform:rotate(-12deg);opacity:.8")}
       </div><form class="inn-skjema" id="innskjema" novalidate>
-        <div class="sup">Post fra reisen</div><h1>${tittelHtml().replace(/<\/b> <i>/, "</b><br><i>")}</h1>
+        <div class="sup">Post fra reisen</div><h1>${tittelHtml().replace(/<\/b> <i>/, "</b><br><i>")}${flagg("flagg inn-flagg")}</h1>
         ${OPP ? `<p class="ingress">Ett postkort fra hver av de reisende – hver dag. Logg inn med e-posten og passordet du fikk i invitasjonen.</p>
         <label class="felt"><span>E-post</span><input type="email" id="epost" autocomplete="username" inputmode="email" value="${esc(e)}" required></label>
         <label class="felt"><span>Passord</span><input type="password" id="passord" autocomplete="current-password" required></label>
@@ -289,7 +298,7 @@
       <a href="#/" ${side === "" || side === "dag" ? 'aria-current="page"' : ""}>${IK.dag}<span>Dagens kort</span></a>
       <a href="#/rute" ${side === "rute" ? 'aria-current="page"' : ""}>${IK.kart}<span>Reiseruten</span></a>
       <a href="#/album" ${side === "album" ? 'aria-current="page"' : ""}>${IK.album}<span>Albumet</span></a></nav>`;
-  const mast = (side) => `<header class="mast"><div class="t">${tittelHtml()}</div>${nav(side)}<button class="meg" data-meg title="${esc(INN.n || INN.e)}" aria-label="Innlogget som ${esc(INN.n || INN.e)}">${esc((INN.n || INN.e || "?").charAt(0).toUpperCase())}</button></header>`;
+  const mast = (side) => `<header class="mast"><div class="t">${tittelHtml()}${flagg("flagg mast-flagg")}</div>${nav(side)}<button class="meg" data-meg title="${esc(INN.n || INN.e)}" aria-label="Innlogget som ${esc(INN.n || INN.e)}">${esc((INN.n || INN.e || "?").charAt(0).toUpperCase())}</button></header>`;
 
   function rutelinje(d) {
     const st = steder(); if (!st.length) return "";
@@ -347,17 +356,69 @@
     }).join("")}</div></section>`;
   }
 
-  function kartHtml(h, venstre = -40) {
+  // Kartet over reiseruten: nummererte stopp fra nord til sør, piler i reiseretningen, fly som buer med fly-ikon,
+  // inn- og utreise (fra og til Norge), og et lite flagg der vi er nå. kompakt = venstre spalte på PC.
+  function kartHtml(h, venstre = 0, kompakt = false) {
     const K = window.KART, st = steder(); if (!K || !st.length) return "";
     const [la0, lo0, la1, lo1] = K.bb, k = K.H / (la1 - la0), c = K.W / ((lo1 - lo0) * k);
     const P = st.map((s) => ({ ...s, x: (s.lon - lo0) * k * c, y: (la1 - s.lat) * k })).filter((p) => isFinite(p.x));
-    const d = idag(), naa = stedFor(d), i0 = naa ? P.findIndex((p) => p.id === naa.id) : d < (st[0] || {}).fra ? -1 : P.length - 1;
-    const linje = (L) => L.map((p, i) => (i ? "L" : "M") + p.x.toFixed(1) + " " + p.y.toFixed(1)).join("");
+    const d = idag(), naa = stedFor(d), o = DATA.opp || {}, iN = naa ? P.findIndex((p) => p.id === naa.id) : -1;
+    const iF = d < (st[0] || {}).fra ? -1 : iN >= 0 ? iN : P.length - 1; // siste stopp vi har kommet til
+    const f = (n) => n.toFixed(1);
+    // Én etappe: kvadratisk kurve som buer ut mot havet (østover), pil eller fly midt på
+    function etappe(A, B, modus, ferdig) {
+      const dx = B.x - A.x, dy = B.y - A.y, L = Math.hypot(dx, dy) || 1, bue = modus === "fly" ? 0.28 : 0.16;
+      const C = { x: (A.x + B.x) / 2 + (dy / L) * L * bue, y: (A.y + B.y) / 2 - (dx / L) * L * bue };
+      const t = 0.55, px = (1 - t) ** 2 * A.x + 2 * (1 - t) * t * C.x + t * t * B.x, py = (1 - t) ** 2 * A.y + 2 * (1 - t) * t * C.y + t * t * B.y;
+      const tx = 2 * (1 - t) * (C.x - A.x) + 2 * t * (B.x - C.x), ty = 2 * (1 - t) * (C.y - A.y) + 2 * t * (B.y - C.y), vin = (Math.atan2(ty, tx) * 180) / Math.PI;
+      const kl = `etappe ${modus === "fly" ? "fly" : "land"}${ferdig ? " ferdig" : ""}`;
+      const tegn = modus === "fly"
+        ? `<g transform="translate(${f(px)} ${f(py)}) rotate(${f(vin + 90)}) scale(.42) translate(-12 -12)" class="e-ikon">${TR.fly.replace(/<\/?svg[^>]*>/g, "")}</g>`
+        : `<path class="e-pil" transform="translate(${f(px)} ${f(py)}) rotate(${f(vin)})" d="M-2.6 -2.4 L2.4 0 L-2.6 2.4 Z"/>`;
+      return `<path class="${kl}" d="M${f(A.x)} ${f(A.y)} Q${f(C.x)} ${f(C.y)} ${f(B.x)} ${f(B.y)}"/>${tegn.replace('class="e-', `class="${ferdig ? "ferdig " : ""}e-`)}`;
+    }
+    let lag = "";
+    // inn fra Norge (fra nordvest) og hjem (mot sørøst)
+    const inn = o.fra || ["fly", "Fly fra Norge"], hjem = o.hjem || ["fly", "Fly hjem"], A0 = P[0], Z = P[P.length - 1];
+    lag += etappe({ x: 6, y: 6 }, A0, inn[0], iF >= 0);
+    lag += etappe(Z, { x: K.W - 6, y: K.H - 4 }, hjem[0], d > (o.slutt || "9"));
+    for (let i = 1; i < P.length; i++) lag += etappe(P[i - 1], P[i], ((P[i].inn || [])[0]) || "bil", i <= iF);
+    // stopp med nummer og navn – etikettene spres så de ikke kolliderer (strek fra punktet hvis flyttet)
+    const fs = kompakt ? 9.5 : 8.2, r = kompakt ? 6.4 : 5.6, hoyde = kompakt ? fs * 1.25 : fs * 2.05;
+    const E = P.map((p, i) => { const side = p.x < 60 ? "under" : p.x < 100 ? "v" : "h"; return { p, i, side, y: side === "under" ? p.y + r + fs + 1 : p.y + fs * 0.32 }; });
+    for (const side of ["v", "h"]) {
+      const L = E.filter((e) => e.side === side).sort((a, b) => a.y - b.y);
+      for (let j = 1; j < L.length; j++) if (L[j].y - L[j - 1].y < hoyde) { L[j - 1].y -= (hoyde - (L[j].y - L[j - 1].y)) / 2; L[j].y = L[j - 1].y + hoyde; }
+    }
+    const merk = E.map(({ p, i, side, y: ly }) => {
+      const ferdig = i <= iF, her = i === iN, flyttet = side !== "under" && Math.abs(ly - (p.y + fs * 0.32)) > 1;
+      const lx = side === "v" ? p.x - r - (flyttet ? 8 : 3) : side === "h" ? p.x + r + (flyttet ? 8 : 3) : p.x;
+      const anker = side === "v" ? "end" : side === "h" ? "start" : "middle";
+      return `<g class="stopp${ferdig ? " ferdig" : ""}${her ? " her" : ""}">
+        ${flyttet ? `<path class="leder" d="M${f(p.x + (side === "v" ? -r : r))} ${f(p.y)} L${f(lx + (side === "v" ? 2 : -2))} ${f(ly - fs * 0.32)}"/>` : ""}
+        ${her ? `<circle class="puls" cx="${f(p.x)}" cy="${f(p.y)}" r="${r + 4}"/>` : ""}
+        <circle cx="${f(p.x)}" cy="${f(p.y)}" r="${r}"/><text class="nr" x="${f(p.x)}" y="${f(p.y + r * 0.42)}" text-anchor="middle" font-size="${f(r * 1.25)}">${i + 1}</text>
+        <text class="knavn" x="${f(lx)}" y="${f(ly)}" text-anchor="${anker}" font-size="${fs}">${esc(p.kort || p.navn)}</text>
+        ${kompakt ? "" : `<text class="kdato" x="${f(lx)}" y="${f(ly + fs * 0.95)}" text-anchor="${anker}" font-size="${f(fs * 0.68)}">${esc(periode(p))}</text>`}
+      </g>`;
+    }).join("");
+    // flagget der vi er nå (tegnes til slutt, over alt annet)
+    const H = iN >= 0 ? P[iN] : null;
+    const flaggHer = H ? `<g transform="translate(${f(H.x)} ${f(H.y - r)})"><path class="stang" d="M0 0 V-11"/><g transform="translate(0.3 -11) scale(.3)">${flagg("kartflagg").replace(/<\/?svg[^>]*>/g, "")}</g></g>` : "";
     const w = (K.W * h) / K.H;
-    return `<div class="rutekart" style="height:${h}px"><svg width="${w}" height="${h}" viewBox="0 0 ${K.W} ${K.H}" style="margin-left:${venstre}px" role="img" aria-label="Kart over reiseruten">
-      <path class="vn" d="${K.vn}"/><path class="vei" d="${linje(P)}"/>${i0 > 0 ? `<path class="gaatt" d="${linje(P.slice(0, i0 + 1))}"/>` : ""}
-      ${P.map((p, i) => i < i0 ? `<circle cx="${p.x}" cy="${p.y}" r="3.3" fill="var(--lakk)"/>` : i === i0 ? `<circle cx="${p.x}" cy="${p.y}" r="8" fill="var(--lakk)" opacity=".2"/><circle cx="${p.x}" cy="${p.y}" r="3.8" fill="var(--kort)" stroke="var(--lakk)" stroke-width="2"/>` : `<circle cx="${p.x}" cy="${p.y}" r="2.8" fill="var(--kort)" stroke="var(--blekk)" stroke-width="1" opacity=".6"/>`).join("")}
+    return `<div class="rutekart${kompakt ? " kompakt" : ""}" style="height:${h}px"><svg width="${f(w)}" height="${h}" viewBox="0 0 ${K.W} ${K.H}" style="margin-left:${venstre}px" role="img" aria-label="Kart over reiseruten fra nord til sør: ${esc(P.map((p, i) => `${i + 1} ${p.navn}`).join(", "))}">
+      <path class="vn" d="${K.vn}"/>${lag}${merk}${flaggHer}
       </svg></div>`;
+  }
+  // Tidslinja under kartet: stoppene i rekkefølge, med hvordan vi reiser mellom dem
+  function tidslinjeHtml(kompakt = false) {
+    const d = idag(), naa = stedFor(d), o = DATA.opp || {}, st = steder();
+    const reise = (m) => m ? `<li class="tl-reise"><span class="tl-ikon">${TR[m[0]] || TR.bil}</span><span>${esc(m[1] || "")}</span></li>` : "";
+    return `<ol class="tidslinje${kompakt ? " kompakt" : ""}">${kompakt ? "" : reise(o.fra)}${st.map((s, i) => {
+      const K = synlig().filter((k) => (stedFor(k.d) || {}).id === s.id).sort((a, b) => (a.d < b.d ? 1 : -1)), fut = d < s.fra, her = naa && naa.id === s.id;
+      return `${i ? reise(s.inn) : ""}<li class="tl-sted${fut ? " fut" : " ferdig"}${her ? " her" : ""}"><a href="#/album/${esc(s.id)}"><span class="nr">${i + 1}</span><span class="tl-tekst"><b>${esc(s.navn)}</b><small>${esc(periode(s))}${K.length ? ` · ${K.length} kort` : ""}</small>
+        ${K.length && !kompakt ? `<span class="ims">${K.slice(0, 4).map((k) => `<span data-fb="${esc(k.b)}"></span>`).join("")}</span>` : ""}</span>${her ? `<span class="her-merke">${flagg("flagg")}Her er vi nå</span>` : ""}</a></li>`;
+    }).join("")}${kompakt ? "" : reise(o.hjem)}</ol>`;
   }
   function stedlisteHtml() {
     const d = idag(), naa = stedFor(d);
@@ -368,7 +429,7 @@
     }).join("")}</div>`;
   }
   const periode = (s) => { const a = dt(s.fra), b = dt(s.til); const m = (x) => new Intl.DateTimeFormat("nb-NO", { timeZone: "UTC", month: "short" }).format(x).replace(".", ""); return a.getUTCMonth() === b.getUTCMonth() ? `${a.getUTCDate()}.–${b.getUTCDate()}. ${m(b)}` : `${a.getUTCDate()}. ${m(a)} – ${b.getUTCDate()}. ${m(b)}`; };
-  const venstreSpalte = () => `<aside class="side-v"><h2>Reiseruten</h2><p class="sub">${esc(dagNr())}</p>${kartHtml(430, -10)}${stedlisteHtml()}</aside>`;
+  const venstreSpalte = () => `<aside class="side-v"><h2>Reiseruten</h2><p class="sub">Fra nord til sør · ${esc(dagNr())}</p>${kartHtml(440, 0, true)}${tidslinjeHtml(true)}</aside>`;
   function dagNr() {
     const o = DATA.opp; if (!o || !o.start) return "";
     const d = idag(), n = mellom(o.start, o.slutt) + 1, i = mellom(o.start, d) + 1;
@@ -389,8 +450,10 @@
     return `<div class="ramme">${mast("dag")}<div class="dato"><a href="#/">‹ Til dagens kort</a></div>${rutelinje(d)}<div class="flate">${venstreSpalte()}<main>${ok ? dagHtml(d) : `<div class="tomt"><h2>Ingen kort denne dagen</h2></div>`}${tidligereHtml(d)}${bunntekst()}</main></div></div>`;
   }
   function sideRute() {
-    return `<div class="ramme">${mast("rute")}<div class="flate">${venstreSpalte()}<main class="ruteside"><h1>Reiseruten</h1><p class="sub">${esc(dagNr())}</p>
-      <div style="position:relative">${kartHtml(600)}${stedlisteHtml()}</div>${bunntekst()}</main></div></div>`;
+    const n = steder().length;
+    return `<div class="ramme">${mast("rute")}<main class="ruteside"><h1>Reiseruten</h1><p class="sub">Fra nord til sør · ${n} stopp · ${esc(dagNr())}</p>
+      <div class="rute-flate"><section class="kartkort">${kartHtml(560)}<p class="tegnforklaring"><span><i class="tf-land"></i>Bil og båt</span><span><i class="tf-fly"></i>Fly</span><span><i class="tf-ferdig"></i>Reist</span></p></section>
+      <section class="tl-kort">${tidslinjeHtml()}</section></div>${bunntekst()}</main></div>`;
   }
   function sideAlbum(sid) {
     const grupper = steder().map((s) => ({ s, K: synlig().filter((k) => (stedFor(k.d) || {}).id === s.id).sort((a, b) => (a.d === b.d ? rekkef(a, b) : a.d < b.d ? -1 : 1)) })).filter((g) => g.K.length);

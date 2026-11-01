@@ -196,26 +196,77 @@ a { color: inherit; }
 /* reiseruten (side + venstre spalte på PC) */
 .ruteside h1, .albumside h1 { font-family: var(--serif); font-weight: 600; font-size: 30px; padding: 16px 20px 0; }
 .ruteside .sub, .albumside .sub { padding: 0 20px; color: var(--dim); font-size: 13.5px; }
-.rutekart { position: relative; margin: 10px 0 0; }
-.rutekart svg { display: block; overflow: visible; }
-.rutekart .vn { fill: var(--kort); stroke: var(--blekk); stroke-width: .55; }
-.rutekart .vei { fill: none; stroke: var(--blekk); stroke-width: .8; stroke-dasharray: 2 2.5; opacity: .45; }
-.rutekart .gaatt { fill: none; stroke: var(--lakk); stroke-width: 1.8; stroke-linecap: round; }
-.stedliste { position: absolute; right: 12px; top: 6px; width: min(52%, 220px); }
-.stedkort { display: block; margin-bottom: 9px; background: var(--kort); border-radius: 10px; padding: 9px 11px; box-shadow: 0 4px 14px #3b2a1018; text-decoration: none; }
-.stedkort .n { font-family: var(--serif); font-size: 18px; font-weight: 600; line-height: 1.1; }
-.stedkort .d { font-size: 11.5px; color: var(--dim); margin: 2px 0 6px; }
-.stedkort .ims { display: flex; gap: 4px; }
-.stedkort .ims div { width: 40px; height: 40px; border-radius: 4px; background: var(--ris2) center / cover; }
-.stedkort.fut { background: color-mix(in srgb, var(--kort) 70%, transparent); box-shadow: none; border: 1px dashed var(--strek); padding: 6px 11px; }
-.stedkort.fut .n { opacity: .5; } .stedkort.fut .d { opacity: .7; margin-bottom: 0; }
-.stedkort.naa { outline: 2px solid var(--lakk); }
-.stedkort.naa .n { color: var(--lakk); }
-.side-v .rutekart { margin: 0; }
-.side-v .stedliste { position: static; width: auto; margin-top: -40px; position: relative; }
+.rutekart { position: relative; display: flex; justify-content: center; }
+.rutekart svg { display: block; overflow: visible; max-width: 100%; height: auto; }
+.rutekart .vn { fill: var(--kort); stroke: var(--blekk); stroke-width: .5; stroke-opacity: .7; }
+.rutekart .etappe { fill: none; stroke: var(--blekk); stroke-opacity: .38; stroke-width: 1; stroke-linecap: round; }
+.rutekart .etappe.fly { stroke-dasharray: 2.4 2.2; }
+.rutekart .etappe.ferdig { stroke: var(--lakk); stroke-opacity: 1; stroke-width: 1.6; }
+.rutekart .e-pil { fill: var(--blekk); fill-opacity: .45; }
+.rutekart .e-ikon { fill: var(--blekk); fill-opacity: .5; }
+.rutekart .ferdig.e-pil, .rutekart .ferdig.e-ikon { fill: var(--lakk); fill-opacity: 1; }
+.rutekart .stopp circle { fill: var(--kort); stroke: var(--blekk); stroke-width: 1; }
+.rutekart .stopp .nr { fill: var(--blekk); font-family: var(--sans); font-weight: 700; }
+.rutekart .stopp.ferdig circle { fill: var(--lakk); stroke: var(--lakk); }
+.rutekart .stopp.ferdig .nr { fill: #fff; }
+.rutekart .stopp .knavn { fill: var(--blekk); font-family: var(--serif); font-weight: 600; paint-order: stroke; stroke: var(--ris); stroke-width: 2.4px; stroke-linejoin: round; }
+.rutekart .stopp .kdato { fill: var(--dim); font-family: var(--sans); font-weight: 500; paint-order: stroke; stroke: var(--ris); stroke-width: 2px; }
+.rutekart .stopp.her .knavn { fill: var(--lakk); }
+.rutekart .puls { fill: var(--lakk); opacity: .25; transform-box: fill-box; transform-origin: center; animation: puls-kart 2.2s ease-out infinite; stroke: none !important; }
+@keyframes puls-kart { 0% { transform: scale(.6); opacity: .45; } 100% { transform: scale(1.6); opacity: 0; } }
+.rutekart .stang { stroke: var(--blekk); stroke-width: .7; }
+.rutekart .leder { stroke: var(--blekk); stroke-opacity: .35; stroke-width: .6; fill: none; }
+.rutekart .kant { fill: var(--dim); font-family: var(--sans); font-style: italic; }
+.ruteside h1 { font-family: var(--serif); font-weight: 600; font-size: 30px; padding: 16px 20px 0; }
+.ruteside .sub { padding: 0 20px; color: var(--dim); font-size: 13.5px; }
+.rute-flate { padding: 14px 16px 0; display: grid; gap: 18px; }
+.kartkort, .tl-kort { background: var(--kort); border-radius: 14px; box-shadow: var(--skygge); padding: 14px 10px 12px; }
+.tl-kort { padding: 16px 14px; }
+.tegnforklaring { display: flex; justify-content: center; gap: 16px; font-size: 12px; color: var(--dim); margin-top: 8px; flex-wrap: wrap; }
+.tegnforklaring span { display: inline-flex; align-items: center; gap: 6px; }
+.tegnforklaring i { display: inline-block; width: 20px; border-top: 1.5px solid var(--blekk); opacity: .5; }
+.tegnforklaring .tf-fly { border-top-style: dashed; }
+.tegnforklaring .tf-ferdig { border-top: 2.5px solid var(--lakk); opacity: 1; }
+@media (min-width: 900px) {
+  .ruteside h1, .ruteside .sub { padding-left: 28px; padding-right: 28px; }
+  .rute-flate { grid-template-columns: minmax(0, 1.1fr) minmax(0, 1fr); padding: 18px 28px 0; align-items: start; }
+  .kartkort { position: sticky; top: 18px; }
+}
+/* tidslinja */
+.tidslinje { list-style: none; position: relative; margin: 0; padding: 0; }
+.tidslinje::before { content: ""; position: absolute; left: 15px; top: 14px; bottom: 14px; border-left: 2px dashed var(--strek); }
+.tidslinje li { position: relative; }
+.tl-sted a { display: flex; align-items: center; gap: 12px; text-decoration: none; padding: 6px 0; }
+.tl-sted .nr { flex: none; width: 32px; height: 32px; border-radius: 50%; display: grid; place-items: center; font-weight: 700; font-size: 14px; background: var(--kort); border: 2px solid var(--blekk); position: relative; z-index: 1; }
+.tl-sted.ferdig .nr { background: var(--lakk); border-color: var(--lakk); color: #fff; }
+.tl-sted.fut { opacity: .62; }
+.tl-sted.her .nr { box-shadow: 0 0 0 5px color-mix(in srgb, var(--lakk) 22%, transparent); }
+.tl-tekst { display: flex; flex-direction: column; min-width: 0; flex: 1; }
+.tl-tekst b { font-family: var(--serif); font-size: 19px; font-weight: 600; line-height: 1.15; }
+.tl-sted.her .tl-tekst b { color: var(--lakk); }
+.tl-tekst small { font-size: 12.5px; color: var(--dim); }
+.tl-tekst .ims { display: flex; gap: 4px; margin-top: 6px; }
+.tl-tekst .ims span { width: 44px; height: 44px; border-radius: 6px; background: var(--ris2) center / cover; }
+.her-merke { flex: none; display: inline-flex; align-items: center; gap: 6px; font-size: 11.5px; font-weight: 700; color: var(--lakk); background: color-mix(in srgb, var(--lakk) 10%, transparent); padding: 5px 9px 5px 6px; border-radius: 20px; }
+.her-merke .flagg { width: 18px; height: 12px; }
+.tl-reise { display: flex; align-items: center; gap: 12px; padding: 2px 0 2px; font-size: 12.5px; color: var(--dim); font-style: italic; }
+.tl-ikon { flex: none; width: 32px; display: grid; place-items: center; position: relative; z-index: 1; }
+.tl-ikon svg { width: 20px; height: 20px; padding: 3px; box-sizing: content-box; background: var(--kort); border-radius: 50%; fill: none; stroke: var(--dim); stroke-width: 1.6; stroke-linejoin: round; }
+.tl-ikon svg path:first-child:only-child { fill: var(--dim); stroke: none; }
+.tidslinje.kompakt .tl-tekst b { font-size: 16px; }
+.tidslinje.kompakt .tl-sted .nr { width: 26px; height: 26px; font-size: 12.5px; }
+.tidslinje.kompakt::before { left: 12px; }
+.tidslinje.kompakt .tl-ikon { width: 26px; }
+.tidslinje.kompakt .tl-reise { font-size: 11.5px; }
+.side-v .rutekart { margin: 6px 0 10px; justify-content: flex-start; }
 .side-v h2 { font-family: var(--serif); font-size: 21px; font-weight: 600; margin: 4px 0 2px; }
 .side-v .sub { font-size: 13px; color: var(--dim); }
-
+/* flagget */
+.flagg { display: inline-block; width: 24px; height: 16px; border-radius: 2px; box-shadow: 0 1px 2px #0003; vertical-align: middle; }
+.mast-flagg { width: 22px; height: 15px; margin-left: 8px; transform: rotate(-5deg) translateY(-3px); }
+.inn-flagg { width: 40px; height: 27px; margin-left: 12px; transform: rotate(-6deg) translateY(-8px); }
+.mast .t { font-size: clamp(20px, 6vw, 24px); }
+@media (min-width: 900px) { .mast .t { font-size: 30px; } .mast-flagg { width: 28px; height: 19px; } }
 /* albumet */
 .albumgruppe { padding: 12px 20px 4px; }
 .albumgruppe h2 { font-family: var(--serif); font-size: 21px; font-weight: 600; }
