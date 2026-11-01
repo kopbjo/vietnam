@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 92, tid: "2026-11-01 kl. 11:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 93, tid: "2026-11-01 kl. 12:45" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3852,8 +3852,17 @@
     const b = btoa(String.fromCharCode(...new TextEncoder().encode(j))).replace(/\+/g, "-").replace(/\//g, "_").replace(/=+$/, "");
     return new URL("gjest/", location.href.split("#")[0]).href + "#i=" + b;
   };
-  const gjPassord = () => { const k = "bcdfghjkmnprstv", v = "aeiou", r = crypto.getRandomValues(new Uint8Array(12)); let s = ""; for (let i = 0; i < 12; i++) { s += i % 2 ? v[r[i] % 5] : k[r[i] % k.length]; if (i % 4 === 3 && i < 11) s += "-"; } return s; };
-  const gjInvTekst = (n, e, pw) => `Hei ${n}! 📮 Vi deler ett bilde hver dag fra reisen på en egen side bare for familie og venner. Åpne lenken og logg inn:\n${gjLenke(e)}\n\nE-post: ${e}\n${pw ? `Passord: ${pw}` : "Passord: det du har fra før (eller trykk «Glemt passord?»)"}\n\nDu kan trykke ♥ og skrive hilsener på postkortene. Klem fra ${D.personer.map((p) => p.navn).join(", ").replace(/, ([^,]*)$/, " og $1")}`;
+  // Passord: to ord + fire sifre (f.eks. «Lykt-mango-4721»): lett å lese og skrive på mobilen, ca. 840 millioner kombinasjoner
+  const GJ_ORD = "lykt mango bambus sol hav strand palme kokos ris nudler suppe kaffe drage ballong fly tog buss sykkel scooter baat seil kajakk fjell grotte bukt elv sjo bolge sand skjell fisk krabbe reke blekk perle mynt kart kompass koffert sekk hatt paraply regn sky torden vind storm stjerne maane natt dag morgen kveld gull silke papir pensel bok brev postkort frimerke stempel hilsen klem latter smil sang dans tromme fiolin gitar lyd lys farge rod gul gronn blaa lilla oransje rosa hvit svart brun tiger elefant panda ape slange skilpadde frosk bie maur fugl ugle ravn orn svane and gaas hane hone kylling gris geit hest esel kamel sjiraff sebra loeve leopard ulv rev hare ekorn mus rotte pinnsvin hval delfin hai manet korall tang alge lotus orkide rose tulipan solsikke kaktus bregne mose eik bjork furu gran lonn ask lind selje vier hassel kirsebaer eple paere plomme drue banan ananas papaya melon vannmelon appelsin sitron lime kiwi fiken dadler mandel valnott kanel ingefaer chili pepper hvitlok lok tomat agurk mais bonne ert gulrot potet nepe kaal salat basilikum mynte koriander dill persille timian rosmarin salvie oregano vanilje sjokolade kjeks kake bolle vaffel pannekake sorbet saft juice melk ost smor brod toast pizza taco burger pasta risotto curry wok sushi dumpling vaarrull baguette pho banhmi tempel pagode bro tarn borg slott hytte telt leir fyrtaarn havn kai brygge marked basar butikk kafe hotell resort basseng terrasse balkong hage park skog eng aaker dal bakke topp tind breen isbre snoe frost vinter vaar sommer host jul nyttaar festival karneval parade maske kostyme drakt kjole skjorte bukse sko sandal caps solbrille kamera album dagbok blyant tusj kortstokk terning ball kite frisbee strikk tau knute anker ror aare mast flagg vimpel".split(" ");
+  const gjTilf = (n) => { const g = Math.floor(4294967296 / n) * n; let x; do { x = crypto.getRandomValues(new Uint32Array(1))[0]; } while (x >= g); return x % n; };
+  const gjPassord = () => { const a = GJ_ORD[gjTilf(GJ_ORD.length)], b = GJ_ORD[gjTilf(GJ_ORD.length)]; return a.charAt(0).toUpperCase() + a.slice(1) + "-" + b + "-" + String(gjTilf(10000)).padStart(4, "0"); };
+  const gjKortLenke = (e) => gjO().lenke || gjLenke(e);
+  function gjInvTekst(n, e, pw) {
+    const dager = mellom(idagISO(), start()), merke = (gjTittel().match(/^#\S+/) || [""])[0] || D.personer.map((p) => p.navn).join(", ");
+    const inn = idagISO() > slutt() ? "Vi har vært i Vietnam 🇻🇳, og i stedet for å sende tradisjonelle postkort sendte vi dem elektronisk! Hvis du har lyst til å se reisen vår, kan du logge inn på denne siden:"
+      : (dager <= 0 ? "Nå er vi i Vietnam 🇻🇳" : dager === 1 ? "I morgen reiser vi til Vietnam 🇻🇳" : `Om ${dager} dager reiser vi til Vietnam 🇻🇳`) + ", og i stedet for å sende tradisjonelle postkort sender vi dem elektronisk! Hvis du har lyst til å følge reisen vår, kan du logge inn på denne siden:";
+    return `Hei ${n}! ${inn}\n\n${gjKortLenke(e)}\n\nBrukernavn: ${e}\nPassord: ${pw || "det du har fra før (eller trykk «Glemt passord?»)"}\n\nKlem fra ${merke}`;
+  }
   function gjVisInvitasjon(n, e, pw, ny) {
     const tekst = gjInvTekst(n, e, pw);
     arkApne(`<div class="ark-etikett">Gjestesiden</div><h2>${ny ? `${esc(n)} er invitert` : `Invitasjon til ${esc(n)}`}</h2>
@@ -3879,7 +3888,7 @@
     if (!G && GJS.listeForsok && Date.now() - GJS.listeForsok > 3000) h = h.replace("Henter gjestelista …", GJS.status === "regler" ? "Gjestelista kan ikke vises før oppsettet over er gjort." : "Fikk ikke hentet gjestelista.");
     h += `<h3 class="gj-ny-t">Inviter en gjest</h3><div class="gj-ny"><input id="gjNavn" maxlength="40" placeholder="Navn (vises på kortene, f.eks. Mormor)" autocomplete="off"><input id="gjEpost" type="email" inputmode="email" placeholder="E-post" autocomplete="off"><button class="kb tel" data-gjny>Inviter</button></div>
       <p class="krolle">Gjesten får en konto med et passord som lages her. Du sender lenke, e-post og passord på SMS eller e-post.</p></section>`;
-    h += `<p class="pl-lenke">Gjestesiden: ${esc(new URL("gjest/", location.href.split("#")[0]).href)}</p>`;
+    h += `<p class="pl-lenke">Gjestesiden: ${esc(gjO().lenke || new URL("gjest/", location.href.split("#")[0]).href)}</p>`;
     if (ok) h += `<details class="kort gj-oppsett"><summary>Oppsett i Firebase</summary><p class="krolle">Alt er på plass. Endres reglene i appen senere, kopier dem på nytt:</p><div class="knapper"><button class="kb" data-gjregler>Kopier reglene</button><button class="kb" data-gjtest>Sjekk oppsettet</button></div></details>`;
     if (gjTest() && navigator.onLine && Date.now() - GJS.hentet > 30e3) setTimeout(() => gjHent(true).then((x) => { if (x && rute().side === "gjester" && $("#overlay").hidden) { const y = window.scrollY; vis(); window.scrollTo(0, y); } }).catch(() => {}), 0);
     if (!G && navigator.onLine && Date.now() - (GJS.listeForsok || 0) > 30e3 && (GJS.listeForsok = Date.now())) setTimeout(async () => { try { await gjHentGjester(); gjStatus("ok"); } catch (e) { if (/ 403$/.test(e.message)) gjStatus("regler"); GJS.gjester = GJS.gjester || null; } if (rute().side === "gjester" && $("#overlay").hidden) { const y = window.scrollY; vis(); window.scrollTo(0, y); } }, 0);
