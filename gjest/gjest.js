@@ -1,4 +1,4 @@
-// Gjestesiden: postkort fra reisen – ett bilde og én linje fra hver av de reisende, hver dag.
+// Gjestesiden: postkort fra reisen – bilder og små hilsener fra de reisende underveis.
 // Ingen navn, datoer eller nøkler ligger i denne fila: tilkoblingen kommer fra invitasjonslenken (#i=…, lagres på enheten),
 // og alt innhold hentes fra databasen etter innlogging. Bare gjester på familiens gjesteliste får lese (se firestore.rules).
 (() => {
@@ -260,8 +260,8 @@
         ${stempel("Post fra reisen", "★", "var(--lakk)", "left:56%;top:76%;transform:rotate(-12deg);opacity:.8")}
       </div><form class="inn-skjema" id="innskjema" novalidate>
         <div class="sup">Post fra reisen</div><h1>${tittelHtml().replace(/<\/b> <i>/, "</b><br><i>")}${flagg("flagg inn-flagg")}</h1>
-        ${OPP ? `<p class="ingress">Ett postkort fra hver av de reisende – hver dag. Logg inn med e-posten og passordet du fikk i invitasjonen.</p>
-        <label class="felt"><span>E-post</span><input type="email" id="epost" autocomplete="username" inputmode="email" value="${esc(e)}" required></label>
+        ${OPP ? `<p class="ingress">Underveis på reisen sender vi postkort hit – bilder og små hilsener fra det vi opplever. Logg inn med brukernavnet og passordet fra invitasjonen.</p>
+        <label class="felt"><span>Brukernavn (e-post)</span><input type="email" id="epost" autocomplete="username" inputmode="email" value="${esc(e)}" required></label>
         <label class="felt"><span>Passord</span><input type="password" id="passord" autocomplete="current-password" required></label>
         <button class="go" id="innknapp" type="submit">Åpne postkassen ${IK.brev}</button>
         <p class="feil" id="innfeil" role="alert">${esc(feil)}</p>
@@ -445,7 +445,7 @@
     const topp = `${mast("")}<div class="dato"><b>${esc(stor(pen(idag())))}</b>${dagNr() ? ` · ${esc(dagNr().toLowerCase())}` : ""}</div>${rutelinje(idag())}`;
     let midt = "";
     if (!o) midt = `<div class="tomt"><h2>Henter …</h2><p>Et øyeblikk.</p></div>`;
-    else if (!d0) midt = `<div class="tomt"><h2>${idag() < o.start ? "Snart kommer det post!" : "Ingen kort ennå"}</h2><p>${idag() < o.start ? `Det første postkortet kommer ${esc(pen(o.start, false))}. Hver kveld velger hver av de reisende sitt beste bilde fra dagen.` : "De reisende har ikke valgt dagens bilder ennå – kom tilbake i kveld."}</p><p class="hand">Hilsen ${esc(personer().map((p) => p.navn).join(", ").replace(/, ([^,]*)$/, " og $1"))}</p></div>`;
+    else if (!d0) midt = `<div class="tomt"><h2>${idag() < o.start ? "Snart kommer det post!" : "Ingen postkort ennå"}</h2><p>${idag() < o.start ? `Postkortene begynner å komme når reisen starter ${esc(pen(o.start, false))}. Underveis sender vi bilder og små hilsener fra det vi opplever.` : "Ingen nye postkort ennå – det kommer flere underveis."}</p><p class="hand">Hilsen ${esc(personer().map((p) => p.navn).join(", ").replace(/, ([^,]*)$/, " og $1"))}</p></div>`;
     else midt = dagHtml(d0) + tidligereHtml(d0);
     return `<div class="ramme">${topp}<div class="flate">${venstreSpalte()}<main>${midt}${bunntekst()}</main></div></div>`;
   }
