@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 90, tid: "2026-11-01 kl. 11:00" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 91, tid: "2026-11-01 kl. 11:05" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -3917,7 +3917,7 @@
     try {
       const k = await dbKomprimer(fil); GJS.testValg = k;
       arkApne(`<div class="ark-etikett">Gjestesiden · test</div><h2>Testkort</h2><div class="db-forh"><img src="${URL.createObjectURL(k.blob)}" alt=""></div>
-        <label class="db-etikett" for="gjTestTekst">Det beste i dag var …</label><input id="gjTestTekst" maxlength="200" value="Testkort – trykk ♥ og skriv en hilsen!">
+        <label class="db-etikett" for="gjTestTekst">Skriv en linje til bildet</label><input id="gjTestTekst" maxlength="200" placeholder="F.eks. «Første testbilde fra hjemme!» (valgfritt)">
         <div class="knapper db-arkknapper"><button class="kb tel" data-gjtestdel>Del med gjestene</button></div>
         <p class="krolle db-arkhjelp">Bare gjestene ser testkortet. Det kommer ikke i Dagens beste eller Reisedagboka, og du kan fjerne det når du vil.</p>`);
     } catch { arkApne(`<h2>Fikk ikke åpnet bildet</h2><p class="krolle">Prøv et annet bilde.</p>`); }
