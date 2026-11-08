@@ -240,6 +240,307 @@
   };
   const tegnetFrim = (motiv, txt, v, stil) => `<div class="frim" style="${stil}" aria-hidden="true"><div class="i">${MOTIV[motiv]}<span>${esc(txt)}</span><em>${esc(v)}</em></div></div>`;
 
+  // ---------- reisebrettet (v98): klokka i Vietnam, hvor vi er nå, været, nedtelling og kilometer reist ----------
+  // Etappene (tider, km), stedene og byene i Norge kommer fra oppsettet bak innloggingen – ingenting av det står i koden.
+  // Været hentes fra Open-Meteo (uten nøkkel) og mellomlagres 20 min. Alt tikker lokalt hvert sekund uten å tegne siden på nytt.
+  const VN_TZ = "Asia/Ho_Chi_Minh", NO_TZ = "Europe/Oslo";
+  const rolig = () => { try { return matchMedia("(prefers-reduced-motion: reduce)").matches; } catch { return false; } };
+  const etapper = () => ((DATA.opp && DATA.opp.etapper) || []).map((e) => ({ ...e, a: Date.parse(e.t0), b: Date.parse(e.t1) })).filter((e) => e.a && e.b).sort((x, y) => x.a - y.a);
+  function tzDeler(tz, ms = Date.now()) {
+    const p = {}; for (const x of new Intl.DateTimeFormat("en-GB", { timeZone: tz, year: "numeric", month: "2-digit", day: "2-digit", hour: "2-digit", minute: "2-digit", second: "2-digit", hourCycle: "h23" }).formatToParts(new Date(ms))) p[x.type] = Number(x.value);
+    return p;
+  }
+  const tzOff = (tz, ms = Date.now()) => { const p = tzDeler(tz, ms); return Math.round((Date.UTC(p.year, p.month - 1, p.day, p.hour, p.minute, p.second) - Math.floor(ms / 1000) * 1000) / 60000); };
+  const to = (n) => String(n).padStart(2, "0");
+  const kl = (tz, ms) => { const p = tzDeler(tz, ms); return `${to(p.hour)}:${to(p.minute)}`; };
+  const klIso = (iso) => String(iso).slice(11, 16); // lokal tid slik den står i etappen
+  const tusen = (n) => Math.round(n).toLocaleString("nb-NO").replace(/\s/g, " ");
+  const varighet = (ms) => { const m = Math.max(0, Math.round(ms / 60000)), d = Math.floor(m / 1440), t = Math.floor((m % 1440) / 60), mm = m % 60; return d ? `${d} d ${t} t` : t ? `${t} t ${mm} min` : `${mm} min`; };
+  const stedNavn = (id) => (steder().find((s) => s.id === id) || {}).navn || "";
+
+  // Hvor er vi nå? fase: for · lufta · vei · stopp (mellomstopp) · bytte (flybytte) · venter (på flyplassen) · her · hjemme
+  function reiseStatus(ms = Date.now()) {
+    const E = etapper(); if (!E.length) return null;
+    const tot = E.reduce((s, e) => s + (e.km || 0), 0);
+    let km = 0, cur = null, sist = null;
+    for (const e of E) {
+      if (ms >= e.b) { km += e.km || 0; sist = e; continue; }
+      if (ms >= e.a) { const f = (ms - e.a) / (e.b - e.a); km += (e.km || 0) * f; cur = { e, f }; }
+      break;
+    }
+    const neste = E.find((e) => e.a > ms) || null;
+    const fase = cur ? (cur.e.type === "fly" ? "lufta" : "vei") : !sist ? "for" : sist === E[E.length - 1] ? "hjemme" : sist.bytte ? "bytte" : sist.venter ? "venter" : !sist.sted ? "stopp" : "her";
+    return { E, tot, km, cur, sist, neste, fase };
+  }
+  const FASE = { for: "Fortsatt hjemme", lufta: "I lufta", vei: "På vei", stopp: "Mellomstopp", bytte: "Flybytte", venter: "På flyplassen", her: "Her er vi nå", hjemme: "Hjemme igjen" };
+
+  // Hvor været og sola skal hentes for «der vi er»
+  function vaerSted(R) {
+    const st = steder(), forste = st[0], siste = st[st.length - 1];
+    if (!R) { const s = stedFor(idag()) || forste; return s ? { navn: s.navn, lat: s.lat, lon: s.lon } : null; }
+    if (R.fase === "for") return forste ? { navn: forste.navn, lat: forste.lat, lon: forste.lon, merk: "første stopp" } : null;
+    if (R.fase === "hjemme") return siste ? { navn: siste.navn, lat: siste.lat, lon: siste.lon } : null;
+    if (R.cur) return { navn: R.cur.e.til, lat: R.cur.e.pos[0], lon: R.cur.e.pos[1], merk: "dit vi skal" };
+    if (R.fase === "her") { const s = st.find((x) => x.id === R.sist.sted); if (s) return { navn: s.navn, lat: s.lat, lon: s.lon }; }
+    return { navn: R.sist.til.replace(/ lufthavn$/, ""), lat: R.sist.pos[0], lon: R.sist.pos[1] };
+  }
+
+  // ----- været (Open-Meteo, flere steder i én forespørsel) -----
+  let VAER = lesJson("kg.vaer", null), vaerGaar = null;
+  const vaerSteder = (R) => { const v = vaerSted(R), n = (DATA.opp && DATA.opp.norge) || []; return v ? [v, ...n] : n; };
+  const vaerNok = (L) => L.map((p) => `${(+p.lat).toFixed(2)},${(+p.lon).toFixed(2)}`).join(";");
+  async function hentVaer(L) {
+    if (!L.length || !navigator.onLine || vaerGaar) return;
+    const nok = vaerNok(L);
+    if (VAER && VAER.nok === nok && Date.now() - VAER.t < 20 * 60e3) return;
+    vaerGaar = (async () => {
+      try {
+        const q = `latitude=${L.map((p) => p.lat).join(",")}&longitude=${L.map((p) => p.lon).join(",")}&current=temperature_2m,weather_code,is_day&daily=sunrise,sunset&timezone=auto&forecast_days=1`;
+        const r = await fetch("https://api.open-meteo.com/v1/forecast?" + q, { referrerPolicy: "no-referrer" });
+        if (!r.ok) throw new Error("vær " + r.status);
+        let j = await r.json(); if (!Array.isArray(j)) j = [j];
+        const min = (s) => { const m = String(s || "").match(/T(\d\d):(\d\d)/); return m ? +m[1] * 60 + +m[2] : null; };
+        VAER = { nok, t: Date.now(), r: j.map((x) => ({ t: x.current && x.current.temperature_2m, k: x.current && x.current.weather_code, dag: x.current ? !!x.current.is_day : true })),
+          sol: [min(j[0].daily && j[0].daily.sunrise && j[0].daily.sunrise[0]), min(j[0].daily && j[0].daily.sunset && j[0].daily.sunset[0])] };
+        lagre.set("kg.vaer", JSON.stringify(VAER));
+        const el = $("#rb-vaer"); if (el) { el.innerHTML = vaerInnhold(reiseStatus()); }
+        brettTikk(true);
+      } catch {} finally { vaerGaar = null; }
+    })();
+  }
+  // WMO-kode → [tekst, ikon]
+  function vaerKode(k, dag = true) {
+    if (k == null) return ["", "sky"];
+    if (k === 0) return ["Klart", dag ? "sol" : "maane"];
+    if (k <= 2) return [k === 1 ? "Nesten klart" : "Lettskyet", dag ? "solsky" : "maanesky"];
+    if (k === 3) return ["Overskyet", "sky"];
+    if (k <= 48) return ["Tåke", "take"];
+    if (k <= 57) return ["Yr", "regn"];
+    if (k <= 67) return ["Regn", "regn"];
+    if (k <= 77) return ["Snø", "sno"];
+    if (k <= 82) return ["Regnbyger", "regn"];
+    if (k <= 86) return ["Snøbyger", "sno"];
+    return ["Torden", "torden"];
+  }
+  const VIK = {
+    sol: '<circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.2M12 19.3v2.2M2.5 12h2.2M19.3 12h2.2M5.3 5.3l1.6 1.6M17.1 17.1l1.6 1.6M5.3 18.7l1.6-1.6M17.1 6.9l1.6-1.6"/>',
+    maane: '<path d="M19.5 14.2A7.8 7.8 0 1 1 9.8 4.5a6.3 6.3 0 0 0 9.7 9.7Z"/>',
+    sky: '<path d="M7 18.5h10.2a4 4 0 0 0 .4-8 5.6 5.6 0 0 0-10.8 1.4A3.3 3.3 0 0 0 7 18.5Z"/>',
+    solsky: '<path d="M8.6 3.2v1.6M3.4 8.4H5M4.9 4.7l1.1 1.1M12.3 4.7l-1.1 1.1"/><path d="M5.9 10.4a3 3 0 0 1 5.5-1.9"/><path d="M8.5 19.5h9a3.6 3.6 0 0 0 .3-7.2 5 5 0 0 0-9.6 1.2 3 3 0 0 0 .3 6Z"/>',
+    maanesky: '<path d="M11.8 7.2A4.6 4.6 0 0 1 6 11.6a4.6 4.6 0 0 0 5.8-4.4Z"/><path d="M8.5 19.5h9a3.6 3.6 0 0 0 .3-7.2 5 5 0 0 0-9.6 1.2 3 3 0 0 0 .3 6Z"/>',
+    regn: '<path d="M7 15h10.2a3.8 3.8 0 0 0 .4-7.6 5.4 5.4 0 0 0-10.4 1.3A3.2 3.2 0 0 0 7 15Z"/><path d="M8.5 18l-1 2.5M12.5 18l-1 2.5M16.5 18l-1 2.5"/>',
+    sno: '<path d="M7 14.5h10.2a3.8 3.8 0 0 0 .4-7.6 5.4 5.4 0 0 0-10.4 1.3A3.2 3.2 0 0 0 7 14.5Z"/><path d="M8.5 18.2h.01M12 19.8h.01M15.5 18.2h.01M10.2 21.4h.01M13.8 21.4h.01" stroke-width="2.6"/>',
+    torden: '<path d="M7 14.5h10.2a3.8 3.8 0 0 0 .4-7.6 5.4 5.4 0 0 0-10.4 1.3A3.2 3.2 0 0 0 7 14.5Z"/><path d="m12.8 15.5-2.3 3.5h3l-2 3.2"/>',
+    take: '<path d="M4 9h16M6 12.5h12M4 16h16M7 19.5h10"/>',
+  };
+  const vIkon = (n) => `<svg class="vik" viewBox="0 0 24 24" aria-hidden="true">${VIK[n] || VIK.sky}</svg>`;
+  function vaerInnhold(R) {
+    const L = vaerSteder(R), V = VAER && VAER.nok === vaerNok(L) ? VAER.r : null;
+    const rad = (p, i) => { const v = V && V[i], [txt, ik] = vaerKode(v && v.k, v ? v.dag : true), t = v && v.t != null ? Math.round(v.t) : null;
+      return `<div class="rb-vr${i ? "" : " hoved"}">${vIkon(ik)}<b class="rb-gr">${t == null ? "–" : `${t}°`}</b><span class="rb-vn"><b>${esc(p.navn)}</b><small>${esc([txt, i === 0 ? p.merk : ""].filter(Boolean).join(" · ") || " ")}</small></span></div>`; };
+    let skala = "", diff = "";
+    if (V && V[0] && V[0].t != null && L.length > 1) {
+      const lo = -20, hi = 38, pos = (t) => Math.max(0, Math.min(100, ((t - lo) / (hi - lo)) * 100));
+      const nor = L.slice(1).map((p, i) => ({ p, t: V[i + 1] && V[i + 1].t })).filter((x) => x.t != null);
+      let forrige = -99;
+      skala = `<div class="rb-skala" aria-hidden="true"><div class="rb-bar"></div>
+        <span class="rb-m vn" style="left:${pos(V[0].t).toFixed(1)}%"><i></i><em>${esc(L[0].navn)}</em></span>
+        ${nor.sort((a, b) => a.t - b.t).map((x) => { const l = pos(x.t), lav = l - forrige < 16; forrige = lav ? -99 : l; return `<span class="rb-m no${lav ? " lav" : ""}" style="left:${l.toFixed(1)}%"><i></i><em>${esc(x.p.navn)}</em></span>`; }).join("")}
+        <span class="rb-s0" style="left:${pos(0).toFixed(1)}%">0°</span></div>`;
+      const n0 = nor.find((x) => x.p === L[1]);
+      if (n0) { const d = Math.round(V[0].t - n0.t); diff = d >= 2 ? `${d} grader varmere enn i ${esc(n0.p.navn)}` : d <= -2 ? `${-d} grader kaldere enn i ${esc(n0.p.navn)}` : `Like varmt som i ${esc(n0.p.navn)}`; }
+    }
+    return `<div class="rb-et">Været nå</div><div class="rb-vliste">${L.map(rad).join("")}</div>${skala}${diff ? `<p class="rb-hand">${diff}</p>` : V ? "" : `<p class="rb-liten">Henter været …</p>`}`;
+  }
+
+  // ----- himmelen over Vietnam: farger, sol og måne etter klokka der -----
+  function himmel(m) {
+    const sr = (VAER && VAER.sol && VAER.sol[0]) || 375, ss = (VAER && VAER.sol && VAER.sol[1]) || 1050;
+    const t = m < sr - 50 || m > ss + 50 ? "natt" : m < sr + 50 ? "gry" : m > ss - 55 ? "skumring" : "dag";
+    const dagLengde = ss - sr + 80, nattLengde = 1440 - dagLengde;
+    const sol = m >= sr - 40 && m <= ss + 40, u = sol ? (m - (sr - 40)) / dagLengde : (((m - (ss + 40)) % 1440) + 1440) % 1440 / nattLengde;
+    return { t, sol, u: Math.max(0, Math.min(1, u)), sr, ss };
+  }
+  const himmelXY = (u) => [206 + u * 138, 160 - Math.sin(u * Math.PI) * 86]; // høyre halvdel – teksten står til venstre
+  const STJ = [[22, 18, 1], [48, 44, .7], [70, 12, .9], [96, 32, .6], [120, 20, 1.1], [142, 52, .7], [168, 14, .8], [190, 38, .6], [214, 22, 1], [240, 48, .7], [262, 12, .9], [288, 30, .6], [312, 20, 1.1], [336, 46, .7], [358, 16, .8], [384, 34, .6], [30, 70, .6], [110, 74, .5], [206, 70, .6], [300, 66, .5], [372, 76, .6]];
+  function sceneSvg() {
+    return `<svg class="rb-scene" viewBox="0 0 400 220" preserveAspectRatio="xMidYMax slice" aria-hidden="true"><defs>
+      <linearGradient id="rbH" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="h0"/><stop offset=".62" class="h1"/><stop offset="1" class="h2"/></linearGradient>
+      <radialGradient id="rbG"><stop offset="0" class="g0"/><stop offset="1" class="g1"/></radialGradient>
+      <linearGradient id="rbV" x1="0" y1="0" x2="0" y2="1"><stop offset="0" class="v0"/><stop offset="1" class="v1"/></linearGradient>
+      <mask id="rbMm"><rect x="-20" y="-20" width="40" height="40" fill="#fff"/><circle cx="5.5" cy="-3.5" r="9.5" fill="#000"/></mask></defs>
+      <rect width="400" height="220" fill="url(#rbH)"/>
+      <g class="rb-stj">${STJ.map(([x, y, r], i) => `<circle cx="${x}" cy="${y}" r="${r}" style="animation-delay:${(i * 0.37) % 3}s"/>`).join("")}</g>
+      <g class="rb-sol"><circle r="34" fill="url(#rbG)"/><circle class="kjerne" r="11"/></g>
+      <g class="rb-maane"><circle r="10" class="kjerne" mask="url(#rbMm)"/></g>
+      <path class="f3" d="M0 168C10 150 16 118 30 116S44 150 52 152C60 120 70 94 84 96S96 150 106 150C116 130 126 126 134 140C142 110 156 90 170 94S180 150 190 152H230C238 126 250 110 262 114S272 148 280 150C290 116 304 102 318 106S330 150 340 150C350 130 362 122 372 132C380 118 392 114 400 120V220H0Z"/>
+      <path class="f2" d="M-5 184C5 160 12 128 26 126S40 170 50 172H118C124 150 134 116 150 114S164 168 176 172H250C258 150 270 126 286 128S298 172 306 176C314 160 322 150 332 156C342 134 354 120 366 124S378 172 390 176L405 178V220H-5Z"/>
+      <rect class="vann" y="186" width="400" height="34" fill="url(#rbV)"/>
+      <path class="glimt" d="M60 196h26M150 203h40M232 194h18M286 208h34M20 211h22M330 198h20"/>
+      <path class="f1" d="M-5 220V200C2 180 10 148 22 146S34 196 46 204V220ZM322 220C328 200 342 156 358 154S380 196 392 204L405 206V220Z"/>
+      <g class="rb-bat"><g transform="translate(48 0)"><path class="seil" d="M209 196V176.5l11 5.5-1.6 14ZM207 196v-15l-7.5 4 .8 11Z"/><path class="skrog" d="M195 196.5h31l-4.5 5.5h-22Z"/></g></g>
+    </svg>`;
+  }
+
+  // ----- det familien (trolig) holder på med -----
+  function holderPaa(R, m) {
+    const h = Math.floor(m / 60), H = himmel(m);
+    if (!R) return "";
+    if (R.fase === "for") { const s = (steder()[0] || {}).navn || "Vietnam"; return h < 6 ? `${s} sover nå` : h < 11 ? `Morgen i ${s}` : h < 17 ? `Ettermiddag i ${s}` : `Kveld i ${s}`; }
+    if (R.fase === "lufta") return `Lander kl. ${klIso(R.cur.e.t1)} lokal tid`;
+    if (R.fase === "vei") return `Framme ca. kl. ${klIso(R.cur.e.t1)}`;
+    if (["bytte", "stopp", "venter"].includes(R.fase)) return R.neste ? `Neste fly går kl. ${klIso(R.neste.t0)}` : "";
+    if (R.fase === "hjemme") return "Takk for at du fulgte med!";
+    if (Math.abs(m - H.ss) <= 30) return "Solnedgang!";
+    return h < 6 ? "Familien sover (forhåpentligvis)" : h < 8 ? "Frokosttid" : h < 12 ? "Ute på dagens eventyr" : h < 14 ? "Lunsjtid – phở, kanskje?" : h < 17 ? "Bading eller utforsking" : h < 19 ? "Gyllen time" : h < 21 ? "Middag" : "Dagens postkort velges nå";
+  }
+
+  // ----- tellere -----
+  const odoPlasser = (tot) => { const L = []; for (let p = 10 ** Math.max(4, String(Math.round(tot || 0)).length - 1); p >= 1; p /= 10) L.push(p); L.push(0.1); return L; };
+  function odoPos(v, p) {
+    if (p < 1) { const x = v * 10; return x % 10; }
+    const base = Math.floor(v / p + 1e-9) % 10, rest = v % p, terskel = p - 0.1;
+    return base + (rest > terskel ? (rest - terskel) / 0.1 : 0);
+  }
+  const odoHtml = (P) => `<div class="rb-odo" aria-hidden="true">${P.map((p) => `<span class="hjul${p < 1 ? " tidel" : ""}" data-p="${p}"><span class="rull">${[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 0].map((d) => `<i>${d}</i>`).join("")}</span></span>${p === 1 ? '<span class="komma">,</span>' : ""}`).join("")}</div>`;
+  function odoSett(v) {
+    $$(".rb-odo .hjul").forEach((el) => {
+      const p = Number(el.dataset.p), pos = odoPos(v, p);
+      el.firstElementChild.style.transform = `translateY(${(-pos * 100) / 11}%)`;
+      el.classList.toggle("null", p >= 10 && v < p);
+    });
+  }
+  const flapp = (id, n) => `<span class="rb-fl" data-cd="${id}">${String(n).split("").map((c) => `<b><span>${c}</span></b>`).join("")}</span>`;
+  function flappSett(id, n) {
+    const el = $(`[data-cd="${id}"]`); if (!el) return;
+    const s = String(n), B = el.children;
+    if (B.length !== s.length) { el.outerHTML = flapp(id, s); return; }
+    for (let i = 0; i < s.length; i++) { const sp = B[i].firstElementChild; if (sp.textContent !== s[i]) { sp.textContent = s[i]; if (!rolig()) { B[i].classList.remove("snu"); void B[i].offsetWidth; B[i].classList.add("snu"); } } }
+  }
+  const nedtelling = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return { d: Math.floor(s / 86400), t: to(Math.floor((s % 86400) / 3600)), m: to(Math.floor((s % 3600) / 60)), s: to(s % 60) }; };
+
+  // ----- brettet -----
+  let BRETT = { nok: "", animert: false, sistMin: -1, sistKm: Number(lagre.get("kg.km") || 0) };
+  function brettNokkel(R) { return [R ? R.fase : "x", R && R.cur ? R.cur.e.t0 : "", R && R.sist ? R.sist.t0 : "", idag(), DATA.opp ? 1 : 0].join("|"); }
+  function heroInnhold(R) {
+    const fase = R ? R.fase : (stedFor(idag()) ? "her" : "for"), o = DATA.opp || {};
+    let chip = FASE[fase] || "", stor = "", om = "", ekstra = "";
+    if (!R) { const s = stedFor(idag()) || steder()[0]; stor = s ? s.navn : "Việt Nam"; om = s ? ((o.om || {})[s.id] || "") : ""; if (!stedFor(idag())) chip = "Snart avreise"; }
+    else if (fase === "for") { const s = steder()[0]; stor = s ? s.navn : "Việt Nam"; om = `Første stopp${s && (o.om || {})[s.id] ? " · " + o.om[s.id].toLowerCase() : ""}`; }
+    else if (fase === "lufta" || fase === "vei") {
+      const e = R.cur.e;
+      stor = `${esc(e.fra.replace(/ lufthavn$/, ""))}<span class="pil">→</span>${esc(e.til.replace(/ lufthavn$/, ""))}`;
+      ekstra = `<div class="rb-fram"><div class="spor"><i style="width:${(R.cur.f * 100).toFixed(2)}%" data-rb="framfyll"></i><span class="farkost" style="left:${(R.cur.f * 100).toFixed(2)}%" data-rb="farkost">${e.type === "fly" ? TR.fly : TR.bil}</span></div>
+        <div class="tekst"><span data-rb="framtekst">Framme om ${varighet(e.b - Date.now())}</span>${e.type === "fly" ? `<span>${tusen((e.km || 0) / ((e.b - e.a) / 3.6e6))} km/t i snitt</span>` : ""}</div></div>`;
+      return { chip, stor, om, ekstra, html: true };
+    }
+    else if (fase === "her") { stor = stedNavn(R.sist.sted) || R.sist.til; om = (o.om || {})[R.sist.sted] || ""; }
+    else if (fase === "hjemme") { stor = R.sist.til; om = `${steder().length} stopp · ${tusen(R.tot)} km`; }
+    else { stor = R.sist.til; om = R.neste ? `Videre til ${R.neste.til.replace(/ lufthavn$/, "")}` : ""; }
+    return { chip, stor: esc(stor), om: esc(om), ekstra };
+  }
+  function tidInnhold(R) {
+    const o = DATA.opp || {}, naa = Date.now();
+    if (R && R.fase === "for") {
+      const n = nedtelling(R.E[0].a - naa), p = tzDeler(NO_TZ, R.E[0].a);
+      return `<div class="rb-et">Avreise om</div><div class="rb-ned">
+        <div class="dager">${flapp("d", n.d)}<small>${n.d === 1 ? "dag" : "dager"}</small></div>
+        <div class="hms"><div>${flapp("t", n.t)}<small>t</small></div><i>:</i><div>${flapp("m", n.m)}<small>min</small></div><i>:</i><div class="sek">${flapp("s", n.s)}<small>sek</small></div></div></div>
+        <p class="rb-liten">Flyet letter ${esc(pen(`${p.year}-${to(p.month)}-${to(p.day)}`, false))} kl. ${to(p.hour)}:${to(p.minute)}</p>`;
+    }
+    if (!o.start) return "";
+    const d = idag(), n = mellom(o.start, o.slutt) + 1;
+    if (d < o.start) { const k = mellom(d, o.start); return `<div class="rb-et">Avreise om</div><div class="rb-ned"><div>${flapp("d", k)}<small>${k === 1 ? "dag" : "dager"}</small></div></div>`; }
+    if (d > o.slutt || (R && R.fase === "hjemme")) return `<div class="rb-et">Reisen er over</div><div class="rb-ring-rad"><div class="rb-ring ferdig">${ringSvg(1)}<b>${n}</b></div><p><b>${n} dager</b><span>${steder().length} stopp · ${R ? tusen(R.tot) + " km" : ""}</span></p></div>`;
+    const i = mellom(o.start, d) + 1, igjen = n - i;
+    const nesteSted = R && R.E.find((e) => e.a > naa && e.sted && e.sted !== (R.sist || {}).sted);
+    const hjem = R && R.E.find((e) => e.type === "fly" && !e.sted && e.a > naa);
+    const linje = nesteSted ? `Neste stopp: <b>${esc(stedNavn(nesteSted.sted))}</b> om <span data-rb="om" data-mal="${nesteSted.a}">${varighet(nesteSted.a - naa)}</span>`
+      : hjem ? `Hjemreisen starter om <span data-rb="om" data-mal="${hjem.a}">${varighet(hjem.a - naa)}</span>` : "";
+    return `<div class="rb-et">Dag ${i} av ${n}</div><div class="rb-ring-rad"><div class="rb-ring">${ringSvg(i / n)}<b>${i}</b></div><p><b>${igjen ? `${igjen} ${igjen === 1 ? "dag" : "dager"} igjen` : "Siste dag!"}</b><span>${linje}</span></p></div>
+      <div class="rb-dager" aria-hidden="true">${Array.from({ length: n }, (_, k) => `<i class="${k < i - 1 ? "f" : k === i - 1 ? "n" : ""}"></i>`).join("")}</div>`;
+  }
+  const ringSvg = (f) => { const r = 26, c = 2 * Math.PI * r; return `<svg viewBox="0 0 64 64" aria-hidden="true"><circle cx="32" cy="32" r="${r}" class="spor"/><circle cx="32" cy="32" r="${r}" class="fyll" stroke-dasharray="${c.toFixed(1)}" stroke-dashoffset="${(c * (1 - f)).toFixed(1)}" transform="rotate(-90 32 32)"/></svg>`; };
+  function kmInnhold(R) {
+    if (!R) return "";
+    let akk = 0;
+    const merker = R.E.slice(0, -1).map((e) => { akk += e.km || 0; return `<i style="left:${((akk / R.tot) * 100).toFixed(2)}%"${akk <= R.km ? ' class="f"' : ""}></i>`; }).join("");
+    const rundt = R.tot / 40075;
+    const fakta = R.fase === "for" ? `Klar for ${tusen(R.tot)} km – ${rundt > 0.6 && rundt < 0.75 ? "to tredjedeler av veien rundt jorda" : `${Math.round(rundt * 100)} % av veien rundt jorda`}!`
+      : `= <span data-rb="rundt">${(R.km / 40075).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</span> ganger rundt jorda`;
+    const siden = R.km - BRETT.sistKm >= 1 && BRETT.sistKm > 0 ? `<span class="rb-pluss">+${tusen(R.km - BRETT.sistKm)} km siden sist du var innom</span>` : "";
+    return `<div class="rb-et">Kilometer reist</div><div class="rb-odo-rad">${odoHtml(odoPlasser(R.tot))}<span class="enhet">km</span>${siden}</div>
+      <div class="rb-spor" aria-hidden="true"><div class="linje"></div><div class="fyll" data-rb="kmfyll" style="width:${((R.km / R.tot) * 100).toFixed(2)}%"></div>${merker}<span class="fly" data-rb="kmfly" style="left:${((R.km / R.tot) * 100).toFixed(2)}%">${TR.fly}</span></div>
+      <div class="rb-spor-tekst"><span>0</span><span>${tusen(R.tot)} km</span></div><p class="rb-hand">${fakta}</p>`;
+  }
+  function brettHtml() {
+    if (!DATA.opp) return "";
+    const R = reiseStatus(), H = heroInnhold(R), m = (() => { const p = tzDeler(VN_TZ); return p.hour * 60 + p.minute; })(), hm = himmel(m);
+    BRETT.nok = brettNokkel(R);
+    const forskjell = Math.round((tzOff(VN_TZ) - tzOff(NO_TZ)) / 60);
+    const sammendrag = `Klokka i Vietnam er ${kl(VN_TZ)}. ${H.chip}: ${String(H.stor).replace(/<[^>]+>/g, " ")}.`;
+    return `<section class="rb" id="rb" aria-label="${esc(sammendrag)}">
+      <div class="rb-hero" data-t="${hm.t}" data-fase="${R ? R.fase : ""}">${sceneSvg()}
+        <div class="rb-lag">
+          <div class="rb-topp"><div><div class="rb-et rb-lys">Klokka i Việt Nam</div><div class="rb-tid"><span data-rb="hh">${kl(VN_TZ).slice(0, 2)}</span><i class="kolon">:</i><span data-rb="mm">${kl(VN_TZ).slice(3)}</span></div>
+            <div class="rb-no">I Norge: <b data-rb="no">${kl(NO_TZ)}</b> · ${forskjell > 0 ? `${forskjell} t foran` : forskjell < 0 ? `${-forskjell} t bak` : "samme tid"}</div></div>
+            <p class="rb-gjor" data-rb="gjor">${esc(holderPaa(R, m))}</p></div>
+          <div class="rb-bunn"><span class="rb-chip"><i></i>${esc(H.chip)}</span><h2 class="rb-sted">${H.stor}</h2>${H.om ? `<p class="rb-om">${H.om}</p>` : ""}${H.ekstra || ""}</div>
+        </div></div>
+      <div class="rb-flis rb-vaer" id="rb-vaer">${vaerInnhold(R)}</div>
+      <div class="rb-flis rb-tidflis">${tidInnhold(R)}</div>
+      ${R ? `<div class="rb-flis rb-km">${kmInnhold(R)}</div>` : ""}
+    </section>`;
+  }
+  // Etter at siden er tegnet: start telleren (km rulles opp første gang), hent været
+  function brettEtterTegn() {
+    if (!$("#rb")) return;
+    const R = reiseStatus();
+    hentVaer(vaerSteder(R));
+    if (R) {
+      const mål = R.km, fra = BRETT.animert || rolig() ? mål : Math.min(BRETT.sistKm, mål);
+      if (fra === mål) odoSett(mål);
+      else {
+        BRETT.animert = true; BRETT.ruller = true; const t0 = performance.now(), varig = 2200;
+        odoSett(fra);
+        const steg = (t) => { const x = Math.min(1, (t - t0) / varig), e = 1 - Math.pow(1 - x, 3); odoSett(fra + (reiseStatus().km - fra) * e); if (x < 1) requestAnimationFrame(steg); else BRETT.ruller = false; };
+        requestAnimationFrame(steg);
+      }
+      BRETT.animert = true;
+    }
+    brettTikk(true);
+  }
+  function brettTikk(tving) {
+    const rb = $("#rb"); if (!rb) return;
+    const R = reiseStatus();
+    if (brettNokkel(R) !== BRETT.nok) { const ny = document.createElement("div"); ny.innerHTML = brettHtml(); rb.replaceWith(ny.firstElementChild); brettEtterTegn(); return; }
+    const naa = Date.now(), p = tzDeler(VN_TZ, naa), m = p.hour * 60 + p.minute, sett = (k, v) => { const el = $(`[data-rb="${k}"]`); if (el && el.textContent !== v) el.textContent = v; };
+    sett("hh", to(p.hour)); sett("mm", to(p.minute)); sett("no", kl(NO_TZ, naa));
+    if (m !== BRETT.sistMin || tving) {
+      BRETT.sistMin = m;
+      const hm = himmel(m), hero = $(".rb-hero"); if (hero) hero.dataset.t = hm.t;
+      const [x, y] = himmelXY(hm.u), sol = $(".rb-sol"), maa = $(".rb-maane");
+      if (sol) { sol.setAttribute("transform", `translate(${x.toFixed(1)} ${(hm.sol ? y : 260).toFixed(1)})`); }
+      if (maa) { maa.setAttribute("transform", `translate(${x.toFixed(1)} ${(hm.sol ? 260 : y).toFixed(1)})`); }
+      sett("gjor", holderPaa(R, m));
+    }
+    if (!R) return;
+    if (R.fase === "for") { const n = nedtelling(R.E[0].a - naa); flappSett("d", n.d); flappSett("t", n.t); flappSett("m", n.m); flappSett("s", n.s); }
+    if (R.cur) {
+      const f = (R.cur.f * 100).toFixed(2) + "%", fy = $('[data-rb="framfyll"]'), fk = $('[data-rb="farkost"]');
+      if (fy) fy.style.width = f; if (fk) fk.style.left = f;
+      sett("framtekst", `Framme om ${varighet(R.cur.e.b - naa)}`);
+      if (!BRETT.ruller) odoSett(R.km);
+      const kf = $('[data-rb="kmfyll"]'), kp = $('[data-rb="kmfly"]'), k = ((R.km / R.tot) * 100).toFixed(2) + "%";
+      if (kf) kf.style.width = k; if (kp) kp.style.left = k;
+      sett("rundt", (R.km / 40075).toLocaleString("nb-NO", { minimumFractionDigits: 2, maximumFractionDigits: 2 }));
+    }
+    const om = $('[data-rb="om"]'); if (om) { const v = varighet(Number(om.dataset.mal) - naa); if (om.textContent !== v) om.textContent = v; }
+  }
+  setInterval(() => { if (document.visibilityState === "visible") brettTikk(false); }, 1000);
+  setInterval(() => { if (document.visibilityState === "visible" && $("#rb")) hentVaer(vaerSteder(reiseStatus())); }, 5 * 60e3);
+  setTimeout(() => { const R = reiseStatus(); if (R && INN && INN.g) lagre.set("kg.km", String(R.km)); }, 8000);
+
   // ---------- visninger ----------
   const app = $("#app");
   const rute = () => { const [, side = "", a = "", b = ""] = (location.hash || "#/").split("/"); return { side, a: decodeURIComponent(a), b: decodeURIComponent(b) }; };
@@ -442,7 +743,7 @@
 
   function sideHjem() {
     const L = dager(), d0 = L[0], o = DATA.opp;
-    const topp = `${mast("")}<div class="dato"><b>${esc(stor(pen(idag())))}</b>${dagNr() ? ` · ${esc(dagNr().toLowerCase())}` : ""}</div>${rutelinje(idag())}`;
+    const topp = `${mast("")}<div class="dato"><b>${esc(stor(pen(idag())))}</b>${dagNr() ? ` · ${esc(dagNr().toLowerCase())}` : ""}</div>${brettHtml()}${rutelinje(idag())}`;
     let midt = "";
     if (!o) midt = `<div class="tomt"><h2>Henter …</h2><p>Et øyeblikk.</p></div>`;
     else if (!d0) midt = `<div class="tomt"><h2>${idag() < o.start ? "Snart kommer det post!" : "Ingen kort ennå"}</h2><p>${idag() < o.start ? `Det første postkortet kommer ${esc(pen(o.start, false))}. Hver kveld velger hver av de reisende sitt beste bilde fra dagen.` : "De reisende har ikke valgt dagens bilder ennå – kom tilbake i kveld."}</p><p class="hand">Hilsen ${esc(personer().map((p) => p.navn).join(", ").replace(/, ([^,]*)$/, " og $1"))}</p></div>`;
@@ -538,6 +839,7 @@
     const r = rute(), y = window.scrollY, kar = $(".karusell"), kx = kar ? kar.scrollLeft : 0, sammeSide = tegn.sist === location.hash;
     app.innerHTML = r.side === "rute" ? sideRute() : r.side === "album" ? sideAlbum(r.a) : r.side === "dag" && r.a ? sideDag(r.a) : sideHjem();
     fyllAlle();
+    brettEtterTegn();
     if (!BR.startet) { BR.startet = true; BR.vis = document.visibilityState === "visible"; BR.synlig = Date.now(); brTell("o"); }
     if (!sammeSide && BR_SIDE[r.side]) brTell(BR_SIDE[r.side]);
     if (sammeSide) { window.scrollTo(0, y); const k2 = $(".karusell"); if (k2) k2.scrollLeft = kx; }

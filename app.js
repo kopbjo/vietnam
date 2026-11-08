@@ -3817,7 +3817,7 @@
   function gjOppsett() {
     const o = gjO(), navn = o.navn || {}, kort = o.kort || {};
     const st = D.steder.filter((s) => s.vaer && s.vaer.lat && !(o.utenom || []).includes(s.id)).map((s) => ({ id: s.id, navn: navn[s.id] || s.navn, kort: kort[s.id] || navn[s.id] || s.navn, fra: s.fra, til: s.til, lat: s.vaer.lat, lon: s.vaer.lon, inn: (o.inn || {})[s.id] || null }));
-    return { tittel: gjTittel(), tz: "Asia/Ho_Chi_Minh", start: start(), slutt: slutt(), personer: D.personer.map((p) => ({ id: p.id, navn: p.navn })), steder: st, fra: o.fra || null, hjem: o.hjem || null };
+    return { tittel: gjTittel(), tz: "Asia/Ho_Chi_Minh", start: start(), slutt: slutt(), personer: D.personer.map((p) => ({ id: p.id, navn: p.navn })), steder: st, fra: o.fra || null, hjem: o.hjem || null, etapper: o.etapper || null, norge: o.norge || null, om: o.om || null }; // v98: reisebrettet
   }
   // Mine egne bilder → gjestesiden. Alt annet (andres bilder) deles av deres egne telefoner.
   async function gjSend() {

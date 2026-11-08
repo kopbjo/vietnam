@@ -293,3 +293,165 @@ a { color: inherit; }
 .bunntekst { text-align: center; color: var(--dim); font-size: 12.5px; padding: 26px 20px 0; }
 .bunntekst button { text-decoration: underline; color: var(--dim); font-size: 12.5px; }
 @media (prefers-reduced-motion: reduce) { .pkort { transition: none; } .knapp.lik.puls { animation: none; } }
+
+/* ---------- reisebrettet (v98): klokke, hvor vi er, vær, nedtelling, km ---------- */
+.rb { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin: 14px 16px 4px; }
+.rb-hero { grid-column: 1 / -1; position: relative; min-height: 262px; border-radius: 16px; overflow: hidden; color: #fffaf0; isolation: isolate;
+  box-shadow: var(--skygge), inset 0 0 0 1px #ffffff1f; background: #1d2b45; }
+.rb-hero::after { content: ""; position: absolute; inset: 0; background: var(--papir); mix-blend-mode: multiply; opacity: .55; pointer-events: none; z-index: 1; }
+.rb-scene { position: absolute; inset: 0; width: 100%; height: 100%; display: block; z-index: 0; }
+.rb-lag { position: relative; z-index: 2; display: flex; flex-direction: column; justify-content: space-between; min-height: 262px; padding: 16px 18px 16px; }
+.rb-topp { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+.rb-et { font-size: 10.5px; font-weight: 700; letter-spacing: 2px; text-transform: uppercase; color: var(--dim); }
+.rb-et.rb-lys { color: currentColor; opacity: .82; }
+.rb-tid { font: 600 58px/0.95 var(--serif); letter-spacing: -1.5px; font-variant-numeric: tabular-nums lining-nums; margin-top: 4px; text-shadow: 0 2px 18px #0003; }
+.rb-tid .kolon { font-style: normal; display: inline-block; margin: 0 1px; animation: rb-blink 2s steps(1) infinite; transform: translateY(-4px); }
+@keyframes rb-blink { 50% { opacity: .25; } }
+.rb-no { font-size: 12.5px; opacity: .85; margin-top: 6px; }
+.rb-no b { font-weight: 600; font-variant-numeric: tabular-nums; }
+.rb-gjor { font: 600 21px/1.05 var(--hand); text-align: right; max-width: 46%; transform: rotate(-3deg); margin-top: 6px; text-shadow: 0 1px 10px #0004; }
+.rb-bunn { margin-top: 18px; }
+.rb-chip { display: inline-flex; align-items: center; gap: 7px; font-size: 10.5px; font-weight: 700; letter-spacing: 1.6px; text-transform: uppercase; padding: 5px 10px 5px 8px; border-radius: 99px;
+  background: #ffffff26; backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px); box-shadow: inset 0 0 0 1px #ffffff33; }
+.rb-chip i { width: 7px; height: 7px; border-radius: 50%; background: #ffd27a; box-shadow: 0 0 0 0 #ffd27a; animation: rb-puls 2.2s ease-out infinite; }
+@keyframes rb-puls { 0% { box-shadow: 0 0 0 0 #ffd27aaa; } 70%, 100% { box-shadow: 0 0 0 9px #ffd27a00; } }
+.rb-sted { font: 600 clamp(32px, 9vw, 46px)/1 var(--serif); letter-spacing: -.8px; margin-top: 8px; text-shadow: 0 2px 22px #0004; }
+.rb-sted .pil { display: inline-block; margin: 0 .22em; font-weight: 400; opacity: .7; font-size: .75em; transform: translateY(-.08em); }
+.rb-om { font: 500 20px/1.1 var(--hand); opacity: .92; margin-top: 4px; }
+.rb-hero[data-t="dag"] { color: #172233; }
+.rb-hero[data-t="dag"] .rb-chip { background: #ffffff8c; box-shadow: inset 0 0 0 1px #ffffffaa; }
+.rb-hero[data-t="dag"] .rb-chip i { background: var(--lakk); animation-name: rb-puls-r; }
+@keyframes rb-puls-r { 0% { box-shadow: 0 0 0 0 #b52a1caa; } 70%, 100% { box-shadow: 0 0 0 9px #b52a1c00; } }
+.rb-hero[data-t="dag"] .rb-tid, .rb-hero[data-t="dag"] .rb-sted, .rb-hero[data-t="dag"] .rb-gjor { text-shadow: 0 1px 14px #ffffff80; }
+/* himmelen – fire tider på døgnet */
+.rb-hero { --h0: #0b1630; --h1: #1d2b55; --h2: #3b406e; --g0: #fff6dc; --g1: #fff6dc00; --f3: #2a3562; --f2: #1b2547; --f1: #0f1830; --v0: #1b2648; --v1: #0e1630; --seil: #6a2a2a; --kjerne: #fff6dc; }
+.rb-hero[data-t="gry"] { --h0: #34406e; --h1: #e2967a; --h2: #f8d49d; --g0: #ffe3a8; --g1: #ffb07000; --f3: #8b7895; --f2: #5a5577; --f1: #2b2f4a; --v0: #b88a8a; --v1: #4c4a68; --seil: #9c3a2a; --kjerne: #fff1cf; }
+.rb-hero[data-t="dag"] { --h0: #6fb0d8; --h1: #bfe2ec; --h2: #f5ecd4; --g0: #fffbe8; --g1: #fff6c000; --f3: #9dbcae; --f2: #6a9a89; --f1: #2f5c4e; --v0: #8fc2bd; --v1: #4f8a85; --seil: #b52a1c; --kjerne: #fffbe8; }
+.rb-hero[data-t="skumring"] { --h0: #262b5a; --h1: #c2566b; --h2: #f6a658; --g0: #ffd08a; --g1: #ff7a4a00; --f3: #7b4a6b; --f2: #4d3355; --f1: #221d38; --v0: #b26a5c; --v1: #3a2a48; --seil: #8f1f14; --kjerne: #ffe2a8; }
+.rb-scene .h0 { stop-color: var(--h0); } .rb-scene .h1 { stop-color: var(--h1); } .rb-scene .h2 { stop-color: var(--h2); }
+.rb-scene .g0 { stop-color: var(--g0); } .rb-scene .g1 { stop-color: var(--g1); }
+.rb-scene .v0 { stop-color: var(--v0); } .rb-scene .v1 { stop-color: var(--v1); }
+.rb-scene stop { transition: stop-color 1.5s; }
+.rb-scene .f3 { fill: var(--f3); } .rb-scene .f2 { fill: var(--f2); } .rb-scene .f1 { fill: var(--f1); }
+.rb-scene .kjerne { fill: var(--kjerne); }
+.rb-scene .glimt { stroke: #ffffff; stroke-opacity: .28; stroke-width: 1.2; stroke-linecap: round; fill: none; animation: rb-glimt 6s ease-in-out infinite alternate; }
+@keyframes rb-glimt { to { transform: translateX(10px); stroke-opacity: .12; } }
+.rb-scene .seil { fill: var(--seil); } .rb-scene .skrog { fill: var(--f1); }
+.rb-bat { animation: rb-bat 60s linear infinite alternate; }
+@keyframes rb-bat { from { transform: translateX(-22px); } to { transform: translateX(26px); } }
+.rb-stj circle { fill: #fff; opacity: 0; transition: opacity 2s; }
+.rb-hero[data-t="natt"] .rb-stj circle { opacity: .85; animation: rb-glitre 3s ease-in-out infinite alternate; }
+.rb-hero[data-t="gry"] .rb-stj circle, .rb-hero[data-t="skumring"] .rb-stj circle { opacity: .25; }
+@keyframes rb-glitre { from { opacity: .9; } to { opacity: .3; } }
+.rb-sol, .rb-maane { transition: transform 1.5s ease; }
+/* fly/bil underveis */
+.rb-fram { margin-top: 12px; max-width: 420px; }
+.rb-fram .spor { position: relative; height: 22px; }
+.rb-fram .spor::before { content: ""; position: absolute; left: 0; right: 0; top: 10px; border-top: 2px dashed currentColor; opacity: .45; }
+.rb-fram .spor i { position: absolute; left: 0; top: 9px; height: 4px; border-radius: 2px; background: currentColor; }
+.rb-fram .farkost { position: absolute; top: 0; width: 22px; height: 22px; transform: translateX(-50%) rotate(90deg); }
+.rb-fram .farkost svg { width: 100%; height: 100%; fill: currentColor; stroke: currentColor; stroke-width: .4; filter: drop-shadow(0 2px 4px #0005); }
+.rb-fram .tekst { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; opacity: .9; margin-top: 2px; }
+
+/* fliser */
+.rb-flis { background: var(--kort); border-radius: 14px; box-shadow: var(--skygge); padding: 14px 14px 13px; position: relative; overflow: hidden; min-width: 0; }
+.rb-flis::before { content: ""; position: absolute; inset: 5px; border: 1px dashed var(--strek); border-radius: 10px; pointer-events: none; }
+.rb-hand { font: 600 19px/1.1 var(--hand); color: var(--lakk); margin-top: 10px; transform: rotate(-1.5deg); transform-origin: left; }
+.rb-liten { font-size: 12px; color: var(--dim); margin-top: 8px; }
+/* vær */
+.rb-vliste { display: grid; gap: 6px; margin-top: 8px; }
+.rb-vr { display: grid; grid-template-columns: 22px auto 1fr; align-items: center; gap: 8px; }
+.rb-vr .vik { width: 22px; height: 22px; fill: none; stroke: currentColor; stroke-width: 1.7; stroke-linecap: round; stroke-linejoin: round; color: var(--dim); }
+.rb-vr .rb-gr { font: 600 20px/1 var(--serif); font-variant-numeric: tabular-nums; min-width: 2.2ch; }
+.rb-vn { display: flex; flex-direction: column; min-width: 0; line-height: 1.15; }
+.rb-vn b { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-vn small { font-size: 11px; color: var(--dim); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.rb-vr.hoved { grid-template-columns: 38px 1fr; row-gap: 2px; padding-bottom: 9px; margin-bottom: 2px; border-bottom: 1px solid var(--strek); }
+.rb-vr.hoved .rb-vn { grid-column: 1 / -1; }
+.rb-vr.hoved .rb-vn b { font-size: 14px; }
+.rb-vr.hoved .vik { width: 34px; height: 34px; color: var(--gull); stroke-width: 1.5; }
+.rb-vr.hoved .rb-gr { font-size: 36px; letter-spacing: -1px; }
+.rb-skala { position: relative; height: 46px; margin: 14px 4px 0; }
+.rb-bar { position: absolute; left: 0; right: 0; top: 19px; height: 6px; border-radius: 3px; background: linear-gradient(90deg, #4a7fc1, #8fc3e0 30%, #e9e1c9 42%, #f2b45c 68%, #d9462f); opacity: .9; }
+.rb-m { position: absolute; top: 0; transform: translateX(-50%); display: flex; flex-direction: column; align-items: center; }
+.rb-m i { width: 12px; height: 12px; border-radius: 50%; background: var(--kort); border: 3px solid var(--blekk); margin-top: 16px; order: 2; }
+.rb-m em { font-style: normal; font-size: 10px; font-weight: 600; white-space: nowrap; color: var(--dim); }
+.rb-m.vn em { order: 1; position: absolute; top: -1px; color: var(--lakk); }
+.rb-m.vn i { border-color: var(--lakk); }
+.rb-m.no em { order: 3; margin-top: 2px; }
+.rb-m.no.lav em { margin-top: 13px; }
+.rb-s0 { position: absolute; top: 26px; transform: translateX(-50%); font-size: 9px; color: var(--dim); opacity: .7; padding-top: 4px; border-left: 1px solid var(--strek); padding-left: 2px; }
+/* nedtelling */
+.rb-ned { display: flex; flex-wrap: wrap; gap: 10px 14px; margin-top: 10px; align-items: flex-end; }
+.rb-ned .dager .rb-fl b { width: 38px; height: 56px; font-size: 38px; border-radius: 7px; }
+.rb-ned .dager { flex-direction: row; align-items: flex-end; gap: 8px; }
+.rb-ned .dager small { font-size: 13px; letter-spacing: 1.5px; padding-bottom: 4px; color: var(--blekk); }
+.rb-ned .hms { display: flex; flex-direction: row; align-items: flex-start; gap: 3px; }
+.rb-ned .hms > i { font: 600 18px/30px var(--serif); font-style: normal; color: var(--dim); }
+.rb-ned .hms .rb-fl b { width: 19px; height: 29px; font-size: 19px; border-radius: 4px; }
+.rb-ned > div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.rb-ned small { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
+.rb-fl { display: inline-flex; gap: 2px; perspective: 300px; }
+.rb-fl b { position: relative; display: grid; place-items: center; width: 25px; height: 38px; border-radius: 5px; background: linear-gradient(#2a3446 0 50%, #1f2a3a 50%); color: #fff6e4;
+  font: 600 25px/1 var(--serif); font-variant-numeric: tabular-nums; box-shadow: 0 2px 4px #0003, inset 0 -1px 0 #0006; overflow: hidden; }
+.rb-fl b::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #0008; }
+.rb-fl b.snu span { animation: rb-flipp .45s cubic-bezier(.3, 1.6, .5, 1); display: block; }
+@keyframes rb-flipp { 0% { transform: rotateX(90deg); opacity: .2; } 100% { transform: rotateX(0); opacity: 1; } }
+.rb-ned .sek .rb-fl b { background: linear-gradient(var(--lakk) 0 50%, var(--lakk2) 50%); }
+.rb-ring-rad { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
+.rb-ring { position: relative; width: 58px; height: 58px; flex: none; }
+@media (min-width: 520px) { .rb-ring { width: 70px; height: 70px; } }
+.rb-ring svg { width: 100%; height: 100%; }
+.rb-ring .spor { fill: none; stroke: var(--strek); stroke-width: 6; }
+.rb-ring .fyll { fill: none; stroke: var(--lakk); stroke-width: 6; stroke-linecap: round; transition: stroke-dashoffset 1.2s ease; }
+.rb-ring b { position: absolute; inset: 0; display: grid; place-items: center; font: 600 24px/1 var(--serif); }
+.rb-ring-rad p { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.rb-ring-rad p b { font-family: var(--serif); font-size: 17px; font-weight: 600; line-height: 1.1; }
+.rb-ring-rad p span { font-size: 12.5px; color: var(--dim); line-height: 1.3; }
+.rb-ring-rad p span b { font: inherit; color: var(--blekk); font-weight: 600; }
+/* kilometer */
+.rb-km { grid-column: 1 / -1; }
+.rb-odo-rad { display: flex; align-items: flex-end; flex-wrap: wrap; gap: 6px 10px; margin-top: 10px; }
+.rb-odo { display: inline-flex; align-items: flex-end; padding: 5px; border-radius: 8px; background: #14181f; box-shadow: inset 0 2px 6px #000a, 0 1px 0 #ffffff14; }
+.rb-odo .hjul { position: relative; width: 26px; height: 40px; overflow: hidden; margin: 0 1px; border-radius: 3px; background: linear-gradient(#0d1016, #262c36 18%, #2f3642 50%, #262c36 82%, #0d1016); }
+.rb-odo .hjul::after { content: ""; position: absolute; inset: 0; background: linear-gradient(#000a, #0000 30%, #0000 70%, #000a); pointer-events: none; }
+.rb-odo .rull { display: block; will-change: transform; }
+.rb-odo .rull i { display: grid; place-items: center; height: 40px; font: 600 26px/1 var(--sans); font-style: normal; color: #f6efe2; font-variant-numeric: tabular-nums; }
+.rb-odo .hjul.null .rull i { color: #f6efe24d; }
+.rb-odo .hjul.tidel { background: linear-gradient(#3a0e09, #8f1f14 18%, #b52a1c 50%, #8f1f14 82%, #3a0e09); }
+.rb-odo .komma { color: #f6efe2; font: 600 22px/1 var(--sans); margin: 0 1px 6px; }
+.rb-odo-rad .enhet { font: 600 22px/1 var(--serif); padding-bottom: 8px; }
+.rb-pluss { font-size: 12px; font-weight: 600; color: var(--jade); background: color-mix(in srgb, var(--jade) 14%, transparent); padding: 4px 9px; border-radius: 99px; margin-bottom: 8px; }
+.rb-spor { position: relative; height: 22px; margin: 16px 10px 0; }
+.rb-spor .linje { position: absolute; left: 0; right: 0; top: 10px; border-top: 2px dashed var(--strek); }
+.rb-spor .fyll { position: absolute; left: 0; top: 9px; height: 4px; border-radius: 2px; background: var(--lakk); }
+.rb-spor > i { position: absolute; top: 7px; width: 10px; height: 10px; border-radius: 50%; transform: translateX(-50%); background: var(--kort); border: 2px solid var(--strek); }
+.rb-spor > i.f { border-color: var(--lakk); background: var(--lakk); }
+.rb-spor .fly { position: absolute; top: -1px; width: 24px; height: 24px; transform: translateX(-50%) rotate(90deg); color: var(--blekk); }
+.rb-spor .fly svg { width: 100%; height: 100%; fill: currentColor; filter: drop-shadow(0 2px 3px #0003); }
+.rb-spor-tekst { display: flex; justify-content: space-between; font-size: 11px; color: var(--dim); margin: 4px 0 0; }
+
+@media (min-width: 520px) { .rb-tid { font-size: 68px; } .rb-gjor { font-size: 24px; } }
+@media (min-width: 900px) {
+  .rb { grid-template-columns: minmax(0, 1.55fr) minmax(0, 1fr) minmax(0, 1fr); grid-template-rows: auto auto; gap: 16px; margin: 18px 28px 6px; }
+  .rb-hero { grid-column: 1; grid-row: 1 / span 2; min-height: 380px; }
+  .rb-lag { min-height: 380px; padding: 24px 26px 22px; }
+  .rb-tid { font-size: 84px; letter-spacing: -2.5px; }
+  .rb-sted { font-size: 54px; }
+  .rb-km { grid-column: 2 / span 2; }
+  .rb-flis { padding: 18px 18px 16px; }
+}
+@media (prefers-color-scheme: dark) {
+  .rb-hero::after { opacity: 0; }
+  .rb-m i { background: var(--ris); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .rb-tid .kolon, .rb-chip i, .rb-bat, .rb-scene .glimt, .rb-hero[data-t="natt"] .rb-stj circle { animation: none; }
+  .rb-sol, .rb-maane, .rb-scene stop, .rb-ring .fyll { transition: none; }
+}
+/* én prikk per reisedag */
+.rb-dager { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 12px; }
+.rb-dager i { width: 8px; height: 8px; border-radius: 2px; background: var(--strek); }
+.rb-dager i.f { background: color-mix(in srgb, var(--lakk) 70%, transparent); }
+.rb-dager i.n { background: var(--lakk); box-shadow: 0 0 0 3px color-mix(in srgb, var(--lakk) 25%, transparent); }
+@media (min-width: 900px) { .rb-dager { gap: 6px; margin-top: 18px; } .rb-dager i { width: 12px; height: 12px; border-radius: 3px; } }
