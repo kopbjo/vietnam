@@ -351,7 +351,7 @@ a { color: inherit; }
 .rb-fram .spor i { position: absolute; left: 0; top: 9px; height: 4px; border-radius: 2px; background: currentColor; }
 .rb-fram .farkost { position: absolute; top: 0; width: 22px; height: 22px; transform: translateX(-50%) rotate(90deg); }
 .rb-fram .farkost svg { width: 100%; height: 100%; fill: currentColor; stroke: currentColor; stroke-width: .4; filter: drop-shadow(0 2px 4px #0005); }
-.rb-fram .tekst { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; opacity: .9; margin-top: 2px; }
+.rb-fram .rb-framtekst { display: flex; justify-content: space-between; gap: 10px; font-size: 12.5px; opacity: .9; margin-top: 2px; }
 
 /* fliser */
 .rb-flis { background: var(--kort); border-radius: 14px; box-shadow: var(--skygge); padding: 14px 14px 13px; position: relative; overflow: hidden; min-width: 0; }
@@ -386,17 +386,22 @@ a { color: inherit; }
 .rb-ned .dager .rb-fl b { width: 38px; height: 56px; font-size: 38px; border-radius: 7px; }
 .rb-ned .dager { flex-direction: row; align-items: flex-end; gap: 8px; }
 .rb-ned .dager small { font-size: 13px; letter-spacing: 1.5px; padding-bottom: 4px; color: var(--blekk); }
-.rb-ned .hms { display: flex; flex-direction: row; align-items: flex-start; gap: 3px; }
-.rb-ned .hms > i { font: 600 18px/30px var(--serif); font-style: normal; color: var(--dim); }
-.rb-ned .hms .rb-fl b { width: 19px; height: 29px; font-size: 19px; border-radius: 4px; }
+.rb-ned .hms { display: flex; flex-direction: row; flex-wrap: nowrap; align-items: flex-start; gap: 3px; }
+.rb-ned .hms > div { flex: none; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+.rb-ned .hms small { font-size: 9px; letter-spacing: .8px; }
+.rb-ned .hms > i { font: 600 16px/28px var(--serif); font-style: normal; color: var(--dim); }
+.rb-ned .hms .rb-fl b { width: 18px; height: 28px; font-size: 18px; border-radius: 4px; }
+@media (min-width: 520px) { .rb-ned .hms .rb-fl b { width: 22px; height: 33px; font-size: 22px; } }
 .rb-ned > div { display: flex; flex-direction: column; align-items: center; gap: 4px; }
 .rb-ned small { font-size: 10px; color: var(--dim); text-transform: uppercase; letter-spacing: 1px; font-weight: 600; }
-.rb-fl { display: inline-flex; gap: 2px; perspective: 300px; }
+.rb-fl { display: inline-flex; flex: none; gap: 2px; }
 .rb-fl b { position: relative; display: grid; place-items: center; width: 25px; height: 38px; border-radius: 5px; background: linear-gradient(#2a3446 0 50%, #1f2a3a 50%); color: #fff6e4;
   font: 600 25px/1 var(--serif); font-variant-numeric: tabular-nums; box-shadow: 0 2px 4px #0003, inset 0 -1px 0 #0006; overflow: hidden; }
 .rb-fl b::after { content: ""; position: absolute; left: 0; right: 0; top: 50%; height: 1px; background: #0008; }
-.rb-fl b.snu span { animation: rb-flipp .45s cubic-bezier(.3, 1.6, .5, 1); display: block; }
-@keyframes rb-flipp { 0% { transform: rotateX(90deg); opacity: .2; } 100% { transform: rotateX(0); opacity: 1; } }
+.rb-fl b { flex: none; box-sizing: border-box; line-height: 1; }
+.rb-fl b span { display: block; line-height: 1; font-variant-numeric: tabular-nums lining-nums; }
+.rb-fl b.rb-vipp span { animation: rb-flipp .35s ease-out; }
+@keyframes rb-flipp { 0% { transform: translateY(-55%); opacity: 0; } 100% { transform: none; opacity: 1; } }
 .rb-ned .sek .rb-fl b { background: linear-gradient(var(--lakk) 0 50%, var(--lakk2) 50%); }
 .rb-ring-rad { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
 .rb-ring { position: relative; width: 58px; height: 58px; flex: none; }

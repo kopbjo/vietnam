@@ -415,7 +415,7 @@
     const el = $(`[data-cd="${id}"]`); if (!el) return;
     const s = String(n), B = el.children;
     if (B.length !== s.length) { el.outerHTML = flapp(id, s); return; }
-    for (let i = 0; i < s.length; i++) { const sp = B[i].firstElementChild; if (sp.textContent !== s[i]) { sp.textContent = s[i]; if (!rolig()) { B[i].classList.remove("snu"); void B[i].offsetWidth; B[i].classList.add("snu"); } } }
+    for (let i = 0; i < s.length; i++) { const sp = B[i].firstElementChild; if (sp.textContent !== s[i]) { sp.textContent = s[i]; if (!rolig()) { B[i].classList.remove("rb-vipp"); void B[i].offsetWidth; B[i].classList.add("rb-vipp"); } } }
   }
   const nedtelling = (ms) => { const s = Math.max(0, Math.floor(ms / 1000)); return { d: Math.floor(s / 86400), t: to(Math.floor((s % 86400) / 3600)), m: to(Math.floor((s % 3600) / 60)), s: to(s % 60) }; };
 
@@ -431,7 +431,7 @@
       const e = R.cur.e;
       stor = `${esc(e.fra.replace(/ lufthavn$/, ""))}<span class="pil">→</span>${esc(e.til.replace(/ lufthavn$/, ""))}`;
       ekstra = `<div class="rb-fram"><div class="spor"><i style="width:${(R.cur.f * 100).toFixed(2)}%" data-rb="framfyll"></i><span class="farkost" style="left:${(R.cur.f * 100).toFixed(2)}%" data-rb="farkost">${e.type === "fly" ? TR.fly : TR.bil}</span></div>
-        <div class="tekst"><span data-rb="framtekst">Framme om ${varighet(e.b - Date.now())}</span>${e.type === "fly" ? `<span>${tusen((e.km || 0) / ((e.b - e.a) / 3.6e6))} km/t i snitt</span>` : ""}</div></div>`;
+        <div class="rb-framtekst"><span data-rb="framtekst">Framme om ${varighet(e.b - Date.now())}</span>${e.type === "fly" ? `<span>${tusen((e.km || 0) / ((e.b - e.a) / 3.6e6))} km/t i snitt</span>` : ""}</div></div>`;
       return { chip, stor, om, ekstra, html: true };
     }
     else if (fase === "her") { stor = stedNavn(R.sist.sted) || R.sist.til; om = (o.om || {})[R.sist.sted] || ""; }
