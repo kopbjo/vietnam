@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 95, tid: "2026-11-08 kl. 11:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 96, tid: "2026-11-08 kl. 11:10" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -2618,14 +2618,14 @@
     return h + bunn();
   }
   // ---- v95: Gjestene – besøk på gjestesiden (tellere fra gjest/<g>/bruk) + hjerter og hilsener ----
-  const GJ_BRUK_FRA = "2026-11-08"; // besøkene telles fra appversjon 95
+  const GJ_BRUK_FRA = "2026-11-09"; // v96: nullstilt – testbesøk, hjerter og hilsener før denne datoen telles ikke
   const msDato = (ms) => new Intl.DateTimeFormat("sv-SE").format(new Date(ms));
   const GJ_HANDL = [["sn", "Snudde et kort (leste hilsener)"], ["st", "Så et bilde i stort"], ["al", "Åpnet albumet"], ["ru", "Åpnet reiseruten"], ["dg", "Åpnet en bestemt dag"]];
   function statGjData(fra, til) {
     const G = gjData(), inv = GJS.gjester, gjest = (e) => e && !/^familie:/.test(e), iPer = (ms) => { if (!ms) return false; const d = msDato(ms); return d >= fra && d <= til; };
-    const bruk = Object.values(G.bruk || {}).filter((b) => b && b.e && b.d);
-    const lik = Object.values(G.lik || {}).filter((l) => gjest(l.e) && l.v === 1);
-    const hils = Object.values(G.hilsen || {}).filter((x) => gjest(x.e) && !x.x);
+    const bruk = Object.values(G.bruk || {}).filter((b) => b && b.e && b.d && b.d >= GJ_BRUK_FRA), etter = (ms) => ms && msDato(ms) >= GJ_BRUK_FRA;
+    const lik = Object.values(G.lik || {}).filter((l) => gjest(l.e) && l.v === 1 && etter(l.s));
+    const hils = Object.values(G.hilsen || {}).filter((x) => gjest(x.e) && !x.x && etter(x.s));
     const per = { bruk: bruk.filter((b) => b.d >= fra && b.d <= til), lik: lik.filter((l) => iPer(l.s)), hils: hils.filter((x) => iPer(x.s)) };
     const P = {}, ny = (e, n) => (P[e] = P[e] || { e, n: n || e, o: 0, sek: 0, lik: 0, hils: 0, enh: {}, sist: 0, inv: false, utenfor: false });
     for (const g of inv || []) { ny(g.e, g.n).inv = true; }
@@ -2698,7 +2698,7 @@
       }
     }
     h += `<section class="kort" style="margin-top:14px"><button class="knapp knapp-sek knapp-full" data-statkopier>Kopier tallene (til Claude)</button></section>`;
-    h += `<p class="krolle" style="margin:14px 4px 0">Besøk telles fra ${esc(pen(GJ_BRUK_FRA, false))}: bare tellere per gjest, enhet og dag – ikke hva de skriver. Bare familien kan se tallene. Gjestenes egne klokker bestemmer datoen.</p>`;
+    h += `<p class="krolle" style="margin:14px 4px 0">Alt telles fra ${esc(pen(GJ_BRUK_FRA, false))}: bare tellere per gjest, enhet og dag – ikke hva de skriver. Bare familien kan se tallene. Gjestenes egne klokker bestemmer datoen.</p>`;
     return h;
   }
   function statKopierGjester() {
