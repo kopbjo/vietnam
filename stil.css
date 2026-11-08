@@ -2317,3 +2317,9 @@ details.praktiskfold > .innhold > section.kort { box-shadow: none; border: .5px 
 .gj-ny { display: flex; flex-direction: column; gap: 8px; }
 .gj-ny input { border: 1px solid var(--linje); border-radius: 12px; padding: 11px 12px; font: inherit; background: var(--flate); color: var(--tekst); }
 .gj-ny .kb { align-self: flex-start; }
+
+/* v97 meny om bord */
+.fly .flymeny h4 { font-size: .86rem; margin: 10px 0 2px; }
+.fly .flymeny ul { margin: 0 0 4px; padding-left: 18px; font-size: .88rem; }
+.fly .flymeny li { margin: 2px 0; }
+.fly .flymeny .fm-merk { font-size: .8rem; color: var(--dempet); margin: 8px 0 0; }

@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 96, tid: "2026-11-08 kl. 11:10" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 97, tid: "2026-11-08 kl. 13:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -293,6 +293,8 @@
   const kontaktPaDag = (k, d) => { const x = k && d && k.dager && k.dager[d]; return x ? { ...k, ...x } : k; };
   const kontakterHtml = (ids) => (ids || []).map((id) => kontaktHtml(kontaktEtterId(id))).join("");
 
+  // Meny om bord (v97): f.meny = { hentet, merk, deler: [{ t, r: [linjer] }] }
+  const flyMeny = (f) => (f.meny && f.meny.deler && f.meny.deler.length ? `<details class="flydet flymeny"><summary>Meny om bord</summary>${f.meny.deler.map((d) => `<h4>${esc(d.t)}</h4><ul>${(d.r || []).map((r) => `<li>${md(r)}</li>`).join("")}</ul>`).join("")}${f.meny.merk ? `<p class="fm-merk">${md(f.meny.merk)}</p>` : ""}${f.meny.hentet ? `<p class="fm-merk">Fra flyselskapets meny, hentet ${esc(f.meny.hentet)}. Kan endres.</p>` : ""}</details>` : "");
   function flyKort(f) {
     if (!f) return "";
     const m = meg(), mitt = f.seter && m ? f.seter[m] : null;
@@ -316,6 +318,7 @@
       <div class="knapper flyknapper">${f.innsjekk && f.d >= idagISO() ? knapp("web", f.innsjekk.url, "Sjekk inn") : ""}${knapp("web", "https://www.flightradar24.com/data/flights/" + encodeURIComponent(f.id.toLowerCase()), "Flystatus")}${bekrKnapp(f.bekr)}</div>
       ${f.innsjekk && f.d >= idagISO() ? `<div class="finnsj">Innsjekk på nett: ${md(f.innsjekk.tekst)}</div>` : ""}
       ${rader ? `<details class="flydet"><summary>Seter og billettnumre</summary><table>${rader}</table></details>` : ""}
+      ${flyMeny(f)}
     </div>`;
   }
 
