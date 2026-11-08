@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 94, tid: "2026-11-01 kl. 12:50" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 95, tid: "2026-11-08 kl. 11:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -2513,7 +2513,7 @@
   }
 
   // ---------- SIDE: Statistikk (skjult) ----------
-  let statPer = "7", statHvem = "alle", statDag = null;
+  let statPer = "7", statHvem = "alle", statDag = null, statVis = "fam";
   const statPerioder = () => [["1", "I dag"], ["7", "7 dager"], ["30", "30 dager"], ["reise", "Reisen"], ["alt", "Alt"]];
   function statFraTil() {
     const i = idagISO();
@@ -2553,7 +2553,9 @@
     const utvalg = per.filter((p) => statHvem === "alle" || (p.hvem || "") === statHvem);
     const hvemFins = [...new Set(alle.map((p) => p.hvem || ""))];
     let h = tittel("Bruksstatistikk", synkHtml("statSynk"));
+    if (GJ()) h += `<div class="velger"><button data-statvis="fam" class="${statVis === "fam" ? "valgt" : ""}">Familien</button><button data-statvis="gjest" class="${statVis === "gjest" ? "valgt" : ""}">Gjestene</button></div>`;
     h += `<div class="velger">${statPerioder().map(([k, t]) => `<button data-statper="${k}" class="${k === statPer ? "valgt" : ""}">${t}</button>`).join("")}</div>`;
+    if (GJ() && statVis === "gjest") return h + statGjester(fra, til) + bunn();
     const folk = D.personer.map((p) => [p.id, p.navn]).concat(hvemFins.includes("") ? [["", "Ikke valgt"]] : []);
     h += `<div class="velger"><button data-stathvem="alle" class="${statHvem === "alle" ? "valgt" : ""}">Alle</button>${folk.map(([id, n]) => `<button data-stathvem="${esc(id)}" class="${statHvem === id ? "valgt" : ""}">${esc(n)}</button>`).join("")}</div>`;
     const apn = utvalg.reduce((x, p) => x + sum4(p.o), 0), sek = utvalg.reduce((x, p) => x + sum4(p.sek), 0);
@@ -2615,17 +2617,110 @@
     h += `<p class="krolle" style="margin:14px 4px 0">Bare tellere per telefon, bruker og dag – ingen tekst du skriver, ingen posisjon. Deles kryptert med familiens telefoner.</p>`;
     return h + bunn();
   }
+  // ---- v95: Gjestene – besøk på gjestesiden (tellere fra gjest/<g>/bruk) + hjerter og hilsener ----
+  const GJ_BRUK_FRA = "2026-11-08"; // besøkene telles fra appversjon 95
+  const msDato = (ms) => new Intl.DateTimeFormat("sv-SE").format(new Date(ms));
+  const GJ_HANDL = [["sn", "Snudde et kort (leste hilsener)"], ["st", "Så et bilde i stort"], ["al", "Åpnet albumet"], ["ru", "Åpnet reiseruten"], ["dg", "Åpnet en bestemt dag"]];
+  function statGjData(fra, til) {
+    const G = gjData(), inv = GJS.gjester, gjest = (e) => e && !/^familie:/.test(e), iPer = (ms) => { if (!ms) return false; const d = msDato(ms); return d >= fra && d <= til; };
+    const bruk = Object.values(G.bruk || {}).filter((b) => b && b.e && b.d);
+    const lik = Object.values(G.lik || {}).filter((l) => gjest(l.e) && l.v === 1);
+    const hils = Object.values(G.hilsen || {}).filter((x) => gjest(x.e) && !x.x);
+    const per = { bruk: bruk.filter((b) => b.d >= fra && b.d <= til), lik: lik.filter((l) => iPer(l.s)), hils: hils.filter((x) => iPer(x.s)) };
+    const P = {}, ny = (e, n) => (P[e] = P[e] || { e, n: n || e, o: 0, sek: 0, lik: 0, hils: 0, enh: {}, sist: 0, inv: false, utenfor: false });
+    for (const g of inv || []) { ny(g.e, g.n).inv = true; }
+    for (const b of bruk) { const x = ny(b.e, b.n); x.sist = Math.max(x.sist, b.s || 0); }
+    for (const l of lik) { const x = ny(l.e, l.n); x.sist = Math.max(x.sist, l.s || 0); }
+    for (const t of hils) { const x = ny(t.e, t.n); x.sist = Math.max(x.sist, t.s || 0); }
+    for (const b of per.bruk) { const x = P[b.e]; x.o += b.o || 0; x.sek += b.sek || 0; const k = x.enh[b.enh] = x.enh[b.enh] || { pf: "", o: 0, t: 0 }; k.o += b.o || 0; if ((b.s || 0) >= k.t) { k.t = b.s || 0; k.pf = b.pf || k.pf; } }
+    for (const l of per.lik) P[l.e].lik++;
+    for (const t of per.hils) P[t.e].hils++;
+    if (inv) for (const x of Object.values(P)) x.utenfor = !x.inv;
+    return { P, per, bruk, lik, hils };
+  }
+  function statGjester(fra, til) {
+    if (navigator.onLine && Date.now() - (GJS.statHentet || 0) > 30e3) {
+      GJS.statHentet = Date.now();
+      setTimeout(async () => {
+        try { await gjHentGjester(); await gjHent(true); await gjHentBruk(); GJS.brukFeil = ""; }
+        catch (e) { GJS.brukFeil = / 403$/.test(e.message) ? "regler" : "nett"; }
+        if (rute().side === "stat" && statVis === "gjest" && $("#overlay").hidden && trygtAaTegne()) { const y = window.scrollY; vis(); window.scrollTo(0, y); }
+      }, 0);
+    }
+    const { P, per } = statGjData(fra, til), alle = Object.values(P);
+    const inv = GJS.gjester ? GJS.gjester.length : null, innom = alle.filter((x) => x.o > 0).length;
+    const o = per.bruk.reduce((s, b) => s + (b.o || 0), 0), sek = per.bruk.reduce((s, b) => s + (b.sek || 0), 0);
+    let h = "";
+    if (GJS.brukFeil === "regler") h += `<section class="kort"><p class="gj-adv">Besøkene telles ikke ennå: reglene i Firebase må oppdateres.</p>
+      <p class="krolle">Firestore Database → Rules → slett alt → lim inn → Publish.</p><div class="knapper"><button class="kb tel" data-gjregler>Kopier reglene</button><a class="kb" href="https://console.firebase.google.com/project/${esc(D.synk.prosjekt)}/firestore/rules" target="_blank" rel="noopener">Åpne Rules ↗</a></div></section>`;
+    else if (GJS.brukFeil === "nett" && !alle.length) h += `<p class="tom" style="margin:4px 4px 0">Fikk ikke hentet tallene – har du nett?</p>`;
+    h += `<div class="sfliser">
+      <div class="sflis"><small>Gjester invitert</small><b>${inv == null ? "–" : inv}</b></div>
+      <div class="sflis"><small>Har vært innom</small><b>${innom}${inv ? ` <i class="sst-kl">av ${inv}</i>` : ""}</b></div>
+      <div class="sflis"><small>Besøk</small><b>${o.toLocaleString("nb-NO")}</b></div>
+      <div class="sflis"><small>Tid på siden</small><b>${varighet(sek)}</b></div>
+      <div class="sflis"><small>Hjerter</small><b>♥ ${per.lik.length}</b></div>
+      <div class="sflis"><small>Hilsener</small><b>${per.hils.length}</b></div></div>`;
+    // Per gjest
+    const liste = alle.filter((x) => x.inv || x.o || x.lik || x.hils).sort((a, b) => b.o - a.o || (b.lik + b.hils) - (a.lik + a.hils) || (b.sist || 0) - (a.sist || 0) || a.n.localeCompare(b.n, "nb"));
+    if (liste.length) h += `<div class="seksjonstittel">Gjestene</div><section class="kort spersoner">${liste.map((x) => {
+      const ting = [x.lik ? `♥ ${x.lik}` : "", x.hils ? flertall(x.hils, "hilsen", "hilsener") : ""].filter(Boolean).join(" · ");
+      return `<div class="sperson"><div class="sp-topp"><b>${esc(x.n)}</b><span>${x.o ? `${flertall(x.o, "besøk", "besøk")} · ${varighet(x.sek)}` : "–"}</span></div>
+        <div class="sp-sist">${x.sist ? "Sist aktiv " + naarTekst(x.sist) : "Ikke vært innom ennå"}${ting ? ` · ${ting}` : ""}${x.utenfor ? ` · <span class="se-gml">ikke lenger på lista</span>` : ""}</div>
+        ${Object.keys(x.enh).length ? Object.entries(x.enh).sort((a, b) => b[1].o - a[1].o).map(([id, k]) => `<div class="senhet"><div><span class="se-navn">${esc(k.pf || "Ukjent")}</span><small>sist ${naarTekst(k.t)} · id ${esc(id)}</small></div><span class="se-tall">${k.o}</span></div>`).join("") : ""}
+        <small class="krolle">${esc(x.e)}</small></div>`;
+    }).join("")}</section>`;
+    else if (inv === 0) h += `<p class="tom" style="margin:4px 4px 0">Ingen gjester invitert ennå (Mer → Gjestesiden).</p>`;
+    // Hva gjestene gjør
+    const sum = (f) => per.bruk.reduce((s, b) => s + (b[f] || 0), 0);
+    const rader = [["Besøk", o], ...GJ_HANDL.map(([f, t]) => [t, sum(f)]), ["Ga et hjerte", per.lik.length], ["Skrev en hilsen", per.hils.length]].filter(([, n], i) => i === 0 || n);
+    h += `<div class="seksjonstittel">Hva gjestene gjør</div><section class="kort">${o || per.lik.length || per.hils.length ? statStolper(rader.map(([t, n]) => [esc(t), n]), "") : `<p class="tom">Ingenting registrert i perioden.</p>`}</section>`;
+    // Mest populære kort
+    const pop = {};
+    for (const l of per.lik) (pop[l.p] = pop[l.p] || { l: 0, h: 0 }).l++;
+    for (const t of per.hils) (pop[t.p] = pop[t.p] || { l: 0, h: 0 }).h++;
+    const topp = Object.entries(pop).sort((a, b) => (b[1].l + b[1].h) - (a[1].l + a[1].h)).slice(0, 8);
+    if (topp.length) h += `<div class="seksjonstittel">Mest populære postkort</div><section class="kort">${statStolper(topp.map(([id, x]) => { const [d, pid] = id.split("_"); return [`${esc(kort(d))} · ${esc(personNavn(pid) || pid)}`, x.l + x.h, [x.l ? `♥ ${x.l}` : "", x.h ? flertall(x.h, "hilsen", "hilsener") : ""].filter(Boolean).join(" · ")]; }), "")}</section>`;
+    // Per dag
+    const sisteD = til > idagISO() ? idagISO() : til, f0 = [...per.bruk.map((b) => b.d), ...per.lik.map((l) => msDato(l.s)), ...per.hils.map((t) => msDato(t.s))].sort()[0];
+    if (f0) {
+      let dg = []; for (let d = f0 < fra ? fra : f0; d <= sisteD && dg.length < 400; d = pluss(d, 1)) dg.push(d);
+      dg = dg.slice(-31);
+      if (dg.length > 1) {
+        const pd = Object.fromEntries(dg.map((d) => [d, { o: 0, sek: 0, g: new Set(), l: 0, h: 0 }]));
+        for (const b of per.bruk) if (pd[b.d]) { pd[b.d].o += b.o || 0; pd[b.d].sek += b.sek || 0; if (b.o) pd[b.d].g.add(b.e); }
+        for (const l of per.lik) { const x = pd[msDato(l.s)]; if (x) x.l++; }
+        for (const t of per.hils) { const x = pd[msDato(t.s)]; if (x) x.h++; }
+        const mx = Math.max(1, ...dg.map((d) => pd[d].o)), valgt = statDag && pd[statDag] ? statDag : dg[dg.length - 1], v = pd[valgt];
+        h += `<div class="seksjonstittel">Besøk per dag</div><section class="kort"><div class="sdager" style="--n:${dg.length}">${dg.map((d) => `<button data-statdag="${d}" class="${d === valgt ? "valgt" : ""}" aria-label="${esc(kort(d))}: ${pd[d].o} besøk"><span style="height:${pd[d].o ? Math.max(4, Math.round(100 * pd[d].o / mx)) : 0}%"></span></button>`).join("")}</div>
+          <div class="sdag-akse"><span>${esc(kort(dg[0]))}</span><span>${esc(kort(dg[dg.length - 1]))}</span></div>
+          <p class="sdag-info"><b>${esc(pen(valgt))}</b> · ${flertall(v.o, "besøk", "besøk")} · ${flertall(v.g.size, "gjest", "gjester")} · ${varighet(v.sek)}${v.l ? ` · ♥ ${v.l}` : ""}${v.h ? ` · ${flertall(v.h, "hilsen", "hilsener")}` : ""}</p></section>`;
+      }
+    }
+    h += `<section class="kort" style="margin-top:14px"><button class="knapp knapp-sek knapp-full" data-statkopier>Kopier tallene (til Claude)</button></section>`;
+    h += `<p class="krolle" style="margin:14px 4px 0">Besøk telles fra ${esc(pen(GJ_BRUK_FRA, false))}: bare tellere per gjest, enhet og dag – ikke hva de skriver. Bare familien kan se tallene. Gjestenes egne klokker bestemmer datoen.</p>`;
+    return h;
+  }
+  function statKopierGjester() {
+    const [fra, til] = statFraTil(), { per } = statGjData(fra, til);
+    const tekst = JSON.stringify({ gjestestatistikk: 1, laget: new Date().toISOString(), app: APP.versjon, periode: [fra, til],
+      gjester: (GJS.gjester || []).map((g) => ({ e: g.e, n: g.n })), bruk: per.bruk.map(({ s, ...r }) => ({ ...r, s: s ? new Date(s).toISOString() : null })),
+      lik: per.lik.map((l) => ({ p: l.p, e: l.e, s: new Date(l.s || 0).toISOString() })), hilsener: per.hils.map((x) => ({ p: x.p, e: x.e, s: new Date(x.s || 0).toISOString() })) });
+    navigator.clipboard.writeText(tekst).then(() => toast("Kopiert – lim inn hos Claude"), () => toast("Kunne ikke kopiere", 2600, "feil"));
+  }
   function statKopier() {
+    if (GJ() && statVis === "gjest") { statKopierGjester(); return; }
     const [fra, til] = statFraTil();
     const poster = statAlle().filter((p) => p.d >= fra && p.d <= til).map(({ k, ...r }) => r).sort((a, b) => (a.d < b.d ? -1 : a.d > b.d ? 1 : 0));
     const tekst = JSON.stringify({ bruksstatistikk: 1, laget: new Date().toISOString(), app: APP.versjon, periode: [fra, til], bolker: BOLKER, personer: Object.fromEntries(D.personer.map((p) => [p.id, p.navn])), poster });
     navigator.clipboard.writeText(tekst).then(() => toast("Kopiert – lim inn hos Claude"), () => toast("Kunne ikke kopiere", 2600, "feil"));
   }
   document.addEventListener("click", (e) => {
-    const t = e.target.closest && e.target.closest("[data-statper],[data-stathvem],[data-statdag],[data-statkopier]");
+    const t = e.target.closest && e.target.closest("[data-statper],[data-stathvem],[data-statdag],[data-statkopier],[data-statvis]");
     if (!t || !D) return;
     e.preventDefault();
-    if (t.dataset.statper) { statPer = t.dataset.statper; statDag = null; }
+    if (t.dataset.statvis) { statVis = t.dataset.statvis; statDag = null; }
+    else if (t.dataset.statper) { statPer = t.dataset.statper; statDag = null; }
     else if (t.dataset.stathvem !== undefined) statHvem = t.dataset.stathvem;
     else if (t.dataset.statdag) statDag = t.dataset.statdag;
     else if (t.hasAttribute("data-statkopier")) { statKopier(); return; }
@@ -3769,6 +3864,22 @@
       G.s[samling] = maks;
     }
     gjLagreData(); return endret;
+  }
+  // v95: gjestenes besøkstellere (bare til statistikksiden) – inkrementelt som likes/hilsener
+  async function gjHentBruk() {
+    if (!GJ() || !navigator.onLine) return false;
+    await gjMedlem();
+    const G = gjData(), s = (G.s.bruk || 0), q = { from: [{ collectionId: "bruk" }] }; G.bruk = G.bruk || {};
+    if (s) q.where = { fieldFilter: { field: { fieldPath: "s" }, op: "GREATER_THAN", value: { timestampValue: new Date(s - 120000).toISOString() } } };
+    const svar = await fsKall(`/${gjStier().g}:runQuery`, { structuredQuery: q });
+    let maks = s, endret = false;
+    for (const x of svar) {
+      if (!x.document) continue;
+      const id = decodeURIComponent(x.document.name.split("/").pop()), f = gjFelt(x.document);
+      maks = Math.max(maks, f.s || 0);
+      if (!G.bruk[id] || G.bruk[id].s !== f.s) { G.bruk[id] = f; endret = true; }
+    }
+    G.s.bruk = maks; gjLagreData(); return endret;
   }
   async function gjSynk() {
     if (!GJ() || GJS.sendGaar || !navigator.onLine) return;

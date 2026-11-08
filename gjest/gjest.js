@@ -1,4 +1,4 @@
-// Gjestesiden: postkort fra reisen – bilder og små hilsener fra de reisende underveis.
+// Gjestesiden: postkort fra reisen – ett bilde og én linje fra hver av de reisende, hver dag.
 // Ingen navn, datoer eller nøkler ligger i denne fila: tilkoblingen kommer fra invitasjonslenken (#i=…, lagres på enheten),
 // og alt innhold hentes fra databasen etter innlogging. Bare gjester på familiens gjesteliste får lese (se firestore.rules).
 (() => {
@@ -260,8 +260,8 @@
         ${stempel("Post fra reisen", "★", "var(--lakk)", "left:56%;top:76%;transform:rotate(-12deg);opacity:.8")}
       </div><form class="inn-skjema" id="innskjema" novalidate>
         <div class="sup">Post fra reisen</div><h1>${tittelHtml().replace(/<\/b> <i>/, "</b><br><i>")}${flagg("flagg inn-flagg")}</h1>
-        ${OPP ? `<p class="ingress">Underveis på reisen sender vi postkort hit – bilder og små hilsener fra det vi opplever. Logg inn med brukernavnet og passordet fra invitasjonen.</p>
-        <label class="felt"><span>Brukernavn (e-post)</span><input type="email" id="epost" autocomplete="username" inputmode="email" value="${esc(e)}" required></label>
+        ${OPP ? `<p class="ingress">Ett postkort fra hver av de reisende – hver dag. Logg inn med e-posten og passordet du fikk i invitasjonen.</p>
+        <label class="felt"><span>E-post</span><input type="email" id="epost" autocomplete="username" inputmode="email" value="${esc(e)}" required></label>
         <label class="felt"><span>Passord</span><input type="password" id="passord" autocomplete="current-password" required></label>
         <button class="go" id="innknapp" type="submit">Åpne postkassen ${IK.brev}</button>
         <p class="feil" id="innfeil" role="alert">${esc(feil)}</p>
@@ -445,7 +445,7 @@
     const topp = `${mast("")}<div class="dato"><b>${esc(stor(pen(idag())))}</b>${dagNr() ? ` · ${esc(dagNr().toLowerCase())}` : ""}</div>${rutelinje(idag())}`;
     let midt = "";
     if (!o) midt = `<div class="tomt"><h2>Henter …</h2><p>Et øyeblikk.</p></div>`;
-    else if (!d0) midt = `<div class="tomt"><h2>${idag() < o.start ? "Snart kommer det post!" : "Ingen postkort ennå"}</h2><p>${idag() < o.start ? `Postkortene begynner å komme når reisen starter ${esc(pen(o.start, false))}. Underveis sender vi bilder og små hilsener fra det vi opplever.` : "Ingen nye postkort ennå – det kommer flere underveis."}</p><p class="hand">Hilsen ${esc(personer().map((p) => p.navn).join(", ").replace(/, ([^,]*)$/, " og $1"))}</p></div>`;
+    else if (!d0) midt = `<div class="tomt"><h2>${idag() < o.start ? "Snart kommer det post!" : "Ingen kort ennå"}</h2><p>${idag() < o.start ? `Det første postkortet kommer ${esc(pen(o.start, false))}. Hver kveld velger hver av de reisende sitt beste bilde fra dagen.` : "De reisende har ikke valgt dagens bilder ennå – kom tilbake i kveld."}</p><p class="hand">Hilsen ${esc(personer().map((p) => p.navn).join(", ").replace(/, ([^,]*)$/, " og $1"))}</p></div>`;
     else midt = dagHtml(d0) + tidligereHtml(d0);
     return `<div class="ramme">${topp}<div class="flate">${venstreSpalte()}<main>${midt}${bunntekst()}</main></div></div>`;
   }
@@ -469,6 +469,66 @@
   }
   const bunntekst = () => `<p class="bunntekst">Logget inn som ${esc(INN.n || INN.e)} · <button data-loggut>Logg ut</button></p>`;
 
+  // ---------- bruk: enkel besøksstatistikk for familien ----------
+  // Bare tellere per gjest, enhet og dag – ikke hva som skrives eller hvor man er. Bare familien kan lese dem (se firestore.rules).
+  // gjest/<g>/bruk/<e-post>~<dato>~<enhet> {e, n, d, enh, o: besøk, sek: tid synlig, sn: kort snudd, st: bilde i stort, ru: ruten, al: albumet, dg: en dag, pf}
+  const BR_SIDE = { rute: "ru", album: "al", dag: "dg" }, BR_FELT = ["o", "sek", "sn", "st", "ru", "al", "dg"];
+  const BR = { startet: false, vis: false, synlig: 0, skjult: 0, sendt: 0, gaar: null };
+  const brDato = () => { const d = new Date(); return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`; };
+  function brEnhet() {
+    let e = lagre.get("kg.enhet");
+    if (!/^[0-9a-f]{6}$/.test(e || "")) { e = Array.from(crypto.getRandomValues(new Uint8Array(3)), (b) => b.toString(16).padStart(2, "0")).join(""); lagre.set("kg.enhet", e); }
+    return e;
+  }
+  function brPlattform() {
+    const ua = navigator.userAgent || "", mt = navigator.maxTouchPoints > 1;
+    const ipad = /iPad/.test(ua) || (/Macintosh/.test(ua) && mt), iphone = /iPhone|iPod/.test(ua);
+    const type = ipad ? "iPad" : iphone ? "iPhone" : /Android/.test(ua) ? "Android" : /Macintosh|Mac OS X/.test(ua) ? "Mac" : /Windows/.test(ua) ? "PC" : "Annen";
+    const nl = /Edg\//.test(ua) ? "Edge" : /CriOS|Chrome\//.test(ua) ? "Chrome" : /FxiOS|Firefox/.test(ua) ? "Firefox" : /Safari/.test(ua) ? "Safari" : "nettleser";
+    let hs = false; try { hs = window.matchMedia("(display-mode: standalone)").matches || navigator.standalone === true; } catch {}
+    return `${type} · ${hs ? "hjemskjerm" : nl}`;
+  }
+  const brLes = () => { const b = lesJson("kg.bruk", null); return b && b.p ? b : { p: {}, u: {} }; };
+  function brTell(felt, n = 1) {
+    if (!INN || !INN.g || !INN.e) return;
+    try {
+      const b = brLes(), d = brDato(), enh = brEnhet(), id = `${INN.e}~${d}~${enh}`;
+      const p = b.p[id] || (b.p[id] = { e: INN.e, d, enh, o: 0, sek: 0, sn: 0, st: 0, ru: 0, al: 0, dg: 0 });
+      p[felt] = (p[felt] || 0) + n; p.n = (INN.n || "").slice(0, 40); p.pf = brPlattform().slice(0, 60);
+      b.u[id] = 1;
+      for (const k of Object.keys(b.p)) if (!b.u[k] && b.p[k].d < d) delete b.p[k]; // sendte dager trengs ikke lenger
+      lagre.set("kg.bruk", JSON.stringify(b));
+    } catch {}
+  }
+  function brTid() { // synlig tid, maks 10 min om gangen (i tilfelle enheten sovnet uten å si fra)
+    const naa = Date.now();
+    if (BR.vis && BR.synlig) { const dt = Math.min(naa - BR.synlig, 10 * 60e3); if (dt >= 1000) brTell("sek", Math.round(dt / 1000)); }
+    BR.synlig = naa;
+  }
+  async function brSend(tving) {
+    if (BR.gaar || !INN || !INN.g || !navigator.onLine || (!tving && Date.now() - BR.sendt < 2 * 60e3)) return;
+    const b = brLes(), ider = Object.keys(b.u).filter((k) => b.p[k]); if (!ider.length) return;
+    BR.sendt = Date.now();
+    BR.gaar = (async () => {
+      try {
+        const sendt = {}, writes = ider.map((id) => { const p = b.p[id]; sendt[id] = JSON.stringify(p);
+          const data = { e: p.e, n: p.n || "", d: p.d, enh: p.enh, pf: p.pf || "" }; for (const f of BR_FELT) data[f] = Math.max(0, Math.round(p[f] || 0));
+          return { update: { name: `${ROT()}/gjest/${INN.g}/bruk/${id}`, fields: Object.fromEntries(Object.entries(data).map(([k, v]) => [k, til(v)])) }, updateTransforms: [{ fieldPath: "s", setToServerValue: "REQUEST_TIME" }] }; });
+        await fs("POST", ":commit", { writes });
+        const n = brLes(); for (const id of ider) if (n.p[id] && JSON.stringify(n.p[id]) === sendt[id]) delete n.u[id];
+        lagre.set("kg.bruk", JSON.stringify(n));
+      } catch {} finally { BR.gaar = null; }
+    })();
+    return BR.gaar;
+  }
+  document.addEventListener("visibilitychange", () => {
+    if (!INN || !INN.g) return;
+    if (document.visibilityState === "hidden") { brTid(); BR.vis = false; BR.skjult = Date.now(); brSend(true); }
+    else { BR.vis = true; BR.synlig = Date.now(); if (BR.skjult && Date.now() - BR.skjult > 60e3) brTell("o"); }
+  });
+  window.addEventListener("pagehide", () => { if (INN && INN.g) { brTid(); brSend(true); } });
+  setInterval(() => { if (INN && INN.g && BR.vis) { brTid(); brSend(); } }, 30e3);
+
   // ---------- tegning (bevarer snudde kort, utkast og rulleposisjon) ----------
   const SNUDD = new Set(), UTKAST = new Map();
   let ventTegn = false;
@@ -478,6 +538,8 @@
     const r = rute(), y = window.scrollY, kar = $(".karusell"), kx = kar ? kar.scrollLeft : 0, sammeSide = tegn.sist === location.hash;
     app.innerHTML = r.side === "rute" ? sideRute() : r.side === "album" ? sideAlbum(r.a) : r.side === "dag" && r.a ? sideDag(r.a) : sideHjem();
     fyllAlle();
+    if (!BR.startet) { BR.startet = true; BR.vis = document.visibilityState === "visible"; BR.synlig = Date.now(); brTell("o"); }
+    if (!sammeSide && BR_SIDE[r.side]) brTell(BR_SIDE[r.side]);
     if (sammeSide) { window.scrollTo(0, y); const k2 = $(".karusell"); if (k2) k2.scrollLeft = kx; }
     else {
       window.scrollTo(0, 0);
@@ -554,11 +616,11 @@
       el.classList.toggle("snudd", på);
       $(".forside", el).setAttribute("aria-hidden", på); $(".bakside", el).setAttribute("aria-hidden", !på);
       if (på && !UTKAST.get(id)) setTimeout(() => { const h = $(".hilsener", el); if (h) h.scrollTop = h.scrollHeight; }, 50);
-      if (på) hent(); // nye hilsener med en gang kortet snus
+      if (på) { hent(); brTell("sn"); } // nye hilsener med en gang kortet snus
     }
     else if (t.dataset.send) send(t.dataset.send);
     else if (t.dataset.slett) slett(t.dataset.slett);
-    else if (t.dataset.stor) lysboks(t.dataset.stor);
+    else if (t.dataset.stor) { lysboks(t.dataset.stor); brTell("st"); }
     else if (t.dataset.hopp) hoppTil(t.dataset.hopp);
     else if (t.hasAttribute("data-loggut")) loggUt();
     else if (t.hasAttribute("data-meg")) toast(`Logget inn som ${INN.n || ""} (${INN.e})`);
