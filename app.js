@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 99, tid: "2026-11-22 kl. 14:20" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 100, tid: "2026-11-22 kl. 15:10" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1365,6 +1365,7 @@
     if (!D || !D.bekr || !navigator.onLine || !window.caches) return;
     try {
       const c = await caches.open(BK_LAGER), onsket = new Set(Object.values(D.bekr).flatMap((b) => b.sider.map(bekrUrl)));
+      if (D.rf && D.rf.f) onsket.add(bekrUrl(D.rf.f));
       for (const r of await c.keys()) if (!onsket.has(r.url)) await c.delete(r);
       for (const url of onsket) {
         if (await c.match(url)) continue;
@@ -1373,6 +1374,43 @@
       }
     } catch {}
   }
+  // ---------- hele reisen som PDF (v100): kryptert i b/<hash>.enc som bekreftelsene, hentes sammen med dem ----------
+  // D.rf = { f: hash, kb, dato, navn }. Filen dekrypteres når arket åpnes; «Lagre» gir delingsarket (Arkiver i Filer) eller vanlig nedlasting.
+  let RF = null;
+  async function rfHent() {
+    const r = D && D.rf; if (!r || !r.f) throw new Error("mangler");
+    if (RF && RF.f === r.f) return RF.fil;
+    const url = bekrUrl(r.f); let s = null;
+    try {
+      const c = await caches.open(BK_LAGER); s = await c.match(url);
+      if (!s) { const n = await fetch(url, { cache: "no-cache" }); if (n.ok) { await c.put(url, n.clone()); s = n; } }
+    } catch { s = await fetch(url).catch(() => null); }
+    if (!s || !s.ok) throw new Error("ikke lastet");
+    const u = new Uint8Array(await s.arrayBuffer());
+    const klar = await crypto.subtle.decrypt({ name: "AES-GCM", iv: u.slice(0, 12) }, K, u.slice(12));
+    const fil = new File([klar], r.navn || "Reisen.pdf", { type: "application/pdf" });
+    RF = { f: r.f, fil }; return fil;
+  }
+  async function visRf() {
+    const r = D && D.rf; if (!r) return;
+    ARK = [];
+    arkApne(`<div class="ark-etikett">PDF</div><h2>Hele reisen som PDF</h2>
+      <p class="krolle">Fly, hoteller, hvem som henter oss, dag for dag, kontakter og nødnumre i én fil. Reserven hvis appen ikke virker${r.dato ? ` · laget ${esc(r.dato)}` : ""}${r.kb ? ` · ${(r.kb / 1024).toFixed(1).replace(".", ",")} MB` : ""}.</p>
+      <div class="knapper"><button class="kb" data-rflagre disabled>Henter …</button></div>
+      <p class="krolle" data-rfhjelp>iPhone: trykk «Lagre», velg <b>Arkiver i Filer</b> og legg den under «På iPhone». Da virker den uten nett – åpne den i Filer-appen.</p>`);
+    const b = $("#overlay [data-rflagre]"), hj = $("#overlay [data-rfhjelp]");
+    try { await rfHent(); if (b && b.isConnected) { b.disabled = false; b.textContent = "Lagre på telefonen"; } }
+    catch { if (b && b.isConnected) { b.textContent = "Ikke lastet ned ennå"; if (hj) hj.textContent = "Åpne appen én gang med nett, så hentes filen. Prøv deretter igjen."; } }
+  }
+  document.addEventListener("click", (e) => {
+    const t = e.target.closest && e.target.closest("[data-rf],[data-rflagre]"); if (!t || !D) return;
+    e.preventDefault(); e.stopPropagation();
+    if (t.hasAttribute("data-rf")) { visRf(); return; }
+    const fil = RF && RF.fil; if (!fil) return;
+    let delt = false;
+    try { if (navigator.canShare && navigator.canShare({ files: [fil] })) { delt = true; navigator.share({ files: [fil] }).catch(() => {}); } } catch { delt = false; }
+    if (!delt) { const a = document.createElement("a"); a.href = URL.createObjectURL(fil); a.download = fil.name; document.body.appendChild(a); a.click(); a.remove(); }
+  }, true);
   document.addEventListener("click", (e) => {
     const t = e.target.closest && e.target.closest("[data-bekr]"); if (!t || !D) return;
     e.preventDefault(); e.stopPropagation(); visBekr(t.dataset.bekr);
@@ -4589,6 +4627,7 @@
       <a href="#/parlor"><span class="lik">${ikon("mat", "")}</span><span class="ltekst">Fraser, tips og priser<small>Si det på vietnamesisk · drikkepenger · vanlige priser</small></span><span class="pil"></span></a>
       <a href="#/nod"><span class="lik rod">${ikon("sykehus", "")}</span><span class="ltekst">Nød og helse<small>Nødnumre, sykehus, forsikring og ⟦k3⟧</small></span><span class="pil"></span></a>
     </div>`;
+    if (D.rf && D.rf.f) h += `<div class="liste"><button class="rad" data-rf><span class="lik">${ikon("dok", "")}</span><span class="ltekst">Hele reisen som PDF<small>Last ned til telefonen – reserven som virker uten appen${D.rf.dato ? ` · laget ${esc(D.rf.dato)}` : ""}</small></span></button></div>`;
     h += `<div class="seksjonstittel">Hvem bruker denne telefonen?</div><section class="kort"><div class="personer">${D.personer.map((p) => `<button data-meg="${p.id}" class="${p.id === m ? "valgt" : ""}" aria-pressed="${p.id === m}">${esc(p.navn)}</button>`).join("")}</div><p class="krolle" style="margin-top:10px">Da ser du ditt eget sete på flyene og din egen pakkeliste.</p></section>`;
     h += `<div class="seksjonstittel">Om appen</div><div class="liste">
       <a href="#/claude"><span class="lik">${ikon("stjerne", "")}</span><span class="ltekst">Oppdater fra Claude<small>Lim inn endringer Claude har skrevet – uten Mac${D.oppdAntall ? ` · ${D.oppdAntall} lagt inn` : ""}</small></span><span class="pil"></span></a>
@@ -4956,6 +4995,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    100: "Mer: hele reisen som PDF – last ned til telefonen som reserve uten nett",
     99: "Pakkeliste: nye ting som legges inn hjemmefra, dukker nå opp også i lister du har endret selv",
     80: "Klesvask: tips om gode dager, «Vis til vaskeriet» og påminnelse om henting · «Fortsett i Google Translate» på kortene vi viser til vietnamesere · «Legg til» med ikoner",
     79: "Penger: markøren står klar i Dong-feltet, så du kan skrive beløpet med en gang",
