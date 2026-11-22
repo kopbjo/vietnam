@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 97, tid: "2026-11-08 kl. 13:30" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 99, tid: "2026-11-22 kl. 14:20" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -2160,7 +2160,35 @@
     if (nokkel === "rommet") return [{ tittel: "Før vi forlater rommet", ting: P.forlateRommet || [] }];
     return P.lister[nokkel] || [];
   }
+  // v99: nye linjer i originallista flettes inn i lister som er endret i appen (ellers ville de aldri dukket opp der).
+  // D.pakking.nye = { liste: { navn: ms } } – når linja kom inn i originalen; D.pakking.ver = nyeste ms. Posten husker hvor langt
+  // den er flettet (f). Poster uten f er fra før v99 og får alt som er kommet til siden redigering ble mulig. Det brukeren selv har
+  // lagt til, endret eller fjernet røres ikke – en linje som fjernes etter flettingen, kommer ikke tilbake.
+  let pakkFlettet = -1;
+  function pakkFlett() {
+    const P = D && D.pakking, nye = P && P.nye; if (!nye || pakkRediger) return;
+    const ver = P.ver || 0, lik = (x) => String(x || "").trim().toLowerCase();
+    for (const [l, p] of Object.entries(egneKart())) {
+      const n = nye[l], fra = p.f || 0; if (!n || fra >= ver) continue;
+      const har = new Set(); for (const g of p.g) for (const t of g.ting || []) if (t.navn) har.add(lik(t.navn));
+      let g2 = null;
+      for (const og of pakkOriginal(l)) og.ting.forEach((t, i) => {
+        if (!t.navn || !(n[t.navn] > fra) || har.has(lik(t.navn))) return;
+        g2 = g2 || kopi(p.g);
+        let gr = g2.find((x) => lik(x.tittel) === lik(og.tittel));
+        if (!gr) { gr = { tittel: og.tittel, ting: [] }; g2.push(gr); }
+        const finn = (x) => gr.ting.findIndex((y) => lik(y.navn || y.under) === lik(x.navn || x.under));
+        let pos = -1; // rett etter linja som står foran i originalen (ellers foran den som står etter, ellers sist i gruppen)
+        for (let j = i - 1; j >= 0 && pos < 0; j--) { const k = finn(og.ting[j]); if (k >= 0) pos = k + 1; }
+        for (let j = i + 1; j < og.ting.length && pos < 0; j++) { const k = finn(og.ting[j]); if (k >= 0) pos = k; }
+        gr.ting.splice(pos < 0 ? gr.ting.length : pos, 0, kopi(t)); har.add(lik(t.navn));
+      });
+      if (g2) synkSett({ k: "l", l, g: g2, b: pakkHash(pakkOriginal(l)), f: ver });
+    }
+    pakkFlettet = ver;
+  }
   function pakkAktiv() {
+    pakkFlett();
     const P = D.pakking || { lister: {} }, m = meg();
     const runder = pakkRunder(), idag = idagISO();
     const runde = runder.find((x) => x.id === pakkRunde) || runder.find((x) => x.dato >= idag) || runder[runder.length - 1];
@@ -2175,7 +2203,11 @@
     const egen = egneKart()[nokkel];
     return { runder, runde, lister, aktiv, nokkel, m, grupper: egen ? egen.g : aktiv[2], endret: !!egen, utdatert: !!(egen && egen.b && egen.b !== pakkHash(aktiv[2])) };
   }
-  function pakkLagreGrupper(nokkel, grupper) { synkSett({ k: "l", l: nokkel, g: grupper || null, b: pakkHash(pakkOriginal(nokkel)) }); }
+  function pakkLagreGrupper(nokkel, grupper) {
+    const p = { k: "l", l: nokkel, g: grupper || null, b: pakkHash(pakkOriginal(nokkel)) };
+    if (grupper) { const ver = (D.pakking || {}).ver || 0, for_ = egneKart()[nokkel]; p.f = !for_ || pakkFlettet === ver ? ver : (for_.f || 0); } // flettet til (v99)
+    synkSett(p);
+  }
   function pakkEndre(fn) {
     const a = pakkAktiv(); if (!a.aktiv) return;
     const g = kopi(a.grupper); const svar = fn(g, a); pakkLagreGrupper(a.nokkel, g); return svar;
@@ -2359,7 +2391,7 @@
       <button class="pakkrediger ${pakkRediger ? "aktiv" : ""}" data-pakkrediger>${pakkRediger ? "Ferdig" : "Rediger"}</button></div>`;
     if (!pakkRediger && pakkSkjul() && ferdig === alle.length && alle.length) h += `<p class="tom">Alt i denne lista er pakket.</p>`;
     if (pakkRediger) h += `<p class="pakkhjelp">Trykk på en tekst for å endre den. <b>−</b> fjerner, pilene flytter. ${!D.synk ? "Endringene gjelder bare denne telefonen." : a.aktiv[0] === "meg" ? "Endringene følger deg på alle telefoner der du har valgt deg selv." : "Endringene deles med hele familien."}</p>`;
-    if (pakkRediger && a.utdatert) h += `<p class="pakkhjelp pakkutdatert">Originallista er oppdatert siden denne ble endret. «Tilbake til original» henter den nye – da forsvinner endringene som er gjort her.</p>`;
+    if (pakkRediger && a.utdatert) h += `<p class="pakkhjelp pakkutdatert">Originallista er endret siden denne ble endret her. Nye linjer legges inn av seg selv, men ny tekst og linjer som er tatt bort i originalen, følger ikke med. «Tilbake til original» henter hele den nye – da forsvinner endringene som er gjort her.</p>`;
     h += a.grupper.map((g, gi) => {
       if (pakkRediger) {
         return `<section class="kort pakk rediger"><div class="pgruppe"><input class="pgtittel" value="${esc(g.tittel)}" data-pgtittel="${gi}" aria-label="Navn på gruppen" enterkeyhint="done">
@@ -3460,6 +3492,7 @@
       ${UTTALE ? `<button class="fv-lyd" data-uttale="${i}" aria-label="Hør uttalen">${HOYTTALER}</button>` : ""}</section>`;
   }
   function pakkTall(pid) {
+    pakkFlett();
     const g = (egneKart()[pid] || {}).g || pakkOriginal(pid), navn = new Set();
     for (const gr of g || []) for (const t of gr.ting || []) if (t.navn) navn.add(t.navn);
     const r = idagISO() < start() ? "hjemme" : "vietnam", kr = (pakkLes()[r] || {})[pid] || {};
@@ -4923,6 +4956,7 @@
   // ---------- varsel: kort som glir ned fra toppen (oppdateringer) ----------
   // Nytt i hver appversjon – vises i varselet etter oppdatering (maks tre siste). Legg til én kort linje per ny versjon.
   const NYTT = {
+    99: "Pakkeliste: nye ting som legges inn hjemmefra, dukker nå opp også i lister du har endret selv",
     80: "Klesvask: tips om gode dager, «Vis til vaskeriet» og påminnelse om henting · «Fortsett i Google Translate» på kortene vi viser til vietnamesere · «Legg til» med ikoner",
     79: "Penger: markøren står klar i Dong-feltet, så du kan skrive beløpet med en gang",
     78: "I dag: bestilte ting står ikke lenger med stiplet ramme – bare det som ikke er bestilt eller bekreftet",
