@@ -7,7 +7,7 @@
   const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
   const LS = { nokkel: "vn.nokkel", kurs: "vn.kurs", kursAuto: "vn.kursAuto", meg: "vn.meg", matSted: "vn.matSted", sistDag: "vn.sistDag", kortVariant: "vn.kortVariant", pakk: "vn.pakk", tp: "vn.tp", pakkEgne: "vn.pakkEgne", synk: "vn.synk", synkInn: "vn.synkInn", synkMigrert: "vn.synkMigrert", sjoforSiste: "vn.sjoforSiste", enhet: "vn.enhet", bruk: "vn.bruk", tema: "vn.tema", fakta: "vn.fakta", forVis: "vn.forVis" };
   const TZ = "Asia/Ho_Chi_Minh";
-  const APP = { versjon: 100, tid: "2026-11-22 kl. 15:10" }; // oppdateres ved hver kodeendring
+  const APP = { versjon: 101, tid: "2026-11-27 kl. 21:30" }; // oppdateres ved hver kodeendring
   let D = null;
 
   // ---------- nøytrale tekster: ⟦nøkkel⟧ byttes med D.ui (fra data.enc) når HTML settes inn ----------
@@ -1176,6 +1176,7 @@
         ${!erIdag && idag >= s0 && idag <= s1 ? `<br><button class="idagknapp" data-dag="0">Gå til i dag</button>` : ""}</div>
       <button class="pilknapp" data-dag="1" aria-label="Neste dag" ${d >= s1 ? "disabled" : ""}>${ikon("hoyre", "")}</button></div>`;
     if (reise && erIdag) h += tzVarsel(d);
+    if (reise) h += mbDagKort(d, erIdag);
     if (reise && erIdag && d > s0 && naaMin() < 15 * 60) h += igaarHtml(pluss(d, -1));
     if (reise && erIdag && naaMin() >= 17 * 60 && meg() && !dbBilde(d, meg())) h += dbPamin(d);
 
@@ -4530,12 +4531,50 @@
   const mbSkriv = (s) => lagre.set(MB_LS, JSON.stringify(s));
   const mbMork = () => { try { return matchMedia("(prefers-color-scheme: dark)").matches; } catch { return false; } };
   const mbBilde = (id, v) => { const B = (D.mobil && D.mobil.bilder) || {}; return B[`${id}_ios${v}_${mbMork() ? "dark" : "light"}`] || ""; };
-  const mbDel = (a) => { const M = D.mobil; return M && M.deler.some((d) => d.id === a) ? a : "hjemme"; };
+  // v101: standardfanen følger datoen (Kastrup til og med 14.12, Hanoi under turen, København fra 06.01)
+  const mbDel = (a) => { const M = D.mobil; if (M && M.deler.some((d) => d.id === a)) return a; const i = idagISO(); const fin = (id) => M && M.deler.some((d) => d.id === id) ? id : "hjemme";
+    return i >= "2027-01-06" ? fin("hjem") : i >= "2026-12-15" ? fin("vietnam") : fin("kastrup"); };
+  // ---- Telefonplanen (v101): alle stoppene til og fra, med status etter dato ----
+  const mbSlutt = (p) => p.til || p.d;
+  function mbStatus(P) {
+    const i = idagISO(); let nesteBrukt = false;
+    return P.stopp.map((p) => { let st = p.type === "ferdig" || mbSlutt(p) < i ? "ferdig" : p.d <= i ? "naa" : "senere";
+      if (st === "senere" && p.type === "gjor" && !nesteBrukt) { st = "neste"; nesteBrukt = true; } return st; });
+  }
+  function mbPlanHtml(apen) {
+    const P = D.mobil && D.mobil.plan; if (!P) return "";
+    const S = mbStatus(P); let nr = 0;
+    const li = P.stopp.map((p, k) => {
+      const st = S[k], gj = p.type === "gjor"; if (gj) nr++;
+      const pkt = st === "ferdig" ? "✓" : gj ? String(nr) : "";
+      const chip = st === "naa" ? `<span class="mb-chip naa">${p.til ? "Nå" : "I dag"}</span>` : st === "neste" ? `<span class="mb-chip neste">Neste</span>` : "";
+      const lenke = p.del ? `<a class="mb-tl-knapp" href="#/mobil/${esc(p.del)}">${st === "ferdig" ? "Se stegene" : "Vis stegene"}${ikon("chev", "")}</a>` : p.lenke ? `<a class="mb-tl-knapp" href="#/mobil/vietnam" data-mbrull="${esc(p.lenke)}">Reglene${ikon("chev", "")}</a>` : "";
+      return `<li class="mb-tl-i t-${esc(p.type)} s-${st}"><span class="mb-tl-pkt" aria-hidden="true">${pkt}</span><div class="mb-tl-inn">
+        <div class="mb-tl-naar">${esc(p.naar)}${p.tid && st !== "ferdig" ? ` · ${esc(p.tid)}` : ""}${chip}</div><div class="mb-tl-sted">${esc(p.sted)}</div><div class="mb-tl-hva">${md(p.hva)}</div>${lenke}</div></li>`;
+    }).join("");
+    return `<details class="kort mb-plan"${apen ? " open" : ""}><summary><span><b>${esc(P.tittel)}</b><small>${esc(P.stopp.filter((p) => p.type === "gjor").length)} ganger gjør vi noe – resten av tiden: ikke rør</small></span></summary>
+      <p class="mb-lead">${md(P.tekst)}</p><ol class="mb-tl">${li}</ol>${P.navn ? `<p class="mb-navn">${md(P.navn)}</p>` : ""}</details>`;
+  }
+  // Kort øverst i «I dag» på dagene vi skal gjøre noe med telefonen (og dagen før)
+  function mbDagKort(d, erIdag) {
+    const P = D.mobil && D.mobil.plan; if (!P) return "";
+    let h = "";
+    for (const p of P.stopp.filter((x) => x.d === d && x.type !== "ferdig" && x.type !== "regel")) {
+      const gj = p.type === "gjor";
+      h += `<section class="kort mb-dag${gj ? " gjor" : ""}"><div class="mb-dag-ikon" aria-hidden="true">${esc(p.ikon || (gj ? "📱" : "📶"))}</div><div class="mb-dag-inn">
+        <div class="mb-dag-et">Telefonen i dag${p.kl ? ` · ca. ${esc(p.kl)}` : ""}</div><b>${esc(p.sted)}</b><p>${md(p.hva)}</p>
+        ${gj ? `<a class="kb kb-hoved" href="#/mobil/${esc(p.del)}">Vis stegene${ikon("chev", "")}</a>` : ""}</div></section>`;
+    }
+    if (erIdag) for (const p of P.stopp.filter((x) => x.d === pluss(d, 1) && x.type === "gjor"))
+      h += `<a class="mb-imorgen" href="#/mobil/${esc(p.del)}"><span aria-hidden="true">📱</span><span><b>I morgen: telefonen</b>${esc(p.sted)} – ${md(p.hva)}</span>${ikon("chev", "")}</a>`;
+    return h;
+  }
   function sideMobil(arg) {
     const M = D.mobil; if (!M) return tittel("Mobil i Vietnam") + `<p class="tom">Veiledningen mangler.</p>` + bunn();
     const del = mbDel(arg), S = mbLes();
-    let h = tittel("Mobil i Vietnam", "Vietnam-SIM steg for steg");
-    h += `<nav class="mb-faner" role="tablist">${M.deler.map((d) => `<a role="tab" href="#/mobil/${d.id}" aria-selected="${d.id === del}" class="${d.id === del ? "p" : ""}">${esc(d.navn)}<small>${esc(d.under)}</small></a>`).join("")}</nav>`;
+    let h = tittel("Mobil i Vietnam", "Telefonplanen – hva vi gjør, og når");
+    h += mbPlanHtml(!arg);
+    h += `<nav class="mb-faner" role="tablist" style="grid-template-columns:repeat(${M.deler.length},1fr)">${M.deler.map((d) => `<a role="tab" href="#/mobil/${d.id}" aria-selected="${d.id === del}" class="${d.id === del ? "p" : ""}">${esc(d.navn)}<small>${esc(d.under)}</small></a>`).join("")}</nav>`;
     const I = M.intro[del] || {};
     h += `<section class="kort mb-kort">${del === "hjemme" ? `<div class="mb-sim" aria-hidden="true"><span>NO</span><span>VN</span></div>` : ""}<h2>${esc(I.tittel || "")}</h2><p class="mb-lead">${md(I.tekst || "")}</p>${I.tid ? `<div class="mb-tid"><b>${esc(I.tid)}</b>${esc(I.tidTekst || "")}</div>` : ""}</section>`;
     if (del === "hjemme") h += `<section class="kort mb-kort"><h2>${esc(M.slik.tittel)}</h2><ol class="mb-slik">${M.slik.steg.map((t, i) => `<li><span class="mb-nr">${i + 1}</span><span>${md(t)}</span></li>`).join("")}</ol><div class="mb-tid"><b>${esc(M.slik.tid)}</b>${esc(M.slik.tidTekst)}</div></section>`;
@@ -4543,7 +4582,9 @@
     const st = M.stopp[del];
     if (st) h += `<details class="mb-stopp"><summary><span class="mb-utrop" aria-hidden="true">!</span>${esc(M.stopp.tittel)}</summary><ul>${st.map((x) => `<li>${md(x)}</li>`).join("")}</ul></details>`;
     h += mbKortstokk(M, S, del);
-    if (del === "hjemme" && !erBarn() && M.voksne) h += `<details class="fold mb-voksne"><summary>${esc(M.voksne.tittel)}</summary><ol>${M.voksne.punkter.map((x) => `<li>${md(x)}</li>`).join("")}</ol><p class="krolle">${md(M.voksne.merk || "")}</p></details>`;
+    if (del === "vietnam" && M.underveis) h += `<section class="kort mb-kort mb-under" id="mbunderveis"><h2>${esc(M.underveis.tittel)}</h2><ul class="mb-regler">${M.underveis.regler.map(([ik, t, u]) => `<li class="r-${esc(ik)}"><span class="mb-rik" aria-hidden="true">${{ wa: "💬", nei: "📵", sms: "✉️", svar: "🔇", las: "🔒" }[ik] || "•"}</span><span><b>${md(t)}</b><small>${md(u)}</small></span></li>`).join("")}</ul></section>`;
+    if ((del === "vietnam" || del === "kastrup") && M.rotte) h += `<details class="kort fold mb-rotte" id="mbrotte"${del === "vietnam" ? " open" : ""}><summary>${esc(M.rotte.tittel)}</summary><ul>${M.rotte.punkter.map((x) => `<li>${md(x)}</li>`).join("")}</ul>${!erBarn() && M.rotte.voksne ? `<p class="krolle">${md(M.rotte.voksne)}</p>` : ""}<div class="knapper"><a class="kb" href="#/nod">Nød og helse${ikon("chev", "")}</a></div></details>`;
+    if (!erBarn() && M.voksne) h += `<details class="fold mb-voksne"><summary>${esc(M.voksne.tittel)}</summary><ol>${M.voksne.punkter.map((x) => `<li>${md(x)}</li>`).join("")}</ol><p class="krolle">${md(M.voksne.merk || "")}</p></details>`;
     return h + bunn();
   }
   function mbKortstokk(M, S, del) {
@@ -4554,10 +4595,14 @@
     return `<section class="kort mb-stokk" id="mbstokk">${prog}<div class="mb-steg">
       <div class="mb-hode"><span class="mb-tall${S.gjort[del + i] ? " g" : ""}">${i + 1}</span><div><div class="mb-av">Steg ${i + 1} av ${n}</div><h2>${md(s.h)}</h2></div></div>
       <p class="mb-tekst">${md(s.t)}</p>
-      <img class="mb-skjerm" src="${esc(mbBilde(s.img, S.v))}" alt="${esc(s.alt || "")}" width="390" height="720">
+      ${s.img ? `<img class="mb-skjerm" src="${esc(mbBilde(s.img, S.v))}" alt="${esc(s.alt || "")}" width="390" height="720">` : ""}
       ${s.tip ? `<p class="mb-tips">${md(s.tip)}</p>` : ""}</div>
       <div class="mb-knapper"><button data-mbgaa="-1" class="mb-tilb"${i === 0 ? " disabled" : ""}>Tilbake</button><button data-mbgaa="1" class="mb-neste${i === n - 1 ? " siste" : ""}">${i === n - 1 ? "Ferdig ✓" : "Gjort – neste"}</button></div></section>`;
   }
+  document.addEventListener("click", (e) => {
+    const a = e.target.closest && e.target.closest("[data-mbrull]"); if (!a) return;
+    setTimeout(() => { const el = document.getElementById("mb" + a.dataset.mbrull); if (el) el.scrollIntoView({ block: "start", behavior: "smooth" }); }, 120);
+  });
   document.addEventListener("click", (e) => {
     if (!D || !e.target.closest || rute().side !== "mobil") return;
     const b = e.target.closest("[data-mbv],[data-mbgaa],[data-mbstart]"); if (!b) return;
@@ -4623,7 +4668,7 @@
       ${GJ() && !erBarn() ? `<a href="#/gjester"><span class="lik">${ikon("bilde", "")}</span><span class="ltekst">Gjestesiden<small>Inviter familie og venner til å følge Dagens bilde${gjAntallTekst()}</small></span><span class="pil"></span></a>` : ""}
     </div><div class="seksjonstittel">Hjelp</div><div class="liste">
       <a href="#/kontakter"><span class="lik">${ikon("kontakt", "")}</span><span class="ltekst">Kontakter<small>Alle hoteller, sjåfører og guider – søkbar</small></span><span class="pil"></span></a>
-      <a href="#/mobil"><span class="lik">${ikon("info", "")}</span><span class="ltekst">Mobil i Vietnam<small>Vietnam-SIM steg for steg – hjemme, i Vietnam og hjem igjen</small></span><span class="pil"></span></a>
+      <a href="#/mobil"><span class="lik">${ikon("info", "")}</span><span class="ltekst">Mobil i Vietnam<small>Telefonplanen: hva vi gjør med telefonen, og når – til og fra</small></span><span class="pil"></span></a>
       <a href="#/parlor"><span class="lik">${ikon("mat", "")}</span><span class="ltekst">Fraser, tips og priser<small>Si det på vietnamesisk · drikkepenger · vanlige priser</small></span><span class="pil"></span></a>
       <a href="#/nod"><span class="lik rod">${ikon("sykehus", "")}</span><span class="ltekst">Nød og helse<small>Nødnumre, sykehus, forsikring og ⟦k3⟧</small></span><span class="pil"></span></a>
     </div>`;
@@ -4802,7 +4847,7 @@
       legg("reise", s.navn, `${s.dato}${s.netter ? " · " + s.netter + (s.netter === 1 ? " natt" : " netter") : ""}`, [s.ingress], { hash: "#/sted/" + s.id });
       (s.seksjoner || []).forEach((x) => legg("reise", x.tittel, s.navn, seksjonTekst(x), { hash: "#/sted/" + s.id, sel: "section.kort > h2", tekst: x.tittel }));
     });
-    if (D.mobil) legg("reise", "Mobil i Vietnam", "eSIM steg for steg · apper før vi drar", ["eSIM", "SIM", "Vietnam-SIM", "internett", "mobildata", "dataroaming", "roaming", "QR-kode", "Nomad"], { hash: "#/mobil" });
+    if (D.mobil) legg("reise", "Mobil i Vietnam", "Telefonplanen · eSIM steg for steg", ["telefonplanen", "telefonen", "Telia", "Primær", "Reise", "WhatsApp", "eSIM", "SIM", "Vietnam-SIM", "internett", "mobildata", "dataroaming", "roaming", "QR-kode", "Nomad"], { hash: "#/mobil" });
     if (D.mobil && D.mobil.apper) legg("reise", "Apper før vi drar", "Før vi drar · App Store-lenker", ["apper", "App Store", "installere", ...D.mobil.apper.grupper.flatMap((g) => g.apps.map((a) => a.n))], { hash: "#/for/apper" });
     const R = D.restauranter;
     R.liste.forEach((r) => legg("mat", r.navn, `${stedNavn(r.sted)} · ${r.kjokken}`, [r.omrade, r.adresse, r.s2, r.tips, r.apent],
